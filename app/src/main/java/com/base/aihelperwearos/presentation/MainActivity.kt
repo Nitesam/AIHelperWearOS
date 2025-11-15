@@ -99,10 +99,15 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                 Screen.Chat -> ChatScreen(
                     uiState = uiState,
                     onSendMessage = { viewModel.sendMessage(it) },
+                    onSendAudio = { audioFile -> viewModel.sendAudioMessage(audioFile) },
+                    onSynthesizeLocally = { text -> viewModel.synthesizeTextLocally(text) },
                     onPlayAudio = { path -> viewModel.playAudio(path) },
                     onIncreaseFontSize = { viewModel.increaseFontSize() },
                     onDecreaseFontSize = { viewModel.decreaseFontSize() },
-                    onBack = { viewModel.navigateTo(Screen.Home) }
+                    onBack = { viewModel.navigateTo(Screen.Home) },
+                    onConfirmTranscription = { viewModel.confirmTranscription() },
+                    onCancelTranscription = { viewModel.cancelTranscription() },
+                    onUpdateTranscription = { viewModel.updateTranscription(it) }
                 )
                 Screen.Analysis -> AnalysisScreen(
                     uiState = uiState,
@@ -289,18 +294,51 @@ fun ModelSelectionScreen(
 fun ChatScreen(
     uiState: com.base.aihelperwearos.presentation.viewmodel.ChatUiState,
     onSendMessage: (String) -> Unit,
+    onSendAudio: (File) -> Unit,
+    onSynthesizeLocally: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
     onIncreaseFontSize: () -> Unit,
     onDecreaseFontSize: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onConfirmTranscription: () -> Unit,
+    onCancelTranscription: () -> Unit,
+    onUpdateTranscription: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isRecording by remember { mutableStateOf(false) }
+    var audioRecorder by remember { mutableStateOf<AudioRecorder?>(null) }
+    var showTtsDialog by remember { mutableStateOf(false) }
+    var pendingText by remember { mutableStateOf("") }
+
+    val microphonePermissionDenied = stringResource(R.string.microphone_permission_denied)
+
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            isRecording = true
+            audioRecorder = AudioRecorder(context)
+            coroutineScope.launch {
+                audioRecorder?.startRecording()
+            }
+        } else {
+            android.util.Log.e("ChatScreen", microphonePermissionDenied)
+        }
+    }
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         result.data?.let { data ->
             RemoteInputHelper.getTextFromIntent(data)?.let { text ->
                 if (text.isNotBlank()) {
-                    onSendMessage(text)
+                    if (uiState.pendingTranscription != null) {
+                        onUpdateTranscription(text)
+                    } else {
+                        pendingText = text
+                        showTtsDialog = true
+                    }
                 }
             }
         }
@@ -351,18 +389,215 @@ fun ChatScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        if (uiState.isLoading) {
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    strokeWidth = 4.dp
+                )
+            }
+        }
+
+        uiState.errorMessage?.let { error ->
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.error
+                )
+            }
+        }
+
         item {
             Spacer(modifier = Modifier.height(8.dp))
             val writeMessage = stringResource(R.string.write_message)
-            Button(
-                onClick = {
-                    val intent = RemoteInputHelper.createRemoteInputIntent(writeMessage)
-                    launcher.launch(intent)
-                },
+            Row(
                 modifier = Modifier.fillMaxWidth(0.9f),
-                enabled = !uiState.isLoading
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(stringResource(R.string.send_message))
+                Button(
+                    onClick = {
+                        val intent = RemoteInputHelper.createRemoteInputIntent(writeMessage)
+                        launcher.launch(intent)
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !uiState.isLoading && !isRecording,
+                    colors = ButtonDefaults.primaryButtonColors()
+                ) {
+                    Text(stringResource(R.string.keyboard), style = MaterialTheme.typography.title2)
+                }
+
+                Button(
+                    onClick = {
+                        if (isRecording) {
+                            isRecording = false
+                            coroutineScope.launch {
+                                audioRecorder?.stopRecording()?.fold(
+                                    onSuccess = { file -> onSendAudio(file) },
+                                    onFailure = { }
+                                )
+                                audioRecorder = null
+                            }
+                        } else {
+                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !uiState.isLoading,
+                    colors = if (isRecording)
+                        ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+                    else
+                        ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                ) {
+                    Text(
+                        if (isRecording) stringResource(R.string.recording_stop) else stringResource(R.string.recording_start),
+                        style = MaterialTheme.typography.title2
+                    )
+                }
+            }
+        }
+
+        if (isRecording) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.recording_in_progress),
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.error
+                )
+            }
+        }
+
+        if (showTtsDialog && pendingText.isNotBlank()) {
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .background(
+                            color = MaterialTheme.colors.primary.copy(alpha = 0.2f),
+                            shape = CircleShape
+                        )
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        stringResource(R.string.choose_input_method),
+                        style = MaterialTheme.typography.caption1,
+                        color = MaterialTheme.colors.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = {
+                            showTtsDialog = false
+                            onSendMessage(pendingText)
+                            pendingText = ""
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.primaryButtonColors()
+                    ) {
+                        Text(stringResource(R.string.send_text_only), style = MaterialTheme.typography.caption1)
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Button(
+                        onClick = {
+                            showTtsDialog = false
+                            onSynthesizeLocally(pendingText)
+                            pendingText = ""
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.secondaryButtonColors()
+                    ) {
+                        Text(stringResource(R.string.synthesize_locally), style = MaterialTheme.typography.caption1)
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Button(
+                        onClick = {
+                            showTtsDialog = false
+                            pendingText = ""
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+                    ) {
+                        Text(stringResource(R.string.cancel), style = MaterialTheme.typography.caption1)
+                    }
+                }
+            }
+        }
+
+        uiState.pendingTranscription?.let { transcription ->
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .background(
+                            color = MaterialTheme.colors.primary.copy(alpha = 0.2f),
+                            shape = CircleShape
+                        )
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        stringResource(R.string.transcription),
+                        style = MaterialTheme.typography.caption1,
+                        color = MaterialTheme.colors.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        transcription,
+                        style = MaterialTheme.typography.body2,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            item {
+                val editText = stringResource(R.string.edit_transcription)
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.95f),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Button(
+                        onClick = onCancelTranscription,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.error
+                        )
+                    ) {
+                        Text(stringResource(R.string.cancel), style = MaterialTheme.typography.title3)
+                    }
+
+                    Button(
+                        onClick = {
+                            val intent = RemoteInputHelper.createRemoteInputIntent(editText)
+                            launcher.launch(intent)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.secondaryButtonColors()
+                    ) {
+                        Text(stringResource(R.string.edit), style = MaterialTheme.typography.title3)
+                    }
+
+                    Button(
+                        onClick = onConfirmTranscription,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.primaryButtonColors()
+                    ) {
+                        Text(stringResource(R.string.confirm), style = MaterialTheme.typography.title3)
+                    }
+                }
             }
         }
     }

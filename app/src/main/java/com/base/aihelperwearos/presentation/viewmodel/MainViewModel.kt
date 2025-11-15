@@ -10,6 +10,7 @@ import com.base.aihelperwearos.data.repository.ChatMessage
 import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.network.OpenRouterService
 import com.base.aihelperwearos.presentation.utils.AudioPlayer
+import com.base.aihelperwearos.presentation.utils.TextToSpeechHelper
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -44,6 +45,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         apiKey = com.base.aihelperwearos.BuildConfig.OPENROUTER_API_KEY
     )
 
+
+    private val ttsHelper = TextToSpeechHelper(application)
     private val audioPlayer = AudioPlayer(application)
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -274,6 +277,55 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun synthesizeTextLocally(text: String) {
+        android.util.Log.d("MainViewModel", "synthesizeTextLocally - CHIAMATO: $text")
+
+        if (text.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Testo vuoto") }
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                ttsHelper.synthesizeToFile(
+                    text = text,
+                    onSuccess = { audioFile ->
+                        android.util.Log.d("MainViewModel", "TTS success: ${audioFile.absolutePath}")
+
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                pendingTranscription = text,
+                                pendingAudioPath = audioFile.absolutePath,
+                                errorMessage = null
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("MainViewModel", "TTS error: ${error.message}", error)
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = "Errore TTS: ${error.message}"
+                            )
+                        }
+                    }
+                )
+
+            } catch (e: Exception) {
+                android.util.Log.e("MainViewModel", "synthesizeTextLocally - EXCEPTION: ${e.message}", e)
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Errore: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
     fun deleteSession(session: ChatSession) {
         viewModelScope.launch {
             try {
@@ -349,6 +401,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
+        ttsHelper.release()
         audioPlayer.release()
         openRouterService.close()
     }

@@ -43,4 +43,9 @@ Hello, %1$s!</string>
     <string name="model_gemini_pro">Gemini Pro 2.5</string>
     <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
     <string name="model_gpt5">GPT 5</string>
+    <string name="choose_input_method">Choose input method:</string>
+    <string name="send_text_only">📝 Send text only</string>
+    <string name="synthesize_locally">🔊 Synthesize locally</string>
+    <string name="start_conversation">Start a conversation!</string>
+    <string name="chat">Chat</string>
 </resources>
