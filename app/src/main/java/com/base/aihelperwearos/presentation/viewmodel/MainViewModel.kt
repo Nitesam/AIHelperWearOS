@@ -3,6 +3,7 @@ package com.base.aihelperwearos.presentation.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.base.aihelperwearos.R
 import com.base.aihelperwearos.data.repository.ChatRepository
 import com.base.aihelperwearos.data.repository.ChatSession
 import com.base.aihelperwearos.data.repository.ChatMessage
@@ -70,7 +71,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 android.util.Log.d("MainViewModel", "startNewChat - START - isAnalysisMode: $isAnalysisMode")
                 android.util.Log.d("MainViewModel", "Selected model: ${_uiState.value.selectedModel}")
 
-                val title = if (isAnalysisMode) "Analisi Matematica" else "Nuova Chat"
+                val title = if (isAnalysisMode) getApplication<Application>().getString(R.string.analysis_mode) else getApplication<Application>().getString(R.string.new_chat)
                 android.util.Log.d("MainViewModel", "Creating session with title: $title")
 
                 val sessionId = chatRepository.createSession(
@@ -160,7 +161,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
 
                 val session = chatRepository.getSession(sessionId)
-                if (session != null && (session.title == "Nuova Chat" || session.title == "Analisi Matematica")) {
+                if (session != null && (session.title == getApplication<Application>().getString(R.string.new_chat) || session.title == getApplication<Application>().getString(R.string.analysis_mode))) {
                     val newTitle = userMessage.take(30) + if (userMessage.length > 30) "..." else ""
                     chatRepository.updateSessionTitle(sessionId, newTitle)
                 }
@@ -352,5 +353,3 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         openRouterService.close()
     }
 }
-
-

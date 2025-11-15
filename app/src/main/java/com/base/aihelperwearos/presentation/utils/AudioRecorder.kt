@@ -1,5 +1,6 @@
 package com.base.aihelperwearos.presentation.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
@@ -25,6 +26,7 @@ class AudioRecorder(private val context: Context) {
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
 
+    @SuppressLint("MissingPermission")
     suspend fun startRecording(): Result<String> = withContext(Dispatchers.IO) {
         try {
             val audioDir = File(context.filesDir, "audio_messages")

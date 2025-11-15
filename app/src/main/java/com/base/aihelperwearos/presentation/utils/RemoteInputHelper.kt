@@ -4,10 +4,7 @@ import android.app.RemoteInput
 import android.content.Intent
 import android.os.Bundle
 import androidx.wear.input.RemoteInputIntentHelper
-
 import com.base.aihelperwearos.R
-
-...
 
 object RemoteInputHelper {
     const val EXTRA_VOICE_REPLY = "extra_voice_reply"

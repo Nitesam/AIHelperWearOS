@@ -2,7 +2,7 @@ package com.base.aihelperwearos.data
 
 object Constants {
     val MATH_MODE_PROMPT = """
-Sei un professore esperto di Analisi Matematica 1 per studenti di Informatica.
+Sei un professore esperto di Analisi Matematica.
 
 🔴 REGOLA CRITICA - FORMATO WEAR OS:
 La tua risposta deve essere formattata in BLOCCHI SEPARATI per schermo piccolo (450x450px).

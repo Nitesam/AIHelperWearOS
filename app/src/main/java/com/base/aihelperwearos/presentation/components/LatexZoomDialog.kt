@@ -20,11 +20,8 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-
 import androidx.compose.ui.res.stringResource
 import com.base.aihelperwearos.R
-
-...
 
 @Composable
 fun LatexZoomDialog(

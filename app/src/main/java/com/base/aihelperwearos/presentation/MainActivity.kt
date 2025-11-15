@@ -1,10 +1,62 @@
-import androidx.compose.ui.res.stringResource
-import com.base.aihelperwearos.R
+package com.base.aihelperwearos.presentation
 
-...
+import android.Manifest
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.wear.compose.material.*
+import com.base.aihelperwearos.R
+import com.base.aihelperwearos.presentation.components.MathMarkdownText
+import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
+import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
+import com.base.aihelperwearos.presentation.viewmodel.Screen
+import com.base.aihelperwearos.presentation.utils.RemoteInputHelper
+import com.base.aihelperwearos.presentation.utils.AudioRecorder
+import kotlinx.coroutines.launch
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+
+        setContent {
+            val viewModel: MainViewModel = viewModel()
+            WearApp(viewModel, this)
+        }
+    }
+}
+
+fun setLocale(activity: ComponentActivity, languageCode: String) {
+    val locale = Locale(languageCode)
+    Locale.setDefault(locale)
+    val resources = activity.resources
+    val config = resources.configuration
+    config.setLocale(locale)
+    resources.updateConfiguration(config, resources.displayMetrics)
+}
 
 @Composable
-fun WearApp(viewModel: MainViewModel) {
+fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.currentScreen) {
@@ -30,6 +82,10 @@ fun WearApp(viewModel: MainViewModel) {
                     onHistory = {
                         android.util.Log.d("MainActivity", "Cronologia clicked")
                         viewModel.navigateTo(Screen.History)
+                    },
+                    onLanguageChange = { lang ->
+                        setLocale(activity, lang)
+                        activity.recreate()
                     }
                 )
                 Screen.ModelSelection -> ModelSelectionScreen(
@@ -79,7 +135,8 @@ fun WearApp(viewModel: MainViewModel) {
 fun HomeScreen(
     onNewChat: () -> Unit,
     onAnalysis: () -> Unit,
-    onHistory: () -> Unit
+    onHistory: () -> Unit,
+    onLanguageChange: (String) -> Unit
 ) {
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -135,6 +192,32 @@ fun HomeScreen(
                 colors = ButtonDefaults.secondaryButtonColors()
             ) {
                 Text(stringResource(R.string.history))
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(0.85f),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { onLanguageChange("it") },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.primaryButtonColors()
+                ) {
+                    Text("IT")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { onLanguageChange("en") },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.primaryButtonColors()
+                ) {
+                    Text("EN")
+                }
             }
         }
     }
@@ -270,9 +353,10 @@ fun ChatScreen(
 
         item {
             Spacer(modifier = Modifier.height(8.dp))
+            val writeMessage = stringResource(R.string.write_message)
             Button(
                 onClick = {
-                    val intent = RemoteInputHelper.createRemoteInputIntent(stringResource(R.string.write_message))
+                    val intent = RemoteInputHelper.createRemoteInputIntent(writeMessage)
                     launcher.launch(intent)
                 },
                 modifier = Modifier.fillMaxWidth(0.9f),
@@ -308,6 +392,7 @@ fun AnalysisScreen(
     val coroutineScope = rememberCoroutineScope()
     var isRecording by remember { mutableStateOf(false) }
     var audioRecorder by remember { mutableStateOf<AudioRecorder?>(null) }
+    val microphonePermissionDenied = stringResource(R.string.microphone_permission_denied)
 
     val audioPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -319,7 +404,7 @@ fun AnalysisScreen(
                 audioRecorder?.startRecording()
             }
         } else {
-            android.util.Log.e("AnalysisScreen", stringResource(R.string.microphone_permission_denied))
+            android.util.Log.e("AnalysisScreen", microphonePermissionDenied)
         }
     }
 
@@ -428,13 +513,14 @@ fun AnalysisScreen(
 
             item {
                 Spacer(modifier = Modifier.height(16.dp))
+                val writeProblem = stringResource(R.string.write_problem)
                 Row(
                     modifier = Modifier.fillMaxWidth(0.9f),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = {
-                            val intent = RemoteInputHelper.createRemoteInputIntent(stringResource(R.string.write_problem))
+                            val intent = RemoteInputHelper.createRemoteInputIntent(writeProblem)
                             textLauncher.launch(intent)
                         },
                         modifier = Modifier.weight(1f),
@@ -516,6 +602,7 @@ fun AnalysisScreen(
                 item { Spacer(modifier = Modifier.height(8.dp)) }
 
                 item {
+                    val editTranscription = stringResource(R.string.edit_transcription)
                     Row(
                         modifier = Modifier.fillMaxWidth(0.95f),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -533,7 +620,7 @@ fun AnalysisScreen(
                         Button(
                             onClick = {
                                 val intent = RemoteInputHelper.createRemoteInputIntent(
-                                    label = stringResource(R.string.edit_transcription)
+                                    label = editTranscription
                                 )
                                 textLauncher.launch(intent)
                             },
@@ -771,4 +858,3 @@ fun HistoryScreen(
         }
     }
 }
-
