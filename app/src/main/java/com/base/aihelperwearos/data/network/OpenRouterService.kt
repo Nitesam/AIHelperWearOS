@@ -17,10 +17,29 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import android.util.Base64
 import java.io.File
+import io.ktor.client.engine.android.Android
+import javax.net.ssl.X509TrustManager
+import java.security.cert.X509Certificate
 
 class OpenRouterService(private val apiKey: String) {
+    private val trustAllCertificates = object : X509TrustManager {
+        override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+        override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+    }
 
     private val client = HttpClient(Android) {
+        engine {
+            sslManager = { httpsURLConnection ->
+                httpsURLConnection.setSSLSocketFactory(
+                    javax.net.ssl.SSLContext.getInstance("TLS").apply {
+                        init(null, arrayOf(trustAllCertificates), java.security.SecureRandom())
+                    }.socketFactory
+                )
+                httpsURLConnection.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+            }
+        }
+
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
