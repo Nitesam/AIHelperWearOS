@@ -23,9 +23,15 @@ enum class Screen {
     History
 }
 
+enum class Language(val code: String, val displayName: String) {
+    ITALIAN("it", "Italiano"),
+    ENGLISH("en", "English")
+}
+
+
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
-    val selectedModel: String = "openrouter/polaris-alpha",
+    val selectedModel: String = "openrouter/sherlock-dash-alpha",
     val currentSessionId: Long? = null,
     val chatMessages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
@@ -34,7 +40,9 @@ data class ChatUiState(
     val chatSessions: List<ChatSession> = emptyList(),
     val fontSize: Int = 11,
     val pendingTranscription: String? = null,
-    val pendingAudioPath: String? = null
+    val pendingAudioPath: String? = null,
+    val selectedLanguage: Language = Language.ITALIAN,
+    val recordedAudioFile: File? = null
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -45,9 +53,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         apiKey = com.base.aihelperwearos.BuildConfig.OPENROUTER_API_KEY
     )
 
-
     private val ttsHelper = TextToSpeechHelper(application)
     private val audioPlayer = AudioPlayer(application)
+    private val userPreferences = com.base.aihelperwearos.data.preferences.UserPreferences(application)
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -56,6 +64,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             chatRepository.getAllSessions().collect { sessions ->
                 _uiState.update { it.copy(chatSessions = sessions) }
+            }
+        }
+
+        loadUserPreferences()
+    }
+
+    private fun loadUserPreferences() {
+        viewModelScope.launch {
+            userPreferences.languageFlow.collect { languageCode ->
+                val language = when (languageCode) {
+                    "en" -> Language.ENGLISH
+                    else -> Language.ITALIAN
+                }
+                _uiState.update { it.copy(selectedLanguage = language) }
             }
         }
     }
@@ -171,14 +193,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 val messages = _uiState.value.chatMessages.map { msg ->
                     Message(role = msg.role, content = msg.content)
-                } + Message(role = "user", content = userMessage)
+                }
 
                 android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}")
 
                 val result = openRouterService.sendMessage(
                     modelId = _uiState.value.selectedModel,
                     messages = messages,
-                    isAnalysisMode = _uiState.value.isAnalysisMode
+                    isAnalysisMode = _uiState.value.isAnalysisMode,
+                    languageCode = _uiState.value.selectedLanguage.code
                 )
 
                 android.util.Log.d("MainViewModel", "sendMessage - API risposta ricevuta")
@@ -232,12 +255,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 android.util.Log.d("MainViewModel", "sendAudioMessage - Inizio elaborazione")
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-
-                android.util.Log.d("MainViewModel", "sendAudioMessage - Chiamata trascrizione audio")
-
                 val audioPath = audioFile.absolutePath
 
-                val transcriptionResult = openRouterService.transcribeAudioWithGemini(audioFile)
+                android.util.Log.d("MainViewModel", "sendAudioMessage - Usando AI Gemini per trascrizione")
+                val transcriptionResult = openRouterService.transcribeAudioWithGemini(
+                    audioFile = audioFile,
+                    languageCode = _uiState.value.selectedLanguage.code
+                )
 
                 transcriptionResult.fold(
                     onSuccess = { transcription ->
@@ -257,7 +281,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = "Errore audio: ${error.message}"
+                                errorMessage = "Errore trascrizione: ${error.message}"
                             )
                         }
                     }
@@ -398,6 +422,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             state.copy(fontSize = newSize)
         }
     }
+
+    fun setLanguage(language: Language) {
+        android.util.Log.d("MainViewModel", "Language changed to: ${language.displayName}")
+        _uiState.update { it.copy(selectedLanguage = language) }
+    }
+
 
     override fun onCleared() {
         super.onCleared()

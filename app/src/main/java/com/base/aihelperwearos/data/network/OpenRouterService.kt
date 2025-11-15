@@ -77,14 +77,15 @@ class OpenRouterService(private val apiKey: String) {
     suspend fun sendMessage(
         modelId: String,
         messages: List<Message>,
-        isAnalysisMode: Boolean = false
+        isAnalysisMode: Boolean = false,
+        languageCode: String = "it"
     ): Result<String> {
         return try {
             val allMessages = if (isAnalysisMode) {
                 listOf(
                     Message(
                         role = "system",
-                        content = com.base.aihelperwearos.data.Constants.MATH_MODE_PROMPT
+                        content = com.base.aihelperwearos.data.Constants.getMathPrompt(languageCode)
                     )
                 ) + messages
             } else {
@@ -155,7 +156,7 @@ class OpenRouterService(private val apiKey: String) {
         }
     }
 
-    suspend fun transcribeAudioWithGemini(audioFile: File): Result<String> {
+    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String = "it"): Result<String> {
         return try {
             Log.d("OpenRouter", "Transcribing with Gemini 2.5 Flash (audio support)")
 
@@ -168,6 +169,8 @@ class OpenRouterService(private val apiKey: String) {
 
             Log.d("OpenRouter", "Audio size: ${audioBytes.size} bytes → Base64: ${audioBase64.length} chars")
 
+            val transcriptionPrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode)
+
             val requestBody = buildString {
                 append("{")
                 append("\"model\":\"google/gemini-2.5-flash\",")
@@ -177,7 +180,7 @@ class OpenRouterService(private val apiKey: String) {
 
                 append("{")
                 append("\"type\":\"text\",")
-                append("\"text\":\"Ascolta attentamente questo file audio e trascrivi ESATTAMENTE ciò che viene detto. L'audio contiene un problema di matematica in italiano. Scrivi SOLO la trascrizione letterale delle parole pronunciate, senza aggiungere commenti, spiegazioni o interpretazioni. Esempio: se sento 'calcola x al quadrato' scrivi esattamente 'calcola x al quadrato'.\"")
+                append("\"text\":\"${transcriptionPrompt.replace("\"", "\\\"")}\"")
                 append("},")
 
                 append("{")

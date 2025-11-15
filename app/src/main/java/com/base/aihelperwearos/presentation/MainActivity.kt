@@ -83,8 +83,8 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                         android.util.Log.d("MainActivity", "Cronologia clicked")
                         viewModel.navigateTo(Screen.History)
                     },
-                    onLanguageChange = { lang ->
-                        setLocale(activity, lang)
+                    onLanguageChange = { action ->
+                        setLocale(activity, action)
                         activity.recreate()
                     }
                 )
@@ -163,7 +163,8 @@ fun HomeScreen(
                 color = MaterialTheme.colors.onSurfaceVariant
             )
         }
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+
+        item { Spacer(modifier = Modifier.height(12.dp)) }
 
         item {
             Button(
@@ -204,24 +205,27 @@ fun HomeScreen(
 
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(0.85f),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(0.7f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
                     onClick = { onLanguageChange("it") },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.primaryButtonColors()
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.surface
+                    )
                 ) {
-                    Text("IT")
+                    Text("🇮🇹", style = MaterialTheme.typography.title2)
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+
                 Button(
                     onClick = { onLanguageChange("en") },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.primaryButtonColors()
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.surface
+                    )
                 ) {
-                    Text("EN")
+                    Text("🇬🇧", style = MaterialTheme.typography.title2)
                 }
             }
         }
@@ -235,7 +239,7 @@ fun ModelSelectionScreen(
     onBack: () -> Unit
 ) {
     val models = listOf(
-        "openrouter/polaris-alpha" to stringResource(R.string.model_polaris),
+        "openrouter/sherlock-dash-alpha" to "Free Model (OpenRouter)",
         "google/gemini-2.5-pro" to stringResource(R.string.model_gemini_pro),
         "anthropic/claude-sonnet-4.5" to stringResource(R.string.model_claude_sonnet),
         "openai/gpt-5" to stringResource(R.string.model_gpt5)
@@ -602,11 +606,11 @@ fun ChatScreen(
         }
     }
 
-        FontSizeControls(
+        /*FontSizeControls(
             currentSize = uiState.fontSize,
             onIncrease = onIncreaseFontSize,
             onDecrease = onDecreaseFontSize
-        )
+        )*/
     }
 }
 
@@ -769,6 +773,7 @@ fun AnalysisScreen(
                         onClick = {
                             if (isRecording) {
                                 isRecording = false
+                                android.util.Log.d("AnalysisScreen", "Stopping AudioRecorder")
                                 coroutineScope.launch {
                                     audioRecorder?.stopRecording()?.fold(
                                         onSuccess = { file -> onSendAudio(file) },
@@ -1093,3 +1098,4 @@ fun HistoryScreen(
         }
     }
 }
+

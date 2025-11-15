@@ -48,4 +48,20 @@ Hello, %1$s!</string>
     <string name="synthesize_locally">🔊 Synthesize locally</string>
     <string name="start_conversation">Start a conversation!</string>
     <string name="chat">Chat</string>
+
+    <string name="choose_transcription_method">Choose transcription method:</string>
+    <string name="ai_transcription">🤖 AI Transcription (Gemini)</string>
+    <string name="local_speech_recognition">🎤 Device Speech-to-Text</string>
+    <string name="transcribing">Transcribing...</string>
+
+    <string name="language_italian">🇮🇹 Italian</string>
+    <string name="language_english">🇬🇧 English</string>
+    <string name="choose_language">Choose language</string>
+
+    <!-- Settings -->
+    <string name="settings">⚙️ Settings</string>
+    <string name="default_language">Default Language</string>
+    <string name="default_transcription">Transcription Method</string>
+    <string name="settings_saved">Settings saved!</string>
+    <string name="save">Save</string>
 </resources>
