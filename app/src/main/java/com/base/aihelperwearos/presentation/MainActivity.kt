@@ -361,31 +361,7 @@ fun ChatScreen(
                 .padding(horizontal = 8.dp),
             horizontalAlignment = Alignment.Start
     ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = onBack,
-                    colors = ButtonDefaults.secondaryButtonColors(),
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Text(stringResource(R.string.back_arrow), style = MaterialTheme.typography.caption1)
-                }
-
-                Text(
-                    text = uiState.selectedModel.split("/").lastOrNull() ?: "",
-                    style = MaterialTheme.typography.caption2,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(start = 8.dp)
-                )
-            }
-        }
-
-        item { Spacer(modifier = Modifier.height(8.dp)) }
+        item { Spacer(modifier = Modifier.height(40.dp)) }
 
         items(uiState.chatMessages.size) { index ->
             val message = uiState.chatMessages[index]
@@ -611,12 +587,27 @@ fun ChatScreen(
             }
         }
     }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onBack,
+                colors = ButtonDefaults.secondaryButtonColors(),
+                modifier = Modifier.size(36.dp)
+            ) {
+                Text(stringResource(R.string.back_arrow), style = MaterialTheme.typography.caption1)
+            }
 
-        /*FontSizeControls(
-            currentSize = uiState.fontSize,
-            onIncrease = onIncreaseFontSize,
-            onDecrease = onDecreaseFontSize
-        )*/
+            Text(
+                text = uiState.selectedModel.split("/").lastOrNull() ?: "",
+                style = MaterialTheme.typography.caption2,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(start = 8.dp)
+            )
+        }
     }
 }
 
@@ -676,23 +667,9 @@ fun AnalysisScreen(
                 .padding(horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Button(
-                        onClick = onBack,
-                        colors = ButtonDefaults.secondaryButtonColors(),
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Text(stringResource(R.string.back_arrow), style = MaterialTheme.typography.caption1)
-                    }
-                }
-            }
+            item { Spacer(modifier = Modifier.height(40.dp)) }
 
             item {
-                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier
                         .background(
@@ -887,12 +864,18 @@ fun AnalysisScreen(
                 }
             }
         }
-
-        /*FontSizeControls(
-            currentSize = uiState.fontSize,
-            onIncrease = onIncreaseFontSize,
-            onDecrease = onDecreaseFontSize
-        )*/
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(
+                onClick = onBack,
+                colors = ButtonDefaults.secondaryButtonColors(),
+                modifier = Modifier.size(36.dp)
+            ) {
+                Text(stringResource(R.string.back_arrow), style = MaterialTheme.typography.caption1)
+            }
+        }
     }
 }
 
