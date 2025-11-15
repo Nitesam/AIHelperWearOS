@@ -6,9 +6,10 @@ fun getApiKey(key: String): String {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
         properties.load(FileInputStream(localPropertiesFile))
-        return properties.getProperty(key)
+        val value = properties.getProperty(key, "")
+        return "\"$value\""
     }
-    return ""
+    return "\"\""
 }
 
 plugins {
