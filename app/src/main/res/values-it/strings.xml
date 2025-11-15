@@ -36,11 +36,42 @@ Ciao, %1$s!</string>
     <string name="zoomed_formula_description">Formula ingrandita: %s</string>
     <string name="formula_description">Formula: %s</string>
     <string name="loading">Caricamento...</string>
-    <string name="formula_error">Errore caricamento:\n%s</string>
+    <string name="formula_error">Errore caricamento:
+%s</string>
     <string name="zoom_and_close_hint">Zoom: %d%% • Tap per chiudere</string>
     <string name="write_message">Scrivi messaggio</string>
     <string name="model_polaris">Polaris (Gratis)</string>
     <string name="model_gemini_pro">Gemini Pro 2.5</string>
     <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
     <string name="model_gpt5">GPT 5</string>
+    <string name="choose_input_method">Scegli il metodo di input:</string>
+    <string name="send_text_only">📝 Invia solo testo</string>
+    <string name="synthesize_locally">🔊 Sintetizza localmente</string>
+    <string name="start_conversation">Inizia una conversazione!</string>
+    <string name="chat">Chat</string>
+
+    <string name="choose_transcription_method">Scegli il metodo di trascrizione:</string>
+    <string name="ai_transcription">🤖 Trascrizione AI (Gemini)</string>
+    <string name="local_speech_recognition">🎤 Riconoscimento vocale del dispositivo</string>
+    <string name="transcribing">Trascrizione in corso...</string>
+
+    <string name="language_italian">🇮🇹 Italiano</string>
+    <string name="language_english">🇬🇧 Inglese</string>
+    <string name="choose_language">Scegli la lingua</string>
+
+    <!-- Settings -->
+    <string name="settings">⚙️ Impostazioni</string>
+    <string name="default_language">Lingua predefinita</string>
+    <string name="default_transcription">Metodo di trascrizione</string>
+    <string name="settings_saved">Impostazioni salvate!</string>
+    <string name="save">Salva</string>
+
+    <!-- Errors -->
+    <string name="error_generic">Errore: %s</string>
+    <string name="error_session_not_found">Errore: sessione non trovata</string>
+    <string name="error_api">Errore API: %s</string>
+    <string name="error_transcription">Errore durante la trascrizione: %s</string>
+    <string name="error_empty_text">Testo vuoto</string>
+    <string name="error_tts">Errore TTS: %s</string>
+    <string name="error_delete">Errore eliminazione: %s</string>
 </resources>

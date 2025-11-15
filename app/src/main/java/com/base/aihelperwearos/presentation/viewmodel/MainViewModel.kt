@@ -96,13 +96,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun localizedError(textIt: String, textEn: String): String {
-        return when (_uiState.value.selectedLanguage) {
-            Language.ENGLISH -> textEn
-            Language.ITALIAN -> textIt
-        }
-    }
-
     fun navigateTo(screen: Screen) {
         _uiState.update { it.copy(currentScreen = screen, errorMessage = null) }
     }
@@ -147,7 +140,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 android.util.Log.e("MainViewModel", "ERROR in startNewChat: ${e.message}", e)
                 e.printStackTrace()
                 _uiState.update {
-                    it.copy(errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}"))
+                    it.copy(errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message))
                 }
             }
         }
@@ -170,7 +163,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}"))
+                    it.copy(errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message))
                 }
             }
         }
@@ -191,7 +184,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (sessionId == null) {
             android.util.Log.e("MainViewModel", "sendMessage - ERRORE: sessionId è null!")
             _uiState.update {
-                it.copy(errorMessage = localizedError("Errore: sessione non trovata", "Error: session not found"))
+                it.copy(errorMessage = getApplication<Application>().getString(R.string.error_session_not_found))
             }
             return
         }
@@ -249,7 +242,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = localizedError("Errore API: ${error.message}", "API error: ${error.message}")
+                                errorMessage = getApplication<Application>().getString(R.string.error_api, error.message)
                             )
                         }
                     }
@@ -260,7 +253,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}")
+                        errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message)
                     )
                 }
             }
@@ -274,7 +267,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (sessionId == null) {
             android.util.Log.e("MainViewModel", "sendAudioMessage - ERRORE: sessionId è null!")
             _uiState.update {
-                it.copy(errorMessage = localizedError("Errore: sessione non trovata", "Error: session not found"))
+                it.copy(errorMessage = getApplication<Application>().getString(R.string.error_session_not_found))
             }
             return
         }
@@ -311,7 +304,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = localizedError("Errore durante la trascrizione: ${error.message}", "Transcription error: ${error.message}")
+                                errorMessage = getApplication<Application>().getString(R.string.error_transcription, error.message)
                             )
                         }
                     }
@@ -324,7 +317,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}")
+                        errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message)
                     )
                 }
             }
@@ -336,7 +329,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         if (text.isBlank()) {
             _uiState.update {
-                it.copy(errorMessage = localizedError("Testo vuoto", "Empty text"))
+                it.copy(errorMessage = getApplication<Application>().getString(R.string.error_empty_text))
             }
             return
         }
@@ -364,7 +357,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = localizedError("Errore TTS: ${error.message}", "TTS error: ${error.message}")
+                                errorMessage = getApplication<Application>().getString(R.string.error_tts, error.message)
                             )
                         }
                     }
@@ -375,7 +368,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}")
+                        errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message)
                     )
                 }
             }
@@ -388,7 +381,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 chatRepository.deleteSession(session.id)
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(errorMessage = localizedError("Errore eliminazione: ${e.message}", "Delete error: ${e.message}"))
+                    it.copy(errorMessage = getApplication<Application>().getString(R.string.error_delete, e.message))
                 }
             }
         }
