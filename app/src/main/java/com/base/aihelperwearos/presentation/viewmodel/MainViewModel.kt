@@ -12,6 +12,7 @@ import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.network.OpenRouterService
 import com.base.aihelperwearos.presentation.utils.AudioPlayer
 import com.base.aihelperwearos.presentation.utils.TextToSpeechHelper
+import com.base.aihelperwearos.utils.getCurrentLanguageCode
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -74,13 +75,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadUserPreferences() {
         viewModelScope.launch {
-            userPreferences.languageFlow.collect { languageCode ->
-                val language = when (languageCode) {
-                    "en" -> Language.ENGLISH
-                    else -> Language.ITALIAN
+            userPreferences.languageFlow.collect { savedLanguageCode ->
+                val effectiveLanguageCode = if (savedLanguageCode.isEmpty()) {
+                    val systemLanguage = getApplication<Application>().applicationContext.getCurrentLanguageCode()
+                    android.util.Log.d("MainViewModel", "First run - Using system language: $systemLanguage")
+                    userPreferences.setLanguage(systemLanguage)
+                    systemLanguage
+                } else {
+                    android.util.Log.d("MainViewModel", "Using saved language: $savedLanguageCode")
+                    savedLanguageCode
                 }
+
+                val language = when (effectiveLanguageCode) {
+                    "it" -> Language.ITALIAN
+                    else -> Language.ENGLISH
+                }
+                android.util.Log.d("MainViewModel", "Language set to: ${language.displayName} (${language.code})")
                 _uiState.update { it.copy(selectedLanguage = language) }
             }
+        }
+    }
+
+    private fun localizedError(textIt: String, textEn: String): String {
+        return when (_uiState.value.selectedLanguage) {
+            Language.ENGLISH -> textEn
+            Language.ITALIAN -> textIt
         }
     }
 
@@ -92,13 +111,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(selectedModel = modelId) }
     }
 
-    fun startNewChat(isAnalysisMode: Boolean = false) {
+    fun startNewChat(title: String, isAnalysisMode: Boolean = false) {
         viewModelScope.launch {
             try {
                 android.util.Log.d("MainViewModel", "startNewChat - START - isAnalysisMode: $isAnalysisMode")
                 android.util.Log.d("MainViewModel", "Selected model: ${_uiState.value.selectedModel}")
 
-                val title = if (isAnalysisMode) getApplication<Application>().getString(R.string.analysis_mode) else getApplication<Application>().getString(R.string.new_chat)
                 android.util.Log.d("MainViewModel", "Creating session with title: $title")
 
                 val sessionId = chatRepository.createSession(
@@ -128,7 +146,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "ERROR in startNewChat: ${e.message}", e)
                 e.printStackTrace()
-                _uiState.update { it.copy(errorMessage = "Errore: ${e.message}") }
+                _uiState.update {
+                    it.copy(errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}"))
+                }
             }
         }
     }
@@ -149,7 +169,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     observeMessages(sessionId)
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Errore: ${e.message}") }
+                _uiState.update {
+                    it.copy(errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}"))
+                }
             }
         }
     }
@@ -168,7 +190,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val sessionId = _uiState.value.currentSessionId
         if (sessionId == null) {
             android.util.Log.e("MainViewModel", "sendMessage - ERRORE: sessionId è null!")
-            _uiState.update { it.copy(errorMessage = "Errore: sessione non trovata") }
+            _uiState.update {
+                it.copy(errorMessage = localizedError("Errore: sessione non trovata", "Error: session not found"))
+            }
             return
         }
 
@@ -197,13 +221,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     Message(role = msg.role, content = msg.content)
                 }
 
-                android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}")
+                val currentLanguage = _uiState.value.selectedLanguage.code
+                android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}, lingua: $currentLanguage")
 
                 val result = openRouterService.sendMessage(
                     modelId = _uiState.value.selectedModel,
                     messages = messages,
                     isAnalysisMode = _uiState.value.isAnalysisMode,
-                    languageCode = _uiState.value.selectedLanguage.code
+                    languageCode = currentLanguage
                 )
 
                 android.util.Log.d("MainViewModel", "sendMessage - API risposta ricevuta")
@@ -224,7 +249,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = "Errore API: ${error.message}"
+                                errorMessage = localizedError("Errore API: ${error.message}", "API error: ${error.message}")
                             )
                         }
                     }
@@ -235,7 +260,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Errore: ${e.message}"
+                        errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}")
                     )
                 }
             }
@@ -248,7 +273,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val sessionId = _uiState.value.currentSessionId
         if (sessionId == null) {
             android.util.Log.e("MainViewModel", "sendAudioMessage - ERRORE: sessionId è null!")
-            _uiState.update { it.copy(errorMessage = "Errore: sessione non trovata") }
+            _uiState.update {
+                it.copy(errorMessage = localizedError("Errore: sessione non trovata", "Error: session not found"))
+            }
             return
         }
 
@@ -258,16 +285,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
                 val audioPath = audioFile.absolutePath
+                val currentLanguage = _uiState.value.selectedLanguage.code
 
-                android.util.Log.d("MainViewModel", "sendAudioMessage - Usando AI Gemini per trascrizione")
+                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, languange: $currentLanguage")
                 val transcriptionResult = openRouterService.transcribeAudioWithGemini(
                     audioFile = audioFile,
-                    languageCode = _uiState.value.selectedLanguage.code
+                    languageCode = currentLanguage
                 )
 
                 transcriptionResult.fold(
                     onSuccess = { transcription ->
-                        android.util.Log.d("MainViewModel", "Trascrizione ricevuta: $transcription")
+                        android.util.Log.d("MainViewModel", "transcription received: $transcription")
 
                         _uiState.update {
                             it.copy(
@@ -279,11 +307,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     },
                     onFailure = { error ->
-                        android.util.Log.e("MainViewModel", "sendAudioMessage - ERRORE API: ${error.message}", error)
+                        android.util.Log.e("MainViewModel", "sendAudioMessage - ERROR API: ${error.message}", error)
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = "Errore trascrizione: ${error.message}"
+                                errorMessage = localizedError("Errore durante la trascrizione: ${error.message}", "Transcription error: ${error.message}")
                             )
                         }
                     }
@@ -296,7 +324,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Errore: ${e.message}"
+                        errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}")
                     )
                 }
             }
@@ -307,7 +335,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         android.util.Log.d("MainViewModel", "synthesizeTextLocally - CHIAMATO: $text")
 
         if (text.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Testo vuoto") }
+            _uiState.update {
+                it.copy(errorMessage = localizedError("Testo vuoto", "Empty text"))
+            }
             return
         }
 
@@ -334,7 +364,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = "Errore TTS: ${error.message}"
+                                errorMessage = localizedError("Errore TTS: ${error.message}", "TTS error: ${error.message}")
                             )
                         }
                     }
@@ -345,7 +375,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Errore: ${e.message}"
+                        errorMessage = localizedError("Errore: ${e.message}", "Error: ${e.message}")
                     )
                 }
             }
@@ -357,7 +387,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 chatRepository.deleteSession(session.id)
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Errore eliminazione: ${e.message}") }
+                _uiState.update {
+                    it.copy(errorMessage = localizedError("Errore eliminazione: ${e.message}", "Delete error: ${e.message}"))
+                }
             }
         }
     }
@@ -426,8 +458,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setLanguage(language: Language) {
-        android.util.Log.d("MainViewModel", "Language changed to: ${language.displayName}")
-        _uiState.update { it.copy(selectedLanguage = language) }
+        android.util.Log.d("MainViewModel", "User changed language to: ${language.displayName} (${language.code})")
+        viewModelScope.launch {
+            userPreferences.setLanguage(language.code)
+        }
+    }
+
+    fun saveLanguagePreference(languageCode: String) {
+        android.util.Log.d("MainViewModel", "Saving language preference: $languageCode")
+        viewModelScope.launch {
+            userPreferences.setLanguage(languageCode)
+            val language = when (languageCode) {
+                "it" -> Language.ITALIAN
+                else -> Language.ENGLISH
+            }
+            _uiState.update { it.copy(selectedLanguage = language) }
+            android.util.Log.d("MainViewModel", "Language preference saved and state updated")
+        }
     }
 
 

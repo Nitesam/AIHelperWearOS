@@ -25,16 +25,16 @@ class AudioPlayer(private val context: Context) {
                 setOnCompletionListener {
                     isPlayingFlag = false
                     onComplete()
-                    Log.d("AudioPlayer", "Riproduzione completata")
+                    Log.d("AudioPlayer", "player finished")
                 }
                 start()
             }
 
             isPlayingFlag = true
-            Log.d("AudioPlayer", "Riproduzione avviata: ${audioFile.name}")
+            Log.d("AudioPlayer", "player started: ${audioFile.name}")
 
         } catch (e: Exception) {
-            Log.e("AudioPlayer", "Errore riproduzione audio", e)
+            Log.e("AudioPlayer", "error during registration of audio", e)
             isPlayingFlag = false
         }
     }
@@ -49,9 +49,9 @@ class AudioPlayer(private val context: Context) {
             }
             mediaPlayer = null
             isPlayingFlag = false
-            Log.d("AudioPlayer", "Riproduzione fermata")
+            Log.d("AudioPlayer", "player ended")
         } catch (e: Exception) {
-            Log.e("AudioPlayer", "Errore stop audio", e)
+            Log.e("AudioPlayer", "audio error on stop", e)
         }
     }
 

@@ -92,7 +92,7 @@ object LatexParser {
                 "$size%20" +
                 encoded
 
-        Log.d("LatexParser", "URL generato: $url")
+        Log.d("LatexParser", "URL: $url")
         return url
     }
 }

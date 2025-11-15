@@ -21,12 +21,13 @@ import java.io.File
 import io.ktor.client.engine.android.Android
 import javax.net.ssl.X509TrustManager
 import java.security.cert.X509Certificate
-import com.base.aihelperwearos.utils.getCurrentLanguageCode
+import com.base.aihelperwearos.data.preferences.UserPreferences
 
 class OpenRouterService(
     private val apiKey: String,
-    private val context: Context
+    context: Context
 ) {
+    private val userPreferences = UserPreferences(context)
     private val trustAllCertificates = object : X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
         override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
@@ -83,14 +84,20 @@ class OpenRouterService(
         modelId: String,
         messages: List<Message>,
         isAnalysisMode: Boolean = false,
-        languageCode: String = context.getCurrentLanguageCode()
+        languageCode: String
     ): Result<String> {
         return try {
+            Log.d("OpenRouter", "=== SEND MESSAGE START ===")
+            Log.d("OpenRouter", "Language parameter received: '$languageCode'")
+            Log.d("OpenRouter", "sendMessage - Using language: $languageCode, isAnalysisMode: $isAnalysisMode")
+
             val allMessages = if (isAnalysisMode) {
+                val mathPrompt = com.base.aihelperwearos.data.Constants.getMathPrompt(languageCode)
+                Log.d("OpenRouter", "sendMessage - Math prompt language: ${if (languageCode == "en") "ENGLISH" else "ITALIANO"}")
                 listOf(
                     Message(
                         role = "system",
-                        content = com.base.aihelperwearos.data.Constants.getMathPrompt(languageCode)
+                        content = mathPrompt
                     )
                 ) + messages
             } else {
@@ -121,9 +128,9 @@ class OpenRouterService(
 
     suspend fun solveAudioMathProblem(
         audioFile: File,
-        mathModel: String = "anthropic/claude-3.5-sonnet",
+        mathModel: String = "anthropic/claude-4.5-sonnet",
         previousMessages: List<Message> = emptyList(),
-        languageCode: String = context.getCurrentLanguageCode()
+        languageCode: String
     ): Result<com.base.aihelperwearos.data.models.MathSolution> {
         return try {
             Log.d("OpenRouter", "=== MATH PIPELINE START ===")
@@ -131,21 +138,21 @@ class OpenRouterService(
 
             Log.d("OpenRouter", "STEP 1: Transcribing with Whisper...")
             val transcription = transcribeAudioWithGemini(audioFile, languageCode).getOrElse { error ->
-                return Result.failure(Exception("Errore trascrizione: ${error.message}"))
+                return Result.failure(Exception("Error during Transcription: ${error.message}"))
             }
 
             if (transcription.isBlank()) {
-                return Result.failure(Exception("Trascrizione vuota. Riprova a dettare più chiaramente."))
+                return Result.failure(Exception("Empty transcription, retry."))
             }
 
-            Log.d("OpenRouter", "Trascrizione: $transcription")
+            Log.d("OpenRouter", "Transcription: $transcription")
 
             Log.d("OpenRouter", "STEP 2: Solving with $mathModel...")
             val solution = solveMathProblem(transcription, mathModel, previousMessages, languageCode).getOrElse { error ->
-                return Result.failure(Exception("Errore risoluzione: ${error.message}"))
+                return Result.failure(Exception("Error: ${error.message}"))
             }
 
-            Log.d("OpenRouter", "Soluzione ricevuta: ${solution.take(100)}...")
+            Log.d("OpenRouter", "Solution: ${solution.take(100)}...")
 
             val result = com.base.aihelperwearos.data.models.MathSolution(
                 transcription = transcription,
@@ -162,12 +169,15 @@ class OpenRouterService(
         }
     }
 
-    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String = context.getCurrentLanguageCode()): Result<String> {
+    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String): Result<String> {
         return try {
+            Log.d("OpenRouter", "=== TRANSCRIPTION START ===")
             Log.d("OpenRouter", "Transcribing with Gemini 2.5 Flash (audio support)")
+            Log.d("OpenRouter", "Language parameter received: '$languageCode'")
+            Log.d("OpenRouter", "Transcription language: ${if (languageCode == "en") "ENGLISH" else "ITALIANO"} (code: $languageCode)")
 
             if (!audioFile.exists() || audioFile.length() == 0L) {
-                return Result.failure(Exception("File audio vuoto o mancante"))
+                return Result.failure(Exception("File audio missing."))
             }
 
             val audioBytes = audioFile.readBytes()
@@ -251,7 +261,7 @@ class OpenRouterService(
         problem: String,
         model: String,
         previousMessages: List<Message>,
-        languageCode: String = context.getCurrentLanguageCode()
+        languageCode: String
     ): Result<String> {
         return try {
             Log.d("OpenRouter", "POST /chat/completions with model: $model")
@@ -293,12 +303,13 @@ class OpenRouterService(
         audioFile: File,
         modelId: String,
         previousMessages: List<Message>,
-        isAnalysisMode: Boolean = false
+        isAnalysisMode: Boolean = false,
+        languageCode: String
     ): Result<String> {
         return if (isAnalysisMode) {
-            solveAudioMathProblem(audioFile, modelId, previousMessages).map { it.solution }
+            solveAudioMathProblem(audioFile, modelId, previousMessages, languageCode).map { it.solution }
         } else {
-            transcribeAudioWithGemini(audioFile)
+            transcribeAudioWithGemini(audioFile, languageCode)
         }
     }
 

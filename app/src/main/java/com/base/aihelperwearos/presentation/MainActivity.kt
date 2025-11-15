@@ -38,9 +38,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         setContent {
             val viewModel: MainViewModel = viewModel()
+
+
             WearApp(viewModel, this)
         }
     }
@@ -68,23 +69,29 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
             timeText = { TimeText() },
             vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) }
         ) {
+            val analysisTitle = stringResource(id = R.string.analysis_mode)
+            val newChatTitle = stringResource(id = R.string.new_chat)
+
             when (uiState.currentScreen) {
                 Screen.Home -> HomeScreen(
                     onNewChat = {
-                        android.util.Log.d("MainActivity", "Nuova Chat clicked")
+                        android.util.Log.d("MainActivity", "new chat clicked")
                         viewModel.navigateTo(Screen.ModelSelection)
                     },
                     onAnalysis = {
-                        android.util.Log.d("MainActivity", "Modalità Analisi clicked")
+                        android.util.Log.d("MainActivity", "analysis clicked")
                         viewModel.selectModel("anthropic/claude-sonnet-4.5")
-                        viewModel.startNewChat(isAnalysisMode = true)
+                        viewModel.startNewChat(title = analysisTitle, isAnalysisMode = true)
                     },
                     onHistory = {
-                        android.util.Log.d("MainActivity", "Cronologia clicked")
+                        android.util.Log.d("MainActivity", "history clicked")
                         viewModel.navigateTo(Screen.History)
                     },
-                    onLanguageChange = { action ->
-                        setLocale(activity, action)
+                    onLanguageChange = { languageCode ->
+                        setLocale(activity, languageCode)
+                        android.util.Log.d("MainActivity", "language changed to $languageCode")
+                        android.util.Log.d("MainActivity", "printing locale: ${Locale.getDefault()}")
+                        viewModel.saveLanguagePreference(languageCode)
                         activity.recreate()
                     }
                 )
@@ -92,7 +99,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                     selectedModel = uiState.selectedModel,
                     onModelSelected = { model ->
                         viewModel.selectModel(model)
-                        viewModel.startNewChat(isAnalysisMode = false)
+                        viewModel.startNewChat(title = newChatTitle, isAnalysisMode = false)
                     },
                     onBack = { viewModel.navigateTo(Screen.Home) }
                 )

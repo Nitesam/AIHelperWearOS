@@ -7,7 +7,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import com.base.aihelperwearos.utils.getCurrentLanguageCode
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -17,13 +20,34 @@ class UserPreferences(private val context: Context) {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
     }
 
+    private fun getSystemLanguage(): String {
+        return context.getCurrentLanguageCode()
+    }
+
     val languageFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[LANGUAGE_KEY] ?: "it" // Default: Italian
+        val savedLanguage = preferences[LANGUAGE_KEY]
+        if (savedLanguage.isNullOrEmpty()) {
+            val systemLang = getSystemLanguage()
+            android.util.Log.d("UserPreferences", "No saved language, using system: $systemLang")
+            systemLang
+        } else {
+            android.util.Log.d("UserPreferences", "Using saved language: $savedLanguage")
+            savedLanguage
+        }
     }
 
     suspend fun setLanguage(language: String) {
+        android.util.Log.d("UserPreferences", "Saving language: $language")
         context.dataStore.edit { preferences ->
             preferences[LANGUAGE_KEY] = language
+        }
+    }
+
+    fun getLanguage(): String {
+        return runBlocking {
+            context.dataStore.data.map { preferences ->
+                preferences[LANGUAGE_KEY] ?: getSystemLanguage()
+            }.first()
         }
     }
 }
