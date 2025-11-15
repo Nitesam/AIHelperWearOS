@@ -642,11 +642,11 @@ fun AnalysisScreen(
             }
         }
 
-        FontSizeControls(
+        /*FontSizeControls(
             currentSize = uiState.fontSize,
             onIncrease = onIncreaseFontSize,
             onDecrease = onDecreaseFontSize
-        )
+        )*/
     }
 }
 
