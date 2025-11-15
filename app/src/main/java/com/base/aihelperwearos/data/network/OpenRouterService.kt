@@ -148,46 +148,55 @@ class OpenRouterService(private val apiKey: String) {
             val audioBase64 = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
 
             Log.d("OpenRouter", "Audio size: ${audioBytes.size} bytes → Base64: ${audioBase64.length} chars")
-            Log.d("OpenRouter", "Sending to Gemini 2.5 Flash for transcription...")
 
-            val contentArray = kotlinx.serialization.json.buildJsonArray {
-                add(kotlinx.serialization.json.buildJsonObject {
-                    put("type", kotlinx.serialization.json.JsonPrimitive("text"))
-                    put("text", kotlinx.serialization.json.JsonPrimitive(
-                        "Ascolta attentamente questo file audio e trascrivi ESATTAMENTE ciò che viene detto. " +
-                        "L'audio contiene un problema di matematica in italiano. " +
-                        "Scrivi SOLO la trascrizione letterale delle parole pronunciate, senza aggiungere commenti, spiegazioni o interpretazioni. " +
-                        "Esempio: se sento 'calcola x al quadrato' scrivi esattamente 'calcola x al quadrato'."
-                    ))
-                })
-                add(kotlinx.serialization.json.buildJsonObject {
-                    put("type", kotlinx.serialization.json.JsonPrimitive("input_audio"))
-                    put("input_audio", kotlinx.serialization.json.buildJsonObject {
-                        put("data", kotlinx.serialization.json.JsonPrimitive(audioBase64))
-                        put("format", kotlinx.serialization.json.JsonPrimitive("wav"))
-                    })
-                })
+            val requestBody = buildString {
+                append("{")
+                append("\"model\":\"google/gemini-2.5-flash\",")
+                append("\"messages\":[{")
+                append("\"role\":\"user\",")
+                append("\"content\":[")
+
+                append("{")
+                append("\"type\":\"text\",")
+                append("\"text\":\"Ascolta attentamente questo file audio e trascrivi ESATTAMENTE ciò che viene detto. L'audio contiene un problema di matematica in italiano. Scrivi SOLO la trascrizione letterale delle parole pronunciate, senza aggiungere commenti, spiegazioni o interpretazioni. Esempio: se sento 'calcola x al quadrato' scrivi esattamente 'calcola x al quadrato'.\"")
+                append("},")
+
+                append("{")
+                append("\"type\":\"input_audio\",")
+                append("\"input_audio\":{")
+                append("\"data\":\"$audioBase64\",")
+                append("\"format\":\"wav\"")
+                append("}")
+                append("}")
+
+                append("]")
+                append("}]")
+                append("}")
             }
 
-            val request = com.base.aihelperwearos.data.models.MultimodalRequest(
-                model = "google/gemini-2.5-flash",
-                messages = listOf(
-                    com.base.aihelperwearos.data.models.MultimodalMessage(
-                        role = "user",
-                        content = contentArray
-                    )
-                ),
-                maxTokens = 1000,
-                temperature = 0.1
-            )
+            Log.d("OpenRouter", "Sending to Gemini 2.5 Flash for transcription...")
 
-            val response: OpenRouterResponse = client.post("chat/completions") {
-                setBody(request)
+            val response: String = client.post("chat/completions") {
+                setBody(requestBody)
+                header("Content-Type", "application/json")
             }.body()
 
-            Log.d("OpenRouter", "Transcription response received")
+            Log.d("OpenRouter", "Transcription response: ${response.take(200)}")
 
-            val text = response.choices.firstOrNull()?.message?.content
+            val jsonResponse = Json.parseToJsonElement(response) as kotlinx.serialization.json.JsonObject
+
+            val error = jsonResponse["error"] as? kotlinx.serialization.json.JsonObject
+            if (error != null) {
+                val errorMsg = (error["message"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    ?: "Errore sconosciuto"
+                Log.e("OpenRouter", "API Error: $errorMsg")
+                return Result.failure(Exception("Errore API: $errorMsg"))
+            }
+
+            val choices = jsonResponse["choices"] as? kotlinx.serialization.json.JsonArray
+            val choice = choices?.firstOrNull() as? kotlinx.serialization.json.JsonObject
+            val message = choice?.get("message") as? kotlinx.serialization.json.JsonObject
+            val text = (message?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content
 
             if (text.isNullOrBlank()) {
                 Log.e("OpenRouter", "Empty transcription from Gemini")
