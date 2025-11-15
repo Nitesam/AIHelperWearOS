@@ -40,8 +40,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel: MainViewModel = viewModel()
-
-
             WearApp(viewModel, this)
         }
     }
@@ -588,7 +586,9 @@ fun ChatScreen(
         }
     }
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 28.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -865,7 +865,9 @@ fun AnalysisScreen(
             }
         }
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 28.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Button(
