@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">AIHelperWearOS</string>
+    <string name="hello_world">Dal mondo Square,
+Ciao, %1$s!</string>
+    <string name="new_chat">Nuova Chat</string>
+    <string name="analysis_mode">Modalità Analisi</string>
+    <string name="history">Cronologia</string>
+    <string name="ai_helper">AI Helper</string>
+    <string name="wear_os">Wear OS</string>
+    <string name="back_arrow">←</string>
+    <string name="choose_model">Scegli Modello</string>
+    <string name="send_message">Invia Messaggio</string>
+    <string name="microphone_permission_denied">Permesso microfono negato</string>
+    <string name="use_keyboard_or_mic">Usa ⌨️ tastiera o 🎤 microfono</string>
+    <string name="write_problem">Scrivi problema</string>
+    <string name="keyboard">⌨️</string>
+    <string name="recording_stop">⏹</string>
+    <string name="recording_start">🎤</string>
+    <string name="recording_in_progress">🔴 Registrazione in corso...</string>
+    <string name="transcription">📝 Trascrizione:</string>
+    <string name="cancel">✗</string>
+    <string name="edit_transcription">Modifica trascrizione</string>
+    <string name="edit">✏️</string>
+    <string name="confirm">✓</string>
+    <string name="you">Tu</string>
+    <string name="ai">AI</string>
+    <string name="play">▶</string>
+    <string name="increase_font_size">↑</string>
+    <string name="decrease_font_size">↓</string>
+    <string name="no_saved_chats">Nessuna chat salvata</string>
+    <string name="analysis">📊 Analisi</string>
+    <string name="delete">🗑</string>
+    <string name="close">Chiudi</string>
+    <string name="zoom_level">Zoom: %d%%</string>
+    <string name="loading_error">Errore caricamento</string>
+    <string name="zoomed_formula_description">Formula ingrandita: %s</string>
+    <string name="formula_description">Formula: %s</string>
+    <string name="loading">Caricamento...</string>
+    <string name="formula_error">Errore caricamento:\n%s</string>
+    <string name="zoom_and_close_hint">Zoom: %d%% • Tap per chiudere</string>
+    <string name="write_message">Scrivi messaggio</string>
+    <string name="model_polaris">Polaris (Gratis)</string>
+    <string name="model_gemini_pro">Gemini Pro 2.5</string>
+    <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
+    <string name="model_gpt5">GPT 5</string>
+</resources>

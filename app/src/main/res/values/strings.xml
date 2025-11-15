@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">AIHelperWearOS</string>
+    <string name="hello_world">From the Square world,
+Hello, %1$s!</string>
+    <string name="new_chat">New Chat</string>
+    <string name="analysis_mode">Analysis Mode</string>
+    <string name="history">History</string>
+    <string name="ai_helper">AI Helper</string>
+    <string name="wear_os">Wear OS</string>
+    <string name="back_arrow">←</string>
+    <string name="choose_model">Choose Model</string>
+    <string name="send_message">Send Message</string>
+    <string name="microphone_permission_denied">Microphone permission denied</string>
+    <string name="use_keyboard_or_mic">Use ⌨️ keyboard or 🎤 microphone</string>
+    <string name="write_problem">Write problem</string>
+    <string name="keyboard">⌨️</string>
+    <string name="recording_stop">⏹</string>
+    <string name="recording_start">🎤</string>
+    <string name="recording_in_progress">🔴 Recording...</string>
+    <string name="transcription">📝 Transcription:</string>
+    <string name="cancel">✗</string>
+    <string name="edit_transcription">Edit transcription</string>
+    <string name="edit">✏️</string>
+    <string name="confirm">✓</string>
+    <string name="you">You</string>
+    <string name="ai">AI</string>
+    <string name="play">▶</string>
+    <string name="increase_font_size">↑</string>
+    <string name="decrease_font_size">↓</string>
+    <string name="no_saved_chats">No saved chats</string>
+    <string name="analysis">📊 Analysis</string>
+    <string name="delete">🗑</string>
+    <string name="close">Close</string>
+    <string name="zoom_level">Zoom: %d%%</string>
+    <string name="loading_error">Loading error</string>
+    <string name="zoomed_formula_description">Zoomed formula: %s</string>
+    <string name="formula_description">Formula: %s</string>
+    <string name="loading">Loading...</string>
+    <string name="formula_error">Error loading:\n%s</string>
+    <string name="zoom_and_close_hint">Zoom: %d%% • Tap to close</string>
+    <string name="write_message">Write message</string>
+    <string name="model_polaris">Polaris (Free)</string>
+    <string name="model_gemini_pro">Gemini Pro 2.5</string>
+    <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
+    <string name="model_gpt5">GPT 5</string>
+</resources>
