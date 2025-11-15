@@ -239,7 +239,6 @@ fun ModelSelectionScreen(
     onBack: () -> Unit
 ) {
     val models = listOf(
-        "openrouter/sherlock-dash-alpha" to "Free Model (OpenRouter)",
         "google/gemini-2.5-pro" to stringResource(R.string.model_gemini_pro),
         "anthropic/claude-sonnet-4.5" to stringResource(R.string.model_claude_sonnet),
         "openai/gpt-5" to stringResource(R.string.model_gpt5)

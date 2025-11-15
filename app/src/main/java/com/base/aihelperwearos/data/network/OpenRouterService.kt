@@ -1,5 +1,6 @@
 package com.base.aihelperwearos.data.network
 
+import android.content.Context
 import android.util.Log
 import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.models.OpenRouterRequest
@@ -20,8 +21,12 @@ import java.io.File
 import io.ktor.client.engine.android.Android
 import javax.net.ssl.X509TrustManager
 import java.security.cert.X509Certificate
+import com.base.aihelperwearos.utils.getCurrentLanguageCode
 
-class OpenRouterService(private val apiKey: String) {
+class OpenRouterService(
+    private val apiKey: String,
+    private val context: Context
+) {
     private val trustAllCertificates = object : X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
         override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
@@ -78,7 +83,7 @@ class OpenRouterService(private val apiKey: String) {
         modelId: String,
         messages: List<Message>,
         isAnalysisMode: Boolean = false,
-        languageCode: String = "it"
+        languageCode: String = context.getCurrentLanguageCode()
     ): Result<String> {
         return try {
             val allMessages = if (isAnalysisMode) {
@@ -117,14 +122,15 @@ class OpenRouterService(private val apiKey: String) {
     suspend fun solveAudioMathProblem(
         audioFile: File,
         mathModel: String = "anthropic/claude-3.5-sonnet",
-        previousMessages: List<Message> = emptyList()
+        previousMessages: List<Message> = emptyList(),
+        languageCode: String = context.getCurrentLanguageCode()
     ): Result<com.base.aihelperwearos.data.models.MathSolution> {
         return try {
             Log.d("OpenRouter", "=== MATH PIPELINE START ===")
             Log.d("OpenRouter", "Audio: ${audioFile.absolutePath}, size: ${audioFile.length()} bytes")
 
             Log.d("OpenRouter", "STEP 1: Transcribing with Whisper...")
-            val transcription = transcribeAudioWithGemini(audioFile).getOrElse { error ->
+            val transcription = transcribeAudioWithGemini(audioFile, languageCode).getOrElse { error ->
                 return Result.failure(Exception("Errore trascrizione: ${error.message}"))
             }
 
@@ -135,7 +141,7 @@ class OpenRouterService(private val apiKey: String) {
             Log.d("OpenRouter", "Trascrizione: $transcription")
 
             Log.d("OpenRouter", "STEP 2: Solving with $mathModel...")
-            val solution = solveMathProblem(transcription, mathModel, previousMessages).getOrElse { error ->
+            val solution = solveMathProblem(transcription, mathModel, previousMessages, languageCode).getOrElse { error ->
                 return Result.failure(Exception("Errore risoluzione: ${error.message}"))
             }
 
@@ -156,7 +162,7 @@ class OpenRouterService(private val apiKey: String) {
         }
     }
 
-    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String = "it"): Result<String> {
+    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String = context.getCurrentLanguageCode()): Result<String> {
         return try {
             Log.d("OpenRouter", "Transcribing with Gemini 2.5 Flash (audio support)")
 
@@ -244,14 +250,16 @@ class OpenRouterService(private val apiKey: String) {
     private suspend fun solveMathProblem(
         problem: String,
         model: String,
-        previousMessages: List<Message>
+        previousMessages: List<Message>,
+        languageCode: String = context.getCurrentLanguageCode()
     ): Result<String> {
         return try {
             Log.d("OpenRouter", "POST /chat/completions with model: $model")
+            Log.d("OpenRouter", "Using language: $languageCode")
 
             val systemPrompt = Message(
                 role = "system",
-                content = com.base.aihelperwearos.data.Constants.MATH_MODE_PROMPT
+                content = com.base.aihelperwearos.data.Constants.getMathPrompt(languageCode)
             )
 
             val allMessages = listOf(systemPrompt) + previousMessages + Message(

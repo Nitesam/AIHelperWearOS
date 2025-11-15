@@ -108,6 +108,4 @@ Example: if I hear 'calculate x squared' write exactly 'calculate x squared'.
             else -> TRANSCRIPTION_PROMPT_IT
         }
     }
-
-    val MATH_MODE_PROMPT = MATH_MODE_PROMPT_IT
 }

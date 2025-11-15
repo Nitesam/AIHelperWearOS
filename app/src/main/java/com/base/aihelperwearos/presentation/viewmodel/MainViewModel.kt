@@ -1,4 +1,5 @@
 package com.base.aihelperwearos.presentation.viewmodel
+import com.base.aihelperwearos.BuildConfig
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -31,7 +32,7 @@ enum class Language(val code: String, val displayName: String) {
 
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
-    val selectedModel: String = "openrouter/sherlock-dash-alpha",
+    val selectedModel: String = "anthropic/claude-sonnet-4.5",
     val currentSessionId: Long? = null,
     val chatMessages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
@@ -50,7 +51,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val chatRepository = ChatRepository(application)
 
     private val openRouterService = OpenRouterService(
-        apiKey = com.base.aihelperwearos.BuildConfig.OPENROUTER_API_KEY
+        apiKey = BuildConfig.OPENROUTER_API_KEY,
+        context = application
     )
 
     private val ttsHelper = TextToSpeechHelper(application)
