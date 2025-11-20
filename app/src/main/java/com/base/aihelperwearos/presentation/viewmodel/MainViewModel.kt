@@ -11,6 +11,7 @@ import com.base.aihelperwearos.data.repository.ChatMessage
 import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.network.OpenRouterService
 import com.base.aihelperwearos.presentation.utils.AudioPlayer
+import com.base.aihelperwearos.presentation.utils.AudioRecorder
 import com.base.aihelperwearos.presentation.utils.TextToSpeechHelper
 import com.base.aihelperwearos.utils.getCurrentLanguageCode
 import kotlinx.coroutines.flow.*
@@ -44,7 +45,8 @@ data class ChatUiState(
     val pendingTranscription: String? = null,
     val pendingAudioPath: String? = null,
     val selectedLanguage: Language = Language.ITALIAN,
-    val recordedAudioFile: File? = null
+    val recordedAudioFile: File? = null,
+    val isRecording: Boolean = false
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -58,6 +60,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val ttsHelper = TextToSpeechHelper(application)
     private val audioPlayer = AudioPlayer(application)
+    private val audioRecorder = AudioRecorder(application)
     private val userPreferences = com.base.aihelperwearos.data.preferences.UserPreferences(application)
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -257,6 +260,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             }
+        }
+    }
+
+    fun startRecording() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRecording = true) }
+            audioRecorder.startRecording()
+        }
+    }
+
+    fun stopRecording() {
+        viewModelScope.launch {
+            audioRecorder.stopRecording().fold(
+                onSuccess = { file ->
+                    _uiState.update { it.copy(isRecording = false) }
+                    sendAudioMessage(file)
+                },
+                onFailure = {
+                    _uiState.update { it.copy(isRecording = false) }
+                }
+            )
         }
     }
 
@@ -476,5 +500,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         ttsHelper.release()
         audioPlayer.release()
         openRouterService.close()
+        audioRecorder.cancelRecording()
     }
 }

@@ -1,7 +1,9 @@
 package com.base.aihelperwearos.presentation
 
 import android.Manifest
+import android.app.Activity
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -27,7 +29,6 @@ import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
 import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
 import com.base.aihelperwearos.presentation.viewmodel.Screen
 import com.base.aihelperwearos.presentation.utils.RemoteInputHelper
-import com.base.aihelperwearos.presentation.utils.AudioRecorder
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -52,6 +53,18 @@ fun setLocale(activity: ComponentActivity, languageCode: String) {
     val config = resources.configuration
     config.setLocale(locale)
     resources.updateConfiguration(config, resources.displayMetrics)
+}
+
+@Composable
+fun KeepScreenOn() {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 }
 
 @Composable
@@ -104,7 +117,8 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                 Screen.Chat -> ChatScreen(
                     uiState = uiState,
                     onSendMessage = { viewModel.sendMessage(it) },
-                    onSendAudio = { audioFile -> viewModel.sendAudioMessage(audioFile) },
+                    onStartRecording = { viewModel.startRecording() },
+                    onStopRecording = { viewModel.stopRecording() },
                     onSynthesizeLocally = { text -> viewModel.synthesizeTextLocally(text) },
                     onPlayAudio = { path -> viewModel.playAudio(path) },
                     onIncreaseFontSize = { viewModel.increaseFontSize() },
@@ -117,7 +131,8 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                 Screen.Analysis -> AnalysisScreen(
                     uiState = uiState,
                     onSendMessage = { viewModel.sendMessage(it) },
-                    onSendAudio = { audioFile -> viewModel.sendAudioMessage(audioFile) },
+                    onStartRecording = { viewModel.startRecording() },
+                    onStopRecording = { viewModel.stopRecording() },
                     onPlayAudio = { path -> viewModel.playAudio(path) },
                     onIncreaseFontSize = { viewModel.increaseFontSize() },
                     onDecreaseFontSize = { viewModel.decreaseFontSize() },
@@ -302,7 +317,8 @@ fun ModelSelectionScreen(
 fun ChatScreen(
     uiState: com.base.aihelperwearos.presentation.viewmodel.ChatUiState,
     onSendMessage: (String) -> Unit,
-    onSendAudio: (File) -> Unit,
+    onStartRecording: () -> Unit,
+    onStopRecording: () -> Unit,
     onSynthesizeLocally: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
     onIncreaseFontSize: () -> Unit,
@@ -313,11 +329,12 @@ fun ChatScreen(
     onUpdateTranscription: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    var isRecording by remember { mutableStateOf(false) }
-    var audioRecorder by remember { mutableStateOf<AudioRecorder?>(null) }
     var showTtsDialog by remember { mutableStateOf(false) }
     var pendingText by remember { mutableStateOf("") }
+
+    if (uiState.isRecording) {
+        KeepScreenOn()
+    }
 
     val microphonePermissionDenied = stringResource(R.string.microphone_permission_denied)
 
@@ -325,11 +342,7 @@ fun ChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            isRecording = true
-            audioRecorder = AudioRecorder(context)
-            coroutineScope.launch {
-                audioRecorder?.startRecording()
-            }
+            onStartRecording()
         } else {
             android.util.Log.e("ChatScreen", microphonePermissionDenied)
         }
@@ -407,7 +420,7 @@ fun ChatScreen(
                         launcher.launch(intent)
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = !uiState.isLoading && !isRecording,
+                    enabled = !uiState.isLoading && !uiState.isRecording,
                     colors = ButtonDefaults.primaryButtonColors()
                 ) {
                     Text(stringResource(R.string.keyboard), style = MaterialTheme.typography.title2)
@@ -415,35 +428,28 @@ fun ChatScreen(
 
                 Button(
                     onClick = {
-                        if (isRecording) {
-                            isRecording = false
-                            coroutineScope.launch {
-                                audioRecorder?.stopRecording()?.fold(
-                                    onSuccess = { file -> onSendAudio(file) },
-                                    onFailure = { }
-                                )
-                                audioRecorder = null
-                            }
+                        if (uiState.isRecording) {
+                            onStopRecording()
                         } else {
                             audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         }
                     },
                     modifier = Modifier.weight(1f),
                     enabled = !uiState.isLoading,
-                    colors = if (isRecording)
+                    colors = if (uiState.isRecording)
                         ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
                     else
                         ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
                 ) {
                     Text(
-                        if (isRecording) stringResource(R.string.recording_stop) else stringResource(R.string.recording_start),
+                        if (uiState.isRecording) stringResource(R.string.recording_stop) else stringResource(R.string.recording_start),
                         style = MaterialTheme.typography.title2
                     )
                 }
             }
         }
 
-        if (isRecording) {
+        if (uiState.isRecording) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -615,7 +621,8 @@ fun ChatScreen(
 fun AnalysisScreen(
     uiState: com.base.aihelperwearos.presentation.viewmodel.ChatUiState,
     onSendMessage: (String) -> Unit,
-    onSendAudio: (File) -> Unit,
+    onStartRecording: () -> Unit,
+    onStopRecording: () -> Unit,
     onPlayAudio: (String) -> Unit,
     onIncreaseFontSize: () -> Unit,
     onDecreaseFontSize: () -> Unit,
@@ -625,20 +632,17 @@ fun AnalysisScreen(
     onUpdateTranscription: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    var isRecording by remember { mutableStateOf(false) }
-    var audioRecorder by remember { mutableStateOf<AudioRecorder?>(null) }
     val microphonePermissionDenied = stringResource(R.string.microphone_permission_denied)
+
+    if (uiState.isRecording) {
+        KeepScreenOn()
+    }
 
     val audioPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            isRecording = true
-            audioRecorder = AudioRecorder(context)
-            coroutineScope.launch {
-                audioRecorder?.startRecording()
-            }
+            onStartRecording()
         } else {
             android.util.Log.e("AnalysisScreen", microphonePermissionDenied)
         }
@@ -746,7 +750,7 @@ fun AnalysisScreen(
                             textLauncher.launch(intent)
                         },
                         modifier = Modifier.weight(1f),
-                        enabled = !uiState.isLoading && !isRecording,
+                        enabled = !uiState.isLoading && !uiState.isRecording,
                         colors = ButtonDefaults.primaryButtonColors()
                     ) {
                         Text(stringResource(R.string.keyboard), style = MaterialTheme.typography.title2)
@@ -754,36 +758,28 @@ fun AnalysisScreen(
 
                     Button(
                         onClick = {
-                            if (isRecording) {
-                                isRecording = false
-                                android.util.Log.d("AnalysisScreen", "Stopping AudioRecorder")
-                                coroutineScope.launch {
-                                    audioRecorder?.stopRecording()?.fold(
-                                        onSuccess = { file -> onSendAudio(file) },
-                                        onFailure = { }
-                                    )
-                                    audioRecorder = null
-                                }
+                            if (uiState.isRecording) {
+                                onStopRecording()
                             } else {
                                 audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
                         },
                         modifier = Modifier.weight(1f),
                         enabled = !uiState.isLoading,
-                        colors = if (isRecording)
+                        colors = if (uiState.isRecording)
                             ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
                         else
                             ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
                     ) {
                         Text(
-                            if (isRecording) stringResource(R.string.recording_stop) else stringResource(R.string.recording_start),
+                            if (uiState.isRecording) stringResource(R.string.recording_stop) else stringResource(R.string.recording_start),
                             style = MaterialTheme.typography.title2
                         )
                     }
                 }
             }
 
-            if (isRecording) {
+            if (uiState.isRecording) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -1089,4 +1085,3 @@ fun HistoryScreen(
         }
     }
 }
-
