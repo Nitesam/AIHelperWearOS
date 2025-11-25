@@ -41,9 +41,8 @@ Ciao, %1$s!</string>
     <string name="zoom_and_close_hint">Zoom: %d%% • Tap per chiudere</string>
     <string name="write_message">Scrivi messaggio</string>
     <string name="model_polaris">Polaris (Gratis)</string>
-    <string name="model_gemini_pro">Gemini Pro 2.5</string>
-    <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
-    <string name="model_gpt5">GPT 5</string>
+    <string name="model_gemini_pro">Gemini Pro 3.0</string>
+    <string name="model_gpt5">GPT 5.1</string>
     <string name="choose_input_method">Scegli il metodo di input:</string>
     <string name="send_text_only">📝 Invia solo testo</string>
     <string name="synthesize_locally">🔊 Sintetizza localmente</string>

@@ -9,7 +9,9 @@ import com.base.aihelperwearos.data.repository.ChatRepository
 import com.base.aihelperwearos.data.repository.ChatSession
 import com.base.aihelperwearos.data.repository.ChatMessage
 import com.base.aihelperwearos.data.models.Message
+import com.base.aihelperwearos.data.network.LLMService
 import com.base.aihelperwearos.data.network.OpenRouterService
+import com.base.aihelperwearos.data.network.FirebaseGeminiService
 import com.base.aihelperwearos.presentation.utils.AudioPlayer
 import com.base.aihelperwearos.presentation.utils.AudioRecorder
 import com.base.aihelperwearos.presentation.utils.TextToSpeechHelper
@@ -23,7 +25,8 @@ enum class Screen {
     ModelSelection,
     Chat,
     Analysis,
-    History
+    History,
+    Settings
 }
 
 enum class Language(val code: String, val displayName: String) {
@@ -34,7 +37,7 @@ enum class Language(val code: String, val displayName: String) {
 
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
-    val selectedModel: String = "anthropic/claude-sonnet-4.5",
+    val selectedModel: String = "google/gemini-3-pro-preview",
     val currentSessionId: Long? = null,
     val chatMessages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
@@ -46,7 +49,8 @@ data class ChatUiState(
     val pendingAudioPath: String? = null,
     val selectedLanguage: Language = Language.ITALIAN,
     val recordedAudioFile: File? = null,
-    val isRecording: Boolean = false
+    val isRecording: Boolean = false,
+    val selectedProvider: String = "openrouter"
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -57,6 +61,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         apiKey = BuildConfig.OPENROUTER_API_KEY,
         context = application
     )
+    private val firebaseGeminiService by lazy { FirebaseGeminiService() }
+    
+    private var currentLLMService: LLMService = openRouterService
 
     private val ttsHelper = TextToSpeechHelper(application)
     private val audioPlayer = AudioPlayer(application)
@@ -97,6 +104,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(selectedLanguage = language) }
             }
         }
+        
+        viewModelScope.launch {
+            userPreferences.providerFlow.collect { provider ->
+                _uiState.update { it.copy(selectedProvider = provider) }
+                currentLLMService = try {
+                    if (provider == "google_vertex") {
+                        firebaseGeminiService
+                    } else {
+                        openRouterService
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("MainViewModel", "Error switching provider", e)
+                    openRouterService
+                }
+                android.util.Log.d("MainViewModel", "LLM Provider switched to: $provider")
+            }
+        }
     }
 
     fun navigateTo(screen: Screen) {
@@ -105,6 +129,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectModel(modelId: String) {
         _uiState.update { it.copy(selectedModel = modelId) }
+    }
+    
+    fun setProvider(provider: String) {
+        viewModelScope.launch {
+            userPreferences.setProvider(provider)
+        }
     }
 
     fun startNewChat(title: String, isAnalysisMode: Boolean = false) {
@@ -220,7 +250,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val currentLanguage = _uiState.value.selectedLanguage.code
                 android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}, lingua: $currentLanguage")
 
-                val result = openRouterService.sendMessage(
+                val result = currentLLMService.sendMessage(
                     modelId = _uiState.value.selectedModel,
                     messages = messages,
                     isAnalysisMode = _uiState.value.isAnalysisMode,
@@ -305,7 +335,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val currentLanguage = _uiState.value.selectedLanguage.code
 
                 android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, languange: $currentLanguage")
-                val transcriptionResult = openRouterService.transcribeAudioWithGemini(
+                
+                val transcriptionResult = currentLLMService.transcribeAudio(
                     audioFile = audioFile,
                     languageCode = currentLanguage
                 )
@@ -501,5 +532,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         audioPlayer.release()
         openRouterService.close()
         audioRecorder.cancelRecording()
+        firebaseGeminiService.close()
     }
 }
