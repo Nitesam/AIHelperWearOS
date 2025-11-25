@@ -49,4 +49,5 @@ google-services.json
 .externalNativeBuild
 .cxx
 local.properties
->>>>>>> master
+
+google_services.json
