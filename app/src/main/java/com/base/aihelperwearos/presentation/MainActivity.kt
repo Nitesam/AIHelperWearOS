@@ -29,7 +29,6 @@ import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
 import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
 import com.base.aihelperwearos.presentation.viewmodel.Screen
 import com.base.aihelperwearos.presentation.utils.RemoteInputHelper
-import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -41,6 +40,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel: MainViewModel = viewModel()
+
+            LaunchedEffect(Unit) {
+                viewModel.bindService()
+            }
+
             WearApp(viewModel, this)
         }
     }

@@ -2,6 +2,11 @@ package com.base.aihelperwearos.presentation.viewmodel
 import com.base.aihelperwearos.BuildConfig
 
 import android.app.Application
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.base.aihelperwearos.R
@@ -13,11 +18,12 @@ import com.base.aihelperwearos.data.network.LLMService
 import com.base.aihelperwearos.data.network.OpenRouterService
 import com.base.aihelperwearos.data.network.FirebaseGeminiService
 import com.base.aihelperwearos.presentation.utils.AudioPlayer
-import com.base.aihelperwearos.presentation.utils.AudioRecorder
 import com.base.aihelperwearos.presentation.utils.TextToSpeechHelper
+import com.base.aihelperwearos.presentation.services.AudioRecordingService
 import com.base.aihelperwearos.utils.getCurrentLanguageCode
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.io.File
 
 enum class Screen {
@@ -33,7 +39,6 @@ enum class Language(val code: String, val displayName: String) {
     ITALIAN("it", "Italiano"),
     ENGLISH("en", "English")
 }
-
 
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
@@ -62,13 +67,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         context = application
     )
     private val firebaseGeminiService by lazy { FirebaseGeminiService() }
-    
+
     private var currentLLMService: LLMService = openRouterService
 
     private val ttsHelper = TextToSpeechHelper(application)
     private val audioPlayer = AudioPlayer(application)
-    private val audioRecorder = AudioRecorder(application)
     private val userPreferences = com.base.aihelperwearos.data.preferences.UserPreferences(application)
+
+    // Audio Recording Service
+    private var recordingService: AudioRecordingService? = null
+    private var serviceBound = false
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            val localBinder = binder as AudioRecordingService.LocalBinder
+            recordingService = localBinder.getService()
+            serviceBound = true
+            android.util.Log.d("MainViewModel", "Service connected")
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            recordingService = null
+            serviceBound = false
+            android.util.Log.d("MainViewModel", "Service disconnected")
+        }
+    }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -81,6 +104,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         loadUserPreferences()
+    }
+
+    fun bindService() {
+        if (!serviceBound) {
+            val context = getApplication<Application>().applicationContext
+            val intent = Intent(context, AudioRecordingService::class.java)
+            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    fun unbindService() {
+        if (serviceBound) {
+            val context = getApplication<Application>().applicationContext
+            try {
+                context.unbindService(serviceConnection)
+                serviceBound = false
+            } catch (e: Exception) {
+                android.util.Log.e("MainViewModel", "Error unbinding service", e)
+            }
+        }
     }
 
     private fun loadUserPreferences() {
@@ -104,7 +147,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(selectedLanguage = language) }
             }
         }
-        
+
         viewModelScope.launch {
             userPreferences.providerFlow.collect { provider ->
                 _uiState.update { it.copy(selectedProvider = provider) }
@@ -130,7 +173,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun selectModel(modelId: String) {
         _uiState.update { it.copy(selectedModel = modelId) }
     }
-    
+
     fun setProvider(provider: String) {
         viewModelScope.launch {
             userPreferences.setProvider(provider)
@@ -294,23 +337,53 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startRecording() {
+        if (!serviceBound) {
+            bindService()
+
+            viewModelScope.launch {
+                delay(300)
+                startRecordingInternal()
+            }
+        } else {
+            startRecordingInternal()
+        }
+    }
+
+    private fun startRecordingInternal() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRecording = true) }
-            audioRecorder.startRecording()
+            recordingService?.startRecording { result ->
+                result.onSuccess {
+                    android.util.Log.d("MainViewModel", "Recording started successfully")
+                }.onFailure { error ->
+                    android.util.Log.e("MainViewModel", "Recording failed", error)
+                    _uiState.update { it.copy(isRecording = false) }
+                }
+            }
         }
     }
 
     fun stopRecording() {
         viewModelScope.launch {
-            audioRecorder.stopRecording().fold(
-                onSuccess = { file ->
-                    _uiState.update { it.copy(isRecording = false) }
-                    sendAudioMessage(file)
-                },
-                onFailure = {
-                    _uiState.update { it.copy(isRecording = false) }
-                }
-            )
+            recordingService?.stopRecording()
+
+            delay(500)
+
+            val audioDir = File(getApplication<Application>().filesDir, "audio_messages")
+            val latestFile = audioDir.listFiles()
+                ?.filter { it.name.startsWith("voice_") && it.name.endsWith(".wav") }
+                ?.maxByOrNull { it.lastModified() }
+
+            if (latestFile != null && latestFile.exists()) {
+                _uiState.update { it.copy(isRecording = false) }
+                sendAudioMessage(latestFile)
+            } else {
+                android.util.Log.e("MainViewModel", "Audio file not found")
+                _uiState.update { it.copy(
+                    isRecording = false,
+                    errorMessage = getApplication<Application>().getString(R.string.error_generic, "File audio non trovato")
+                )}
+            }
         }
     }
 
@@ -334,8 +407,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val audioPath = audioFile.absolutePath
                 val currentLanguage = _uiState.value.selectedLanguage.code
 
-                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, languange: $currentLanguage")
-                
+                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, language: $currentLanguage")
+
                 val transcriptionResult = currentLLMService.transcribeAudio(
                     audioFile = audioFile,
                     languageCode = currentLanguage
@@ -364,7 +437,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                 )
-
 
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "sendAudioMessage - EXCEPTION: ${e.message}", e)
@@ -525,13 +597,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     override fun onCleared() {
         super.onCleared()
         ttsHelper.release()
         audioPlayer.release()
         openRouterService.close()
-        audioRecorder.cancelRecording()
+        unbindService()
         firebaseGeminiService.close()
     }
 }
