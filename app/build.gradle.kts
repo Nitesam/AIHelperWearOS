@@ -17,7 +17,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.google.services)
 }
 
 android {
@@ -56,12 +55,6 @@ android {
         compose = true
         buildConfig = true
     }
-    
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
 }
 
 dependencies {
@@ -77,30 +70,28 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
 
-    val ktorVersion = "3.0.0"
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-android:$ktorVersion")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("io.ktor:ktor-client-logging:$ktorVersion")
+    // Ktor per chiamate API
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.logging)
 
+    // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
 
-
+    // ViewModel
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
 
+    // DataStore per salvataggio dati
     implementation(libs.datastore.preferences)
-
+    
+    // Markdown per il testo
     implementation(libs.markdown.compose)
 
+    // Coil per caricare le immagini LaTeX da CodeCogs
     implementation("io.coil-kt:coil-compose:2.7.0")
-
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
-
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.ai)
-    implementation("com.google.firebase:firebase-analytics")
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)

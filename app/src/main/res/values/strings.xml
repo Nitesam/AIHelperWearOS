@@ -41,8 +41,9 @@ Hello, %1$s!</string>
     <string name="zoom_and_close_hint">Zoom: %d%% • Tap to close</string>
     <string name="write_message">Write message</string>
     <string name="model_polaris">Polaris (Free)</string>
-    <string name="model_gemini_pro">Gemini Pro 3.0</string>
-    <string name="model_gpt5">GPT 5.1</string>
+    <string name="model_gemini_pro">Gemini Pro 2.5</string>
+    <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
+    <string name="model_gpt5">GPT 5</string>
     <string name="choose_input_method">Choose input method:</string>
     <string name="send_text_only">📝 Send text only</string>
     <string name="synthesize_locally">🔊 Synthesize locally</string>

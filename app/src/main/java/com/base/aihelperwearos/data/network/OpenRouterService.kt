@@ -26,7 +26,7 @@ import com.base.aihelperwearos.data.preferences.UserPreferences
 class OpenRouterService(
     private val apiKey: String,
     context: Context
-) : LLMService {
+) {
     private val userPreferences = UserPreferences(context)
     private val trustAllCertificates = object : X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
@@ -80,10 +80,10 @@ class OpenRouterService(
         }
     }
 
-    override suspend fun sendMessage(
+    suspend fun sendMessage(
         modelId: String,
         messages: List<Message>,
-        isAnalysisMode: Boolean,
+        isAnalysisMode: Boolean = false,
         languageCode: String
     ): Result<String> {
         return try {
@@ -107,7 +107,7 @@ class OpenRouterService(
             val request = OpenRouterRequest(
                 model = modelId,
                 messages = allMessages,
-                maxTokens = if (isAnalysisMode) 4096 else 2048,
+                maxTokens = if (isAnalysisMode) 3000 else 1000,
                 temperature = if (isAnalysisMode) 0.2 else 0.7
             )
 
@@ -126,11 +126,47 @@ class OpenRouterService(
         }
     }
 
-    override suspend fun transcribeAudio(
+    suspend fun solveAudioMathProblem(
         audioFile: File,
+        mathModel: String = "anthropic/claude-4.5-sonnet",
+        previousMessages: List<Message> = emptyList(),
         languageCode: String
-    ): Result<String> {
-        return transcribeAudioWithGemini(audioFile, languageCode)
+    ): Result<com.base.aihelperwearos.data.models.MathSolution> {
+        return try {
+            Log.d("OpenRouter", "=== MATH PIPELINE START ===")
+            Log.d("OpenRouter", "Audio: ${audioFile.absolutePath}, size: ${audioFile.length()} bytes")
+
+            Log.d("OpenRouter", "STEP 1: Transcribing with Whisper...")
+            val transcription = transcribeAudioWithGemini(audioFile, languageCode).getOrElse { error ->
+                return Result.failure(Exception("Error during Transcription: ${error.message}"))
+            }
+
+            if (transcription.isBlank()) {
+                return Result.failure(Exception("Empty transcription, retry."))
+            }
+
+            Log.d("OpenRouter", "Transcription: $transcription")
+
+            Log.d("OpenRouter", "STEP 2: Solving with $mathModel...")
+            val solution = solveMathProblem(transcription, mathModel, previousMessages, languageCode).getOrElse { error ->
+                return Result.failure(Exception("Error: ${error.message}"))
+            }
+
+            Log.d("OpenRouter", "Solution: ${solution.take(100)}...")
+
+            val result = com.base.aihelperwearos.data.models.MathSolution(
+                transcription = transcription,
+                solution = solution,
+                model = mathModel
+            )
+
+            Log.d("OpenRouter", "=== MATH PIPELINE SUCCESS ===")
+            Result.success(result)
+
+        } catch (e: Exception) {
+            Log.e("OpenRouter", "=== MATH PIPELINE FAILED ===", e)
+            Result.failure(e)
+        }
     }
 
     suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String): Result<String> {
@@ -151,11 +187,9 @@ class OpenRouterService(
 
             val transcriptionPrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode)
 
-            val modelName = "google/gemini-2.5-flash-preview-09-2025"
-
             val requestBody = buildString {
                 append("{")
-                append("\"model\":\"$modelName\",")
+                append("\"model\":\"google/gemini-2.5-flash\",")
                 append("\"messages\":[{")
                 append("\"role\":\"user\",")
                 append("\"content\":[")
@@ -178,7 +212,7 @@ class OpenRouterService(
                 append("}")
             }
 
-            Log.d("OpenRouter", "Sending to $modelName for transcription...")
+            Log.d("OpenRouter", "Sending to Gemini 2.5 Flash for transcription...")
 
             val response: String = client.post("chat/completions") {
                 setBody(requestBody)
@@ -212,7 +246,7 @@ class OpenRouterService(
 
         } catch (e: Exception) {
             Log.e("OpenRouter", "Audio transcription failed", e)
-            Result.failure(e)
+            Result.failure(Exception("Errore trascrizione: ${e.message}"))
         } finally {
             try {
                 audioFile.delete()
@@ -223,7 +257,64 @@ class OpenRouterService(
         }
     }
 
-    override fun close() {
+    private suspend fun solveMathProblem(
+        problem: String,
+        model: String,
+        previousMessages: List<Message>,
+        languageCode: String
+    ): Result<String> {
+        return try {
+            Log.d("OpenRouter", "POST /chat/completions with model: $model")
+            Log.d("OpenRouter", "Using language: $languageCode")
+
+            val systemPrompt = Message(
+                role = "system",
+                content = com.base.aihelperwearos.data.Constants.getMathPrompt(languageCode)
+            )
+
+            val allMessages = listOf(systemPrompt) + previousMessages + Message(
+                role = "user",
+                content = "Problema: $problem"
+            )
+
+            val request = OpenRouterRequest(
+                model = model,
+                messages = allMessages,
+                temperature = 0.3,
+                maxTokens = 4000
+            )
+
+            val response: OpenRouterResponse = client.post("chat/completions") {
+                setBody(request)
+            }.body()
+
+            val solution = response.choices.firstOrNull()?.message?.content
+                ?: return Result.failure(Exception("Nessuna soluzione dall'AI"))
+
+            Result.success(solution)
+
+        } catch (e: Exception) {
+            Log.e("OpenRouter", "Math solving failed", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun sendAudioMessage(
+        audioFile: File,
+        modelId: String,
+        previousMessages: List<Message>,
+        isAnalysisMode: Boolean = false,
+        languageCode: String
+    ): Result<String> {
+        return if (isAnalysisMode) {
+            solveAudioMathProblem(audioFile, modelId, previousMessages, languageCode).map { it.solution }
+        } else {
+            transcribeAudioWithGemini(audioFile, languageCode)
+        }
+    }
+
+    fun close() {
         client.close()
     }
 }
+

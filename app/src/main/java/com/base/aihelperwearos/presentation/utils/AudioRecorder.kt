@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.PowerManager
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,8 +21,9 @@ class AudioRecorder(private val context: Context) {
     private var audioFile: File? = null
     private var isRecording = false
     private var recordingThread: Thread? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
-    private val sampleRate = 96000
+    private val sampleRate = 44100
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
@@ -47,6 +49,11 @@ class AudioRecorder(private val context: Context) {
             if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
                 return@withContext Result.failure(Exception("AudioRecord non inizializzato"))
             }
+
+            // Acquire WakeLock to keep CPU running even if screen goes off
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AudioRecorder::RecordingWakeLock")
+            wakeLock?.acquire(10 * 60 * 1000L) // Timeout 10 minutes
 
             audioRecord?.startRecording()
             isRecording = true
@@ -94,6 +101,8 @@ class AudioRecorder(private val context: Context) {
             Log.e("AudioRecorder", "Error stopping recording", e)
             cleanup()
             Result.failure(e)
+        } finally {
+            releaseWakeLock()
         }
     }
 
@@ -103,6 +112,7 @@ class AudioRecorder(private val context: Context) {
 
         try {
             outputStream = FileOutputStream(audioFile)
+
             writeWavHeader(outputStream, 0, sampleRate, 1, 16)
 
             var totalBytesWritten = 0L
@@ -204,12 +214,26 @@ class AudioRecorder(private val context: Context) {
             cleanup()
         } catch (e: Exception) {
             Log.e("AudioRecorder", "Error cancelling recording", e)
+        } finally {
+            releaseWakeLock()
         }
     }
 
     private fun cleanup() {
         audioFile?.delete()
         audioFile = null
+        releaseWakeLock()
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRecorder", "Error releasing wakelock", e)
+        }
+        wakeLock = null
     }
 
     fun isRecording() = isRecording

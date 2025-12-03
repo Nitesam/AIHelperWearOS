@@ -29,6 +29,7 @@ import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
 import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
 import com.base.aihelperwearos.presentation.viewmodel.Screen
 import com.base.aihelperwearos.presentation.utils.RemoteInputHelper
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -40,11 +41,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel: MainViewModel = viewModel()
-
-            LaunchedEffect(Unit) {
-                viewModel.bindService()
-            }
-
             WearApp(viewModel, this)
         }
     }
@@ -89,14 +85,13 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
 
             when (uiState.currentScreen) {
                 Screen.Home -> HomeScreen(
-                    selectedProvider = uiState.selectedProvider,
                     onNewChat = {
                         android.util.Log.d("MainActivity", "new chat clicked")
                         viewModel.navigateTo(Screen.ModelSelection)
                     },
                     onAnalysis = {
                         android.util.Log.d("MainActivity", "analysis clicked")
-                        viewModel.selectModel("google/gemini-3-pro-preview")
+                        viewModel.selectModel("anthropic/claude-sonnet-4.5")
                         viewModel.startNewChat(title = analysisTitle, isAnalysisMode = true)
                     },
                     onHistory = {
@@ -109,8 +104,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                         android.util.Log.d("MainActivity", "printing locale: ${Locale.getDefault()}")
                         viewModel.saveLanguagePreference(languageCode)
                         activity.recreate()
-                    },
-                    onProviderChange = { viewModel.setProvider(it) }
+                    }
                 )
                 Screen.ModelSelection -> ModelSelectionScreen(
                     selectedModel = uiState.selectedModel,
@@ -157,7 +151,6 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                     },
                     onBack = { viewModel.navigateTo(Screen.Home) }
                 )
-                else -> {}
             }
         }
     }
@@ -165,12 +158,10 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
 
 @Composable
 fun HomeScreen(
-    selectedProvider: String,
     onNewChat: () -> Unit,
     onAnalysis: () -> Unit,
     onHistory: () -> Unit,
-    onLanguageChange: (String) -> Unit,
-    onProviderChange: (String) -> Unit
+    onLanguageChange: (String) -> Unit
 ) {
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -230,22 +221,6 @@ fun HomeScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(8.dp)) }
-
-        item {
-            val providerName = if (selectedProvider == "google_vertex") "Google" else "OpenRouter"
-            Button(
-                onClick = {
-                    val newProvider = if (selectedProvider == "google_vertex") "openrouter" else "google_vertex"
-                    onProviderChange(newProvider)
-                },
-                modifier = Modifier.fillMaxWidth(0.85f),
-                colors = ButtonDefaults.secondaryButtonColors()
-            ) {
-                Text("AI: $providerName", maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
-
         item { Spacer(modifier = Modifier.height(16.dp)) }
 
         item {
@@ -284,8 +259,9 @@ fun ModelSelectionScreen(
     onBack: () -> Unit
 ) {
     val models = listOf(
-        "google/gemini-3-pro-preview" to stringResource(R.string.model_gemini_pro),
-        "openai/gpt-5.1" to stringResource(R.string.model_gpt5)
+        "google/gemini-2.5-pro" to stringResource(R.string.model_gemini_pro),
+        "anthropic/claude-sonnet-4.5" to stringResource(R.string.model_claude_sonnet),
+        "openai/gpt-5" to stringResource(R.string.model_gpt5)
     )
 
     ScalingLazyColumn(

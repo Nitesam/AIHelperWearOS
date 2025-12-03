@@ -18,7 +18,6 @@ class UserPreferences(private val context: Context) {
 
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
-        private val PROVIDER_KEY = stringPreferencesKey("provider") // "openrouter" or "google_vertex"
     }
 
     private fun getSystemLanguage(): String {
@@ -37,20 +36,10 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    val providerFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[PROVIDER_KEY] ?: "openrouter"
-    }
-
     suspend fun setLanguage(language: String) {
         android.util.Log.d("UserPreferences", "Saving language: $language")
         context.dataStore.edit { preferences ->
             preferences[LANGUAGE_KEY] = language
-        }
-    }
-
-    suspend fun setProvider(provider: String) {
-        context.dataStore.edit { preferences ->
-            preferences[PROVIDER_KEY] = provider
         }
     }
 
@@ -62,3 +51,4 @@ class UserPreferences(private val context: Context) {
         }
     }
 }
+
