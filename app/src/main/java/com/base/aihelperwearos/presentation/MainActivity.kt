@@ -41,6 +41,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel: MainViewModel = viewModel()
+
+            LaunchedEffect(Unit) {
+                viewModel.bindService()
+            }
+
             WearApp(viewModel, this)
         }
     }
