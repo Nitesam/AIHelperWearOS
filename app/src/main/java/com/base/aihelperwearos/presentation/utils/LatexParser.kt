@@ -7,6 +7,12 @@ import java.net.URLEncoder
 
 object LatexParser {
 
+    /**
+     * Splits mixed text and LaTeX content into renderable parts.
+     *
+     * @param content message content containing inline or display math.
+     * @return `ParsedMathMessage` with ordered text and LaTeX parts.
+     */
     fun parseLatexContent(content: String): ParsedMathMessage {
         val parts = mutableListOf<MathContentPart>()
 
@@ -58,6 +64,14 @@ object LatexParser {
         return ParsedMathMessage(parts)
     }
 
+    /**
+     * Builds a URL for rendering a LaTeX expression as an image.
+     *
+     * @param latex LaTeX source string.
+     * @param isDisplayMode whether the formula is display-style.
+     * @param textSizeSp text size used for scaling.
+     * @return image URL as a `String`.
+     */
     fun buildLatexImageUrl(
         latex: String,
         isDisplayMode: Boolean,
@@ -68,19 +82,15 @@ object LatexParser {
             .replace("  ", " ")
             .replace("\n", " ")
 
-        // Aggiungi comando per aumentare la dimensione del font LaTeX
         val sizedLatex = if (isDisplayMode) {
-            "\\large $cleanLatex"  // Più grande per formule display
+            "\\large $cleanLatex"
         } else {
             cleanLatex
         }
 
-        // URL encode per i.upmath.me
         val encoded = URLEncoder.encode(sizedLatex, "UTF-8")
             .replace("+", "%20")
 
-        // Usa i.upmath.me con SVG convertito in PNG ad alta risoluzione
-        // Aggiungi scala 2x per maggiore nitidezza
         val url = "https://i.upmath.me/png/$encoded"
 
         Log.d("LatexParser", "URL: $url")

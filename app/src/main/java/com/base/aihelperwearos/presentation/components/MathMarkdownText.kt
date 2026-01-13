@@ -10,6 +10,14 @@ import com.base.aihelperwearos.data.models.MathContentPart
 import com.base.aihelperwearos.presentation.utils.LatexParser
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
+/**
+ * Renders markdown mixed with LaTeX formulas as Wear OS UI content.
+ *
+ * @param markdown raw markdown text that may include LaTeX delimiters.
+ * @param modifier modifier applied to the column container.
+ * @param fontSize base font size in sp units.
+ * @return `Unit` after composing the content.
+ */
 @Composable
 fun MathMarkdownText(
     markdown: String,
@@ -46,4 +54,3 @@ fun MathMarkdownText(
         }
     }
 }
-

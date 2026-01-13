@@ -29,6 +29,14 @@ class TextToSpeechHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Synthesizes text to a WAV file and reports the result via callbacks.
+     *
+     * @param text text to synthesize.
+     * @param onSuccess callback invoked with the created audio file.
+     * @param onFailure callback invoked with the failure exception.
+     * @return `Unit` after synthesis is initiated or rejected.
+     */
     fun synthesizeToFile(
         text: String,
         onSuccess: (File) -> Unit,
@@ -54,10 +62,22 @@ class TextToSpeechHelper(private val context: Context) {
             val audioFile = File(audioDir, "tts_$timestamp.wav")
 
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                /**
+                 * Handles synthesis start events.
+                 *
+                 * @param utteranceId identifier for the utterance.
+                 * @return `Unit` after logging the start event.
+                 */
                 override fun onStart(utteranceId: String?) {
                     Log.d("TTS", "Synthesis started")
                 }
 
+                /**
+                 * Handles synthesis completion and verifies the output file.
+                 *
+                 * @param utteranceId identifier for the utterance.
+                 * @return `Unit` after invoking success or failure callbacks.
+                 */
                 override fun onDone(utteranceId: String?) {
                     Log.d("TTS", "Synthesis completed: ${audioFile.absolutePath}")
                     if (audioFile.exists()) {
@@ -67,11 +87,24 @@ class TextToSpeechHelper(private val context: Context) {
                     }
                 }
 
+                /**
+                 * Handles synthesis errors for legacy callback signature.
+                 *
+                 * @param utteranceId identifier for the utterance.
+                 * @return `Unit` after invoking the failure callback.
+                 */
                 override fun onError(utteranceId: String?) {
                     Log.e("TTS", "Synthesis error")
                     onFailure(Exception("Errore sintesi vocale"))
                 }
 
+                /**
+                 * Handles synthesis errors with error codes.
+                 *
+                 * @param utteranceId identifier for the utterance.
+                 * @param errorCode error code reported by the TTS engine.
+                 * @return `Unit` after invoking the failure callback.
+                 */
                 @Deprecated("Deprecated in Java")
                 override fun onError(utteranceId: String?, errorCode: Int) {
                     Log.e("TTS", "Synthesis error: $errorCode")
@@ -95,6 +128,11 @@ class TextToSpeechHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Stops and releases the underlying TextToSpeech instance.
+     *
+     * @return `Unit` after resources are released.
+     */
     fun release() {
         tts?.stop()
         tts?.shutdown()
@@ -102,4 +140,3 @@ class TextToSpeechHelper(private val context: Context) {
         isInitialized = false
     }
 }
-

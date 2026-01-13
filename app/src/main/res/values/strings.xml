@@ -59,14 +59,12 @@ Hello, %1$s!</string>
     <string name="language_english">🇬🇧 English</string>
     <string name="choose_language">Choose language</string>
 
-    <!-- Settings -->
     <string name="settings">⚙️ Settings</string>
     <string name="default_language">Default Language</string>
     <string name="default_transcription">Transcription Method</string>
     <string name="settings_saved">Settings saved!</string>
     <string name="save">Save</string>
 
-    <!-- Errors -->
     <string name="error_generic">Error: %s</string>
     <string name="error_session_not_found">Error: session not found</string>
     <string name="error_api">API error: %s</string>

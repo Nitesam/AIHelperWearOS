@@ -25,6 +25,12 @@ private val DarkColorPalette = Colors(
     onError = Color(0xFFFFFFFF)
 )
 
+/**
+ * Applies the app theme and background surface for Wear OS screens.
+ *
+ * @param content composable content to render inside the theme.
+ * @return `Unit` after composing the themed content.
+ */
 @Composable
 fun AIHelperWearOSTheme(
     content: @Composable () -> Unit

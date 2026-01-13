@@ -1,6 +1,12 @@
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
+/**
+ * Reads a key from local properties and returns a quoted string for build config.
+ *
+ * @param key property name to look up in `local.properties`.
+ * @return quoted property value, or empty quotes when missing.
+ */
 fun getApiKey(key: String): String {
     val properties = Properties()
     val localPropertiesFile = rootProject.file("local.properties")
@@ -70,28 +76,27 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
 
-    // Ktor per chiamate API
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.logging)
 
-    // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    // ViewModel
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
 
-    // DataStore per salvataggio dati
     implementation(libs.datastore.preferences)
     
-    // Markdown per il testo
     implementation(libs.markdown.compose)
 
-    // Coil per caricare le immagini LaTeX da CodeCogs
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.8.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)

@@ -36,6 +36,12 @@ import java.util.*
 
 class MainActivity : ComponentActivity() {
 
+    /**
+     * Initializes the activity and sets the Compose content tree.
+     *
+     * @param savedInstanceState saved instance state bundle.
+     * @return `Unit` after content is set.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -51,6 +57,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Updates the activity locale and applies configuration changes.
+ *
+ * @param activity activity whose resources will be updated.
+ * @param languageCode ISO language code to apply.
+ * @return `Unit` after updating the configuration.
+ */
 fun setLocale(activity: ComponentActivity, languageCode: String) {
     val locale = Locale(languageCode)
     Locale.setDefault(locale)
@@ -60,6 +73,11 @@ fun setLocale(activity: ComponentActivity, languageCode: String) {
     resources.updateConfiguration(config, resources.displayMetrics)
 }
 
+/**
+ * Keeps the device screen on while this composable is active.
+ *
+ * @return `Unit` after applying the keep-screen-on flag.
+ */
 @Composable
 fun KeepScreenOn() {
     val context = LocalContext.current
@@ -72,6 +90,13 @@ fun KeepScreenOn() {
     }
 }
 
+/**
+ * Hosts the main Wear OS UI based on the current screen state.
+ *
+ * @param viewModel view model providing UI state and actions.
+ * @param activity host activity used for locale changes.
+ * @return `Unit` after composing the UI.
+ */
 @Composable
 fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -161,6 +186,15 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
     }
 }
 
+/**
+ * Renders the home screen with navigation actions.
+ *
+ * @param onNewChat callback to start a new chat.
+ * @param onAnalysis callback to start analysis mode.
+ * @param onHistory callback to open chat history.
+ * @param onLanguageChange callback with the selected language code.
+ * @return `Unit` after composing the screen.
+ */
 @Composable
 fun HomeScreen(
     onNewChat: () -> Unit,
@@ -257,6 +291,14 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Displays the model selection list.
+ *
+ * @param selectedModel currently selected model id.
+ * @param onModelSelected callback with the chosen model id.
+ * @param onBack callback to return to the previous screen.
+ * @return `Unit` after composing the screen.
+ */
 @Composable
 fun ModelSelectionScreen(
     selectedModel: String,
@@ -264,7 +306,7 @@ fun ModelSelectionScreen(
     onBack: () -> Unit
 ) {
     val models = listOf(
-        "google/gemini-2.5-pro" to stringResource(R.string.model_gemini_pro),
+        "google/gemini-3-pro-preview" to stringResource(R.string.model_gemini_pro),
         "anthropic/claude-sonnet-4.5" to stringResource(R.string.model_claude_sonnet),
         "openai/gpt-5" to stringResource(R.string.model_gpt5)
     )
@@ -318,6 +360,23 @@ fun ModelSelectionScreen(
     }
 }
 
+/**
+ * Displays the chat screen with message list and input controls.
+ *
+ * @param uiState current chat UI state.
+ * @param onSendMessage callback to send text messages.
+ * @param onStartRecording callback to begin audio recording.
+ * @param onStopRecording callback to stop audio recording.
+ * @param onSynthesizeLocally callback to synthesize speech locally.
+ * @param onPlayAudio callback to play an audio message.
+ * @param onIncreaseFontSize callback to increase message font size.
+ * @param onDecreaseFontSize callback to decrease message font size.
+ * @param onBack callback to return to the home screen.
+ * @param onConfirmTranscription callback to accept a transcription.
+ * @param onCancelTranscription callback to discard a transcription.
+ * @param onUpdateTranscription callback to edit transcription text.
+ * @return `Unit` after composing the screen.
+ */
 @Composable
 fun ChatScreen(
     uiState: com.base.aihelperwearos.presentation.viewmodel.ChatUiState,
@@ -340,13 +399,11 @@ fun ChatScreen(
     val listState = rememberScalingLazyListState()
     val coroutineScope = rememberCoroutineScope()
     
-    // Autoscroll quando cambiano i messaggi o appare la trascrizione
     LaunchedEffect(uiState.chatMessages.size, uiState.pendingTranscription) {
         if (uiState.chatMessages.isNotEmpty() || uiState.pendingTranscription != null) {
             coroutineScope.launch {
-                // Scrolla all'ultimo elemento
                 val targetIndex = if (uiState.pendingTranscription != null) {
-                    uiState.chatMessages.size + 3 // trascrizione è dopo i messaggi
+                    uiState.chatMessages.size + 3
                 } else {
                     uiState.chatMessages.size
                 }
@@ -602,7 +659,6 @@ fun ChatScreen(
             )
         }
 
-        // Bottoni di conferma trascrizione fissi a sinistra
         uiState.pendingTranscription?.let {
             Column(
                 modifier = Modifier
@@ -633,6 +689,22 @@ fun ChatScreen(
     }
 }
 
+/**
+ * Displays the analysis screen with chat and recording controls.
+ *
+ * @param uiState current chat UI state.
+ * @param onSendMessage callback to send text messages.
+ * @param onStartRecording callback to begin audio recording.
+ * @param onStopRecording callback to stop audio recording.
+ * @param onPlayAudio callback to play an audio message.
+ * @param onIncreaseFontSize callback to increase message font size.
+ * @param onDecreaseFontSize callback to decrease message font size.
+ * @param onBack callback to return to the home screen.
+ * @param onConfirmTranscription callback to accept a transcription.
+ * @param onCancelTranscription callback to discard a transcription.
+ * @param onUpdateTranscription callback to edit transcription text.
+ * @return `Unit` after composing the screen.
+ */
 @Composable
 fun AnalysisScreen(
     uiState: com.base.aihelperwearos.presentation.viewmodel.ChatUiState,
@@ -653,12 +725,11 @@ fun AnalysisScreen(
     val listState = rememberScalingLazyListState()
     val coroutineScope = rememberCoroutineScope()
     
-    // Autoscroll quando cambiano i messaggi o appare la trascrizione
     LaunchedEffect(uiState.chatMessages.size, uiState.pendingTranscription) {
         if (uiState.chatMessages.isNotEmpty() || uiState.pendingTranscription != null) {
             coroutineScope.launch {
                 val targetIndex = if (uiState.pendingTranscription != null) {
-                    uiState.chatMessages.size + 4 // trascrizione è dopo i messaggi + header
+                    uiState.chatMessages.size + 4
                 } else {
                     uiState.chatMessages.size + 1
                 }
@@ -870,7 +941,6 @@ fun AnalysisScreen(
             }
         }
 
-        // Bottoni di conferma trascrizione fissi a sinistra
         uiState.pendingTranscription?.let {
             Column(
                 modifier = Modifier
@@ -901,6 +971,16 @@ fun AnalysisScreen(
     }
 }
 
+/**
+ * Renders a single chat message bubble.
+ *
+ * @param role message role string.
+ * @param content message text content.
+ * @param audioPath optional audio file path for playback.
+ * @param onPlayAudio callback invoked to play audio.
+ * @param fontSize font size for message text.
+ * @return `Unit` after composing the message row.
+ */
 @Composable
 fun ChatMessageItem(
     role: String,
@@ -973,6 +1053,14 @@ fun ChatMessageItem(
     }
 }
 
+/**
+ * Displays controls for adjusting chat font size.
+ *
+ * @param currentSize current font size value.
+ * @param onIncrease callback to increase the font size.
+ * @param onDecrease callback to decrease the font size.
+ * @return `Unit` after composing the controls.
+ */
 @Composable
 fun FontSizeControls(
     currentSize: Int,
@@ -1019,6 +1107,15 @@ fun FontSizeControls(
     }
 }
 
+/**
+ * Displays the chat history list.
+ *
+ * @param sessions list of stored chat sessions.
+ * @param onSessionClick callback when a session is selected.
+ * @param onDeleteSession callback to delete a session.
+ * @param onBack callback to return to the home screen.
+ * @return `Unit` after composing the history screen.
+ */
 @Composable
 fun HistoryScreen(
     sessions: List<com.base.aihelperwearos.data.repository.ChatSession>,

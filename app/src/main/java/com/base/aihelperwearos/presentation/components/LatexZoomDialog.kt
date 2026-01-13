@@ -23,6 +23,14 @@ import coil.request.ImageRequest
 import androidx.compose.ui.res.stringResource
 import com.base.aihelperwearos.R
 
+/**
+ * Displays a full-screen dialog that allows zooming and panning a LaTeX image.
+ *
+ * @param imageUrl URL of the rendered LaTeX image.
+ * @param latex original LaTeX source for accessibility text.
+ * @param onDismiss callback invoked when the dialog is dismissed.
+ * @return `Unit` after composing the dialog.
+ */
 @Composable
 fun LatexZoomDialog(
     imageUrl: String,
@@ -113,4 +121,3 @@ fun LatexZoomDialog(
         }
     }
 }
-

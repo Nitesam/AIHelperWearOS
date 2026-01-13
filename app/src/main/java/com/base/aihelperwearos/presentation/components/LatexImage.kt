@@ -31,6 +31,15 @@ import coil.request.ImageRequest
 import androidx.compose.ui.res.stringResource
 import com.base.aihelperwearos.R
 
+/**
+ * Renders a LaTeX formula image with tap-to-zoom support.
+ *
+ * @param latex LaTeX source text for accessibility.
+ * @param imageUrl URL of the rendered LaTeX image.
+ * @param isDisplayMode whether the formula is display-style.
+ * @param modifier modifier applied to the image container.
+ * @return `Unit` after composing the formula view.
+ */
 @Composable
 fun LatexImage(
     latex: String,
@@ -106,6 +115,14 @@ fun LatexImage(
     }
 }
 
+/**
+ * Shows a fullscreen LaTeX image with zoom controls and panning.
+ *
+ * @param imageUrl URL of the rendered LaTeX image.
+ * @param latex LaTeX source text for accessibility.
+ * @param onDismiss callback invoked to close the dialog.
+ * @return `Unit` after composing the fullscreen dialog.
+ */
 @Composable
 private fun LatexFullscreenDialog(
     imageUrl: String,
@@ -168,8 +185,6 @@ private fun LatexFullscreenDialog(
                 }
             )
 
-            // Bottoni zoom posizionati lungo il bordo curvo sinistro
-            // Bottone + in alto a sinistra (segue la curva)
             Button(
                 onClick = { scale = (scale + 0.25f).coerceAtMost(5f) },
                 modifier = Modifier
@@ -183,7 +198,6 @@ private fun LatexFullscreenDialog(
                 Text("+", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
-            // Bottone - più in basso a sinistra (segue la curva)
             Button(
                 onClick = { scale = (scale - 0.25f).coerceAtLeast(0.5f) },
                 modifier = Modifier
@@ -198,7 +212,6 @@ private fun LatexFullscreenDialog(
                 Text("-", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
-            // Testo zoom in basso
             Text(
                 text = stringResource(R.string.zoom_and_close_hint, (scale * 100).toInt()),
                 fontSize = 10.sp,

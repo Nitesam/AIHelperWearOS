@@ -1,0 +1,118 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-01-13",
+  "categorie": [
+    {
+      "nome": "Equazioni Differenziali",
+      "keywords": ["equazione differenziale", "EDO", "ODE", "dy/dx", "y'", "y''"],
+      "sottotipi": [
+        {
+          "nome": "Lineari I Ordine",
+          "keywords": ["primo ordine", "lineare", "fattore integrante", "separabile"]
+        },
+        {
+          "nome": "Lineari II Ordine - Omogenee",
+          "keywords": ["secondo ordine", "omogenea", "caratteristica", "radici"]
+        },
+        {
+          "nome": "Lineari II Ordine - Non Omogenee",
+          "keywords": ["particolare", "variazione costanti", "somiglianza"]
+        },
+        {
+          "nome": "A Variabili Separabili",
+          "keywords": ["separabili", "separazione variabili"]
+        }
+      ]
+    },
+    {
+      "nome": "Integrali",
+      "keywords": ["integrale", "primitiva", "antiderivata"],
+      "sottotipi": [
+        {
+          "nome": "Integrali Doppi",
+          "keywords": ["doppio", "dominio", "area", "Fubini"]
+        },
+        {
+          "nome": "Integrali Tripli",
+          "keywords": ["triplo", "volume", "sferico", "cilindrico"]
+        },
+        {
+          "nome": "Integrali di Linea",
+          "keywords": ["linea", "curva", "parametrizzazione", "lavoro"]
+        },
+        {
+          "nome": "Integrali di Superficie",
+          "keywords": ["superficie", "flusso", "parametrica"]
+        }
+      ]
+    },
+    {
+      "nome": "Serie",
+      "keywords": ["serie", "somma", "convergenza", "divergenza"],
+      "sottotipi": [
+        {
+          "nome": "Serie Numeriche",
+          "keywords": ["numerica", "criterio", "confronto", "rapporto", "radice"]
+        },
+        {
+          "nome": "Serie di Potenze",
+          "keywords": ["potenze", "raggio", "Taylor", "MacLaurin"]
+        },
+        {
+          "nome": "Serie di Fourier",
+          "keywords": ["Fourier", "periodica", "coefficienti", "armoniche"]
+        }
+      ]
+    },
+    {
+      "nome": "Limiti",
+      "keywords": ["limite", "continuità", "asintoto"],
+      "sottotipi": [
+        {
+          "nome": "Limiti in più variabili",
+          "keywords": ["due variabili", "polari", "restrizioni", "multivariabile"]
+        },
+        {
+          "nome": "Limiti notevoli",
+          "keywords": ["notevole", "fondamentale", "esponenziale", "logaritmo"]
+        }
+      ]
+    },
+    {
+      "nome": "Derivate",
+      "keywords": ["derivata", "gradiente", "Jacobiano", "Hessiano"],
+      "sottotipi": [
+        {
+          "nome": "Derivate Parziali",
+          "keywords": ["parziale", "multivariabile", "catena"]
+        },
+        {
+          "nome": "Derivate Direzionali",
+          "keywords": ["direzionale", "direzione", "versore", "gradiente"]
+        },
+        {
+          "nome": "Massimi e Minimi",
+          "keywords": ["massimo", "minimo", "critico", "Hessiano", "ottimizzazione"]
+        }
+      ]
+    },
+    {
+      "nome": "Campi Vettoriali",
+      "keywords": ["campo", "vettoriale", "rotore", "divergenza"],
+      "sottotipi": [
+        {
+          "nome": "Teorema di Gauss",
+          "keywords": ["Gauss", "divergenza", "flusso", "chiusa"]
+        },
+        {
+          "nome": "Teorema di Stokes",
+          "keywords": ["Stokes", "rotore", "circuitazione"]
+        },
+        {
+          "nome": "Campi Conservativi",
+          "keywords": ["conservativo", "potenziale", "irrotazionale"]
+        }
+      ]
+    }
+  ]
+}

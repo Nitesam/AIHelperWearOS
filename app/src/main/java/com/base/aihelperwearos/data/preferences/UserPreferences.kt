@@ -20,6 +20,11 @@ class UserPreferences(private val context: Context) {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
     }
 
+    /**
+     * Reads the current system language code from the device configuration.
+     *
+     * @return system language code as a `String`.
+     */
     private fun getSystemLanguage(): String {
         return context.getCurrentLanguageCode()
     }
@@ -36,6 +41,12 @@ class UserPreferences(private val context: Context) {
         }
     }
 
+    /**
+     * Persists the selected language code in DataStore.
+     *
+     * @param language language code to save.
+     * @return `Unit` after the preference is stored.
+     */
     suspend fun setLanguage(language: String) {
         android.util.Log.d("UserPreferences", "Saving language: $language")
         context.dataStore.edit { preferences ->
@@ -43,6 +54,11 @@ class UserPreferences(private val context: Context) {
         }
     }
 
+    /**
+     * Retrieves the stored language code or falls back to the system language.
+     *
+     * @return selected language code as a `String`.
+     */
     fun getLanguage(): String {
         return runBlocking {
             context.dataStore.data.map { preferences ->
@@ -51,4 +67,3 @@ class UserPreferences(private val context: Context) {
         }
     }
 }
-

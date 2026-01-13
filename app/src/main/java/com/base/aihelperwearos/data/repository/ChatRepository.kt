@@ -52,6 +52,11 @@ class ChatRepository(private val context: Context) {
         private val CHAT_DATA_KEY = stringPreferencesKey("chat_data")
     }
 
+    /**
+     * Loads persisted chat data from DataStore or returns an empty default.
+     *
+     * @return `ChatData` with sessions/messages from storage or defaults.
+     */
     private suspend fun getChatData(): ChatData {
         android.util.Log.d("ChatRepository", "getChatData - START")
         return try {
@@ -82,6 +87,12 @@ class ChatRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Persists chat data to DataStore.
+     *
+     * @param data chat payload to serialize and store.
+     * @return `Unit` after data is saved.
+     */
     private suspend fun saveChatData(data: ChatData) {
         android.util.Log.d("ChatRepository", "saveChatData - START")
         try {
@@ -97,6 +108,11 @@ class ChatRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Streams all stored chat sessions ordered by most recent.
+     *
+     * @return `Flow<List<ChatSession>>` of sessions sorted by timestamp.
+     */
     fun getAllSessions(): Flow<List<ChatSession>> {
         return context.dataStore.data.map { preferences ->
             val jsonString = preferences[CHAT_DATA_KEY] ?: return@map emptyList()
@@ -109,6 +125,12 @@ class ChatRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Streams messages for a specific session in chronological order.
+     *
+     * @param sessionId session identifier to filter messages.
+     * @return `Flow<List<ChatMessage>>` of session messages.
+     */
     fun getMessagesForSession(sessionId: Long): Flow<List<ChatMessage>> {
         return context.dataStore.data.map { preferences ->
             val jsonString = preferences[CHAT_DATA_KEY] ?: return@map emptyList()
@@ -123,6 +145,14 @@ class ChatRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Creates a new chat session and persists it.
+     *
+     * @param modelId model identifier used for the session.
+     * @param title display title for the session.
+     * @param isAnalysisMode whether the session runs in analysis mode.
+     * @return new session id as a `Long`.
+     */
     suspend fun createSession(modelId: String, title: String, isAnalysisMode: Boolean): Long {
         android.util.Log.d("ChatRepository", "createSession - START - modelId: $modelId, title: $title, isAnalysisMode: $isAnalysisMode")
 
@@ -156,11 +186,26 @@ class ChatRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Retrieves a session by id.
+     *
+     * @param sessionId session identifier to find.
+     * @return matching `ChatSession?`, or `null` when missing.
+     */
     suspend fun getSession(sessionId: Long): ChatSession? {
         val data = getChatData()
         return data.sessions.find { it.id == sessionId }
     }
 
+    /**
+     * Appends a new message to an existing session.
+     *
+     * @param sessionId session identifier to attach the message.
+     * @param role message role (user/assistant/system).
+     * @param content message text content.
+     * @param audioPath optional local audio path for the message.
+     * @return `Unit` after the message is stored.
+     */
     suspend fun addMessage(sessionId: Long, role: String, content: String, audioPath: String? = null) {
         val currentData = getChatData()
         val newMessage = ChatMessage(
@@ -180,6 +225,13 @@ class ChatRepository(private val context: Context) {
         saveChatData(updatedData)
     }
 
+    /**
+     * Updates a session title and persists the change.
+     *
+     * @param sessionId session identifier to update.
+     * @param newTitle new title to set.
+     * @return `Unit` after the update is saved.
+     */
     suspend fun updateSessionTitle(sessionId: Long, newTitle: String) {
         val currentData = getChatData()
         val updatedSessions = currentData.sessions.map { session ->
@@ -194,6 +246,12 @@ class ChatRepository(private val context: Context) {
         saveChatData(updatedData)
     }
 
+    /**
+     * Deletes a session and its related messages.
+     *
+     * @param sessionId session identifier to remove.
+     * @return `Unit` after data is updated.
+     */
     suspend fun deleteSession(sessionId: Long) {
         val currentData = getChatData()
         val updatedData = currentData.copy(
@@ -203,4 +261,3 @@ class ChatRepository(private val context: Context) {
         saveChatData(updatedData)
     }
 }
-

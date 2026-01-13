@@ -26,6 +26,11 @@ class AudioRecorder(private val context: Context) {
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
 
+    /**
+     * Starts capturing microphone audio and writes PCM data to a WAV file.
+     *
+     * @return `Result<String>` with a status message or failure.
+     */
     @SuppressLint("MissingPermission")
     suspend fun startRecording(): Result<String> = withContext(Dispatchers.IO) {
         try {
@@ -66,6 +71,11 @@ class AudioRecorder(private val context: Context) {
         }
     }
 
+    /**
+     * Stops recording and finalizes the WAV file on disk.
+     *
+     * @return `Result<File>` containing the recorded file or failure.
+     */
     suspend fun stopRecording(): Result<File> = withContext(Dispatchers.IO) {
         try {
             if (!isRecording) {
@@ -97,6 +107,11 @@ class AudioRecorder(private val context: Context) {
         }
     }
 
+    /**
+     * Streams PCM frames from the recorder and writes them into the output file.
+     *
+     * @return `Unit` after recording loop ends and header is updated.
+     */
     private fun writeAudioDataToFile() {
         val data = ByteArray(bufferSize)
         var outputStream: FileOutputStream? = null
@@ -133,6 +148,16 @@ class AudioRecorder(private val context: Context) {
         }
     }
 
+    /**
+     * Writes a WAV header to the output stream.
+     *
+     * @param out output stream to write the header into.
+     * @param dataSize size of PCM data in bytes.
+     * @param sampleRate sample rate in Hz.
+     * @param channels number of audio channels.
+     * @param bitsPerSample bit depth of each sample.
+     * @return `Unit` after header is written.
+     */
     private fun writeWavHeader(
         out: FileOutputStream,
         dataSize: Long,
@@ -164,6 +189,13 @@ class AudioRecorder(private val context: Context) {
         out.write(header.array())
     }
 
+    /**
+     * Updates the WAV header with the final data size.
+     *
+     * @param file WAV file to update.
+     * @param dataSize size of PCM data in bytes.
+     * @return `Unit` after header update completes.
+     */
     private fun updateWavHeader(file: File, dataSize: Long) {
         try {
             val raf = java.io.RandomAccessFile(file, "rw")
@@ -181,6 +213,12 @@ class AudioRecorder(private val context: Context) {
         }
     }
 
+    /**
+     * Converts an integer to a little-endian byte array.
+     *
+     * @param value integer value to convert.
+     * @return little-endian `ByteArray`.
+     */
     private fun intToByteArray(value: Int): ByteArray {
         return byteArrayOf(
             (value and 0xFF).toByte(),
@@ -190,6 +228,11 @@ class AudioRecorder(private val context: Context) {
         )
     }
 
+    /**
+     * Cancels any active recording and cleans up resources.
+     *
+     * @return `Unit` after recording is stopped and files are cleared.
+     */
     fun cancelRecording() {
         try {
             if (isRecording) {
@@ -208,10 +251,20 @@ class AudioRecorder(private val context: Context) {
         }
     }
 
+    /**
+     * Removes the temporary audio file and resets internal state.
+     *
+     * @return `Unit` after cleanup.
+     */
     private fun cleanup() {
         audioFile?.delete()
         audioFile = null
     }
 
+    /**
+     * Reports whether recording is currently active.
+     *
+     * @return `Boolean` indicating recording state.
+     */
     fun isRecording() = isRecording
 }

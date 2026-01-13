@@ -14,14 +14,14 @@ data class OpenRouterRequest(
 
 @Serializable
 data class Message(
-    val role: String, // "user" o "assistant" o "system"
+    val role: String,
     val content: String
 )
 
 @Serializable
 data class MultimodalMessage(
     val role: String,
-    val content: JsonElement  // String o List<ContentPart>
+    val content: JsonElement
 )
 
 @Serializable
@@ -38,7 +38,7 @@ data class InputAudioContent(
 
 @Serializable
 data class AudioData(
-    val data: String,  // Base64
+    val data: String,
     val format: String = "wav"
 )
 
@@ -71,3 +71,9 @@ data class Usage(
     @SerialName("total_tokens") val totalTokens: Int
 )
 
+data class TranscriptionResult(
+    val transcription: String,
+    val keywords: List<String>,
+    val displayText: String = transcription,
+    val isTheoryQuery: Boolean = keywords.firstOrNull() == "teoria" || keywords.firstOrNull() == "theory"
+)

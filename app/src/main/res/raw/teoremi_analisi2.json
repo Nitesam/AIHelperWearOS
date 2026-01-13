@@ -1,0 +1,218 @@
+{
+    "version": "1.0",
+    "last_updated": "2026-01-13",
+    "theorems": [
+        {
+            "id": "DEF-TOPO-001",
+            "nome": "Intorno Circolare",
+            "categoria": "Teoria",
+            "tipo": "definizione",
+            "keywords": [
+                "intorno",
+                "raggio",
+                "topologia"
+            ],
+            "enunciato": "Dato $$P_0(x_0, y_0)$$ e $$r > 0$$, l'intorno circolare $$I_r(P_0)$$ è l'insieme:\n$$I_r(P_0) = \\{P \\in \\mathbb{R}^2 : d(P, P_0) < r\\}$$\n$$\\text{dove } d(P, P_0) = \\sqrt{(x-x_0)^2 + (y-y_0)^2}$$",
+            "dimostrazione": null,
+            "note": "Base per la definizione di limite."
+        },
+        {
+            "id": "TH-WEIERSTRASS",
+            "nome": "Teorema di Weierstrass",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "massimo",
+                "minimo",
+                "compatti",
+                "continuità"
+            ],
+            "enunciato": "Sia $$f$$ una funzione continua in un insieme $$A \\subseteq \\mathbb{R}^2$$.\nSe $$A$$ è **chiuso e limitato** (compatto), allora:\n$$f$$ ammette massimo e minimo assoluto in $$A$$.",
+            "dimostrazione": null,
+            "note": "Assicura l'esistenza degli estremi assoluti."
+        },
+        {
+            "id": "TH-SCHWARZ",
+            "nome": "Teorema di Schwarz",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "derivate miste",
+                "schwarz",
+                "hessiano"
+            ],
+            "enunciato": "Sia $$f$$ definita in un aperto $$A$$.\nSe le derivate miste $$f_{xy}$$ e $$f_{yx}$$ esistono in $$A$$ e sono **continue** in $$(x_0, y_0)$$, allora:\n$$f_{xy}(x_0, y_0) = f_{yx}(x_0, y_0)$$",
+            "dimostrazione": null,
+            "note": "Rende la matrice Hessiana simmetrica."
+        },
+        {
+            "id": "DEF-DIFF",
+            "nome": "Differenziabilità",
+            "categoria": "Teoria",
+            "tipo": "definizione",
+            "keywords": [
+                "differenziale",
+                "approssimazione",
+                "piano tangente"
+            ],
+            "enunciato": "$$f$$ è differenziabile in $$(x_0, y_0)$$ se esistono $$l, m \\in \\mathbb{R}$$ tali che per $$(h,k) \\to (0,0)$$: \n$$f(x_0+h, y_0+k) - f(x_0, y_0) =$$\n$$lh + mk + o(\\sqrt{h^2+k^2})$$",
+            "dimostrazione": null,
+            "note": "Implica continuità e derivabilità."
+        },
+        {
+            "id": "TH-FERMAT-2VAR",
+            "nome": "Teorema di Fermat (2 Var)",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "punti critici",
+                "gradiente",
+                "estremi relativi"
+            ],
+            "enunciato": "Se $$(x_0, y_0)$$ è un punto di estremo relativo interno al dominio e $$f$$ è derivabile in tale punto, allora:\n$$\\nabla f(x_0, y_0) = (0, 0)$$",
+            "dimostrazione": null,
+            "note": "I punti con gradiente nullo si dicono stazionari."
+        },
+        {
+            "id": "TH-INT-PARTI",
+            "nome": "Integrazione per Parti",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "parti",
+                "fattore differenziale",
+                "prodotto"
+            ],
+            "enunciato": "Siano $$f, g$$ derivabili in $$(a,b)$$.\nAllora vale la formula:\n$$\\int f(x)g'(x) dx =$$\n$$f(x)g(x) - \\int f'(x)g(x) dx$$",
+            "dimostrazione": null,
+            "note": "Si sceglie g'(x) (fattore differenziale) facile da integrare e f(x) (fattore finito) facile da derivare."
+        },
+        {
+            "id": "TH-TORRICELLI",
+            "nome": "Formula Fondamentale Calcolo",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "torricelli",
+                "barrow",
+                "integrale definito"
+            ],
+            "enunciato": "Sia $$f$$ continua e $$F$$ una sua primitiva in $$(a,b)$$.\nAllora per ogni $$a, b$$ nell'intervallo:\n$$\\int_a^b f(x) dx = F(b) - F(a)$$",
+            "dimostrazione": null,
+            "note": "Collega l'integrale definito al calcolo delle primitive."
+        },
+        {
+            "id": "TH-COND-NEC-SERIE",
+            "nome": "Condizione Necessaria Conv.",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "limite",
+                "convergenza",
+                "successione"
+            ],
+            "enunciato": "Se la serie $$\\sum a_n$$ converge, allora il termine generale tende a zero:\n$$\\lim_{n \\to \\infty} a_n = 0$$\n\nAttenzione: Non vale il viceversa (es. serie armonica).",
+            "dimostrazione": null,
+            "note": "Fondamentale per provare che una serie NON converge."
+        },
+        {
+            "id": "TH-CRIT-RAPPORTO",
+            "nome": "Criterio del Rapporto",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "termini positivi",
+                "limite",
+                "fattoriale"
+            ],
+            "enunciato": "Sia $$\\sum a_n$$ a termini positivi.\nSe esiste $$\\lim_{n \\to \\infty} \\frac{a_{n+1}}{a_n} = l$$\nAllora:\n- Se $$l < 1$$: converge\n- Se $$l > 1$$: diverge\n- Se $$l = 1$$: nulla si può dire",
+            "dimostrazione": null,
+            "note": "Utile con fattoriali ed esponenziali."
+        },
+        {
+            "id": "TH-CRIT-RADICE",
+            "nome": "Criterio della Radice",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "termini positivi",
+                "potenza n-esima",
+                "limite"
+            ],
+            "enunciato": "Sia $$\\sum a_n$$ a termini positivi.\nSe esiste $$\\lim_{n \\to \\infty} \\sqrt[n]{a_n} = l$$\nAllora:\n- Se $$l < 1$$: converge\n- Se $$l > 1$$: diverge\n- Se $$l = 1$$: nulla si può dire",
+            "dimostrazione": null,
+            "note": "Utile quando il termine generale è una potenza n-esima."
+        },
+        {
+            "id": "TH-LEIBNIZ",
+            "nome": "Criterio di Leibniz",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "segni alterni",
+                "decrescente",
+                "convergenza"
+            ],
+            "enunciato": "Sia $$\\sum (-1)^n a_n$$ una serie a segni alterni con $$a_n \\ge 0$$.\nSe valgono le due condizioni:\n1. $$a_n$$ è decrescente\n2. $$\\lim_{n \\to \\infty} a_n = 0$$\nAllora la serie converge.",
+            "dimostrazione": null,
+            "note": "Vale anche la stima dell'errore: $$|S - S_n| \\le a_{n+1}$$."
+        },
+        {
+            "id": "DEF-EDO-LIN-N",
+            "nome": "EDO Lineare Ordine n",
+            "categoria": "Teoria",
+            "tipo": "definizione",
+            "keywords": [
+                "lineare",
+                "ordine n",
+                "omogenea",
+                "completa"
+            ],
+            "enunciato": "Un'equazione differenziale lineare di ordine $$n$$ ha la forma:\n$$y^{(n)} + a_1(x)y^{(n-1)} + \\dots + a_n(x)y = f(x)$$\n\nSe $$f(x) = 0$$, l'equazione è detta **omogenea**.",
+            "dimostrazione": null,
+            "note": "La soluzione generale è somma della soluzione dell'omogenea e di una soluzione particolare."
+        },
+        {
+            "id": "TH-WRONSKIANO",
+            "nome": "Wronskiano e Indipendenza",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "wronskiano",
+                "indipendenza",
+                "determinante"
+            ],
+            "enunciato": "Siano $$y_1, \\dots, y_n$$ soluzioni dell'omogenea.\nIl loro **Wronskiano** $$W(x)$$ è il determinante della matrice delle derivate fino all'ordine $$n-1$$.\n\nSe $$W(x) \\neq 0$$, le soluzioni sono **linearmente indipendenti**.",
+            "dimostrazione": null,
+            "note": "Se sono indipendenti, formano una base per l'integrale generale."
+        },
+        {
+            "id": "TH-STRUTTURA-OMOGENEA",
+            "nome": "Integrale Generale (Omogenea)",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "integrale generale",
+                "combinazione lineare",
+                "base"
+            ],
+            "enunciato": "Se $$y_1, \\dots, y_n$$ sono $$n$$ soluzioni indipendenti dell'equazione omogenea, l'integrale generale è:\n$$y(x) = c_1 y_1(x) + \\dots + c_n y_n(x)$$\ncon $$c_i \\in \\mathbb{R}$$.",
+            "dimostrazione": null,
+            "note": "Lo spazio delle soluzioni ha dimensione n."
+        },
+        {
+            "id": "TH-COEFF-COSTANTI",
+            "nome": "Eq. Caratteristica (Coeff. Costanti)",
+            "categoria": "Teoria",
+            "tipo": "teorema",
+            "keywords": [
+                "polinomio caratteristico",
+                "radici",
+                "esponenziale"
+            ],
+            "enunciato": "Per $$y^{(n)} + a_1 y^{(n-1)} + \\dots + a_n y = 0$$ a coefficienti costanti, si risolve:\n$$\\alpha^n + a_1 \\alpha^{n-1} + \\dots + a_n = 0$$\n\nLe soluzioni dipendono dalle radici $$\\alpha$$ (reali distinte, multiple o complesse).",
+            "dimostrazione": null,
+            "note": "Radici complesse generano seni e coseni."
+        }
+    ]
+}

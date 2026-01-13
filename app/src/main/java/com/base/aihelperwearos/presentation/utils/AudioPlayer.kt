@@ -10,6 +10,13 @@ class AudioPlayer(private val context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private var isPlayingFlag = false
 
+    /**
+     * Plays the specified audio file and notifies when playback completes.
+     *
+     * @param audioFile audio file to play.
+     * @param onComplete callback invoked after playback finishes.
+     * @return `Unit` after playback starts or fails.
+     */
     fun playAudio(audioFile: File, onComplete: () -> Unit = {}) {
         try {
             stopAudio()
@@ -39,6 +46,11 @@ class AudioPlayer(private val context: Context) {
         }
     }
 
+    /**
+     * Stops current playback and releases the media player.
+     *
+     * @return `Unit` after playback is stopped.
+     */
     fun stopAudio() {
         try {
             mediaPlayer?.apply {
@@ -55,10 +67,19 @@ class AudioPlayer(private val context: Context) {
         }
     }
 
+    /**
+     * Reports whether audio is currently playing.
+     *
+     * @return `Boolean` indicating playback state.
+     */
     fun isPlaying() = isPlayingFlag
 
+    /**
+     * Releases player resources and stops any active playback.
+     *
+     * @return `Unit` after cleanup.
+     */
     fun release() {
         stopAudio()
     }
 }
-

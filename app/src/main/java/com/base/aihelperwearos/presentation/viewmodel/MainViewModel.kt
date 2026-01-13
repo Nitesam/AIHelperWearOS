@@ -9,7 +9,13 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.base.aihelperwearos.AIHelperApplication
 import com.base.aihelperwearos.R
+import com.base.aihelperwearos.data.Constants
+import com.base.aihelperwearos.data.rag.MathContextRetriever
+import com.base.aihelperwearos.data.rag.RagRepository
+import com.base.aihelperwearos.data.rag.TheoremResult
+import com.base.aihelperwearos.data.rag.models.ContentType
 import com.base.aihelperwearos.data.repository.ChatRepository
 import com.base.aihelperwearos.data.repository.ChatSession
 import com.base.aihelperwearos.data.repository.ChatMessage
@@ -52,7 +58,9 @@ data class ChatUiState(
     val pendingAudioPath: String? = null,
     val selectedLanguage: Language = Language.ITALIAN,
     val recordedAudioFile: File? = null,
-    val isRecording: Boolean = false
+    val isRecording: Boolean = false,
+    val extractedKeywords: List<String>? = null,
+    val isTheoryQuery: Boolean? = null
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -68,10 +76,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val audioPlayer = AudioPlayer(application)
     private val userPreferences = com.base.aihelperwearos.data.preferences.UserPreferences(application)
 
+    private val ragRepository: RagRepository? by lazy {
+        AIHelperApplication.getRagRepository()
+    }
+    
+    private val mathContextRetriever: MathContextRetriever? by lazy {
+        ragRepository?.let { MathContextRetriever(it) }
+    }
+
     private var recordingService: AudioRecordingService? = null
     private var serviceBound = false
 
     private val serviceConnection = object : ServiceConnection {
+        /**
+         * Handles successful binding to the recording service.
+         *
+         * @param name component name of the connected service.
+         * @param binder binder provided by the service.
+         * @return `Unit` after updating state.
+         */
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val localBinder = binder as AudioRecordingService.LocalBinder
             recordingService = localBinder.getService()
@@ -79,6 +102,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             android.util.Log.d("MainViewModel", "Service connected")
         }
 
+        /**
+         * Handles unexpected disconnection from the recording service.
+         *
+         * @param name component name of the disconnected service.
+         * @return `Unit` after clearing service state.
+         */
         override fun onServiceDisconnected(name: ComponentName?) {
             recordingService = null
             serviceBound = false
@@ -99,6 +128,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         loadUserPreferences()
     }
 
+    /**
+     * Binds to the audio recording service if not already bound.
+     *
+     * @return `Unit` after the bind request is issued.
+     */
     fun bindService() {
         if (!serviceBound) {
             val context = getApplication<Application>().applicationContext
@@ -107,6 +141,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Unbinds from the audio recording service if currently bound.
+     *
+     * @return `Unit` after unbinding or failure handling.
+     */
     fun unbindService() {
         if (serviceBound) {
             val context = getApplication<Application>().applicationContext
@@ -119,6 +158,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Loads user preferences and updates the UI state accordingly.
+     *
+     * @return `Unit` after launching the preference collection.
+     */
     private fun loadUserPreferences() {
         viewModelScope.launch {
             userPreferences.languageFlow.collect { savedLanguageCode ->
@@ -142,8 +186,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Navigates to a screen and performs cleanup when leaving chat screens.
+     *
+     * @param screen destination screen.
+     * @return `Unit` after updating UI state.
+     */
     fun navigateTo(screen: Screen) {
-        // Se stiamo uscendo dalla chat/analysis, controlla se la sessione è vuota
         val currentScreen = _uiState.value.currentScreen
         if ((currentScreen == Screen.Chat || currentScreen == Screen.Analysis) && 
             screen == Screen.Home) {
@@ -153,14 +202,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Elimina la sessione corrente se non contiene risposte dell'AI.
-     * Questo evita di intasare la cronologia con chat vuote o incomplete.
+     * Removes the current session if it contains no AI responses.
+     *
+     * @return `Unit` after scheduling cleanup work.
      */
     private fun cleanupEmptySession() {
         val sessionId = _uiState.value.currentSessionId ?: return
         val messages = _uiState.value.chatMessages
         
-        // Controlla se c'è almeno una risposta dell'AI
         val hasAiResponse = messages.any { it.role == "assistant" }
         
         if (!hasAiResponse) {
@@ -176,10 +225,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Updates the selected model in UI state.
+     *
+     * @param modelId model identifier to select.
+     * @return `Unit` after updating state.
+     */
     fun selectModel(modelId: String) {
         _uiState.update { it.copy(selectedModel = modelId) }
     }
 
+    /**
+     * Creates a new chat session and navigates to the chat screen.
+     *
+     * @param title title used for the new session.
+     * @param isAnalysisMode whether to start in analysis mode.
+     * @return `Unit` after launching session creation.
+     */
     fun startNewChat(title: String, isAnalysisMode: Boolean = false) {
         viewModelScope.launch {
             try {
@@ -222,6 +284,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Loads a stored session and updates UI state.
+     *
+     * @param sessionId session identifier to load.
+     * @return `Unit` after launching load.
+     */
     fun loadSession(sessionId: Long) {
         viewModelScope.launch {
             try {
@@ -245,6 +313,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Observes messages for a session and updates UI state.
+     *
+     * @param sessionId session identifier to observe.
+     * @return `Unit` after launching collection.
+     */
     private fun observeMessages(sessionId: Long) {
         viewModelScope.launch {
             chatRepository.getMessagesForSession(sessionId).collect { messages ->
@@ -253,6 +327,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Sends a user message and handles AI response flow.
+     *
+     * @param userMessage text message content.
+     * @param audioPath optional audio path tied to the message.
+     * @return `Unit` after launching send workflow.
+     */
     fun sendMessage(userMessage: String, audioPath: String? = null) {
         android.util.Log.d("MainViewModel", "sendMessage - CHIAMATO con messaggio: $userMessage")
 
@@ -291,13 +372,103 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 val currentLanguage = _uiState.value.selectedLanguage.code
+                
+                val extractedKeywords = _uiState.value.extractedKeywords
+                val isTheoryFromTranscription = _uiState.value.isTheoryQuery
+                
+                android.util.Log.d("MainViewModel", "📊 RAG Context - Keywords available: ${extractedKeywords != null}")
+                if (extractedKeywords != null) {
+                    android.util.Log.d("MainViewModel", "📊 RAG - Extracted keywords (${extractedKeywords.size}): ${extractedKeywords.joinToString(", ")}")
+                    android.util.Log.d("MainViewModel", "📊 RAG - Is theory query from transcription: $isTheoryFromTranscription")
+                }
+                
+                if (_uiState.value.isAnalysisMode) {
+                    android.util.Log.d("MainViewModel", "🔍 RAG: Analyzing query type")
+                    
+                    val queryType = if (isTheoryFromTranscription == true) {
+                        android.util.Log.d("MainViewModel", "🔍 RAG: Using transcription classification → THEOREM")
+                        ContentType.THEOREM
+                    } else {
+                        val classified = ragRepository?.classifyQueryType(userMessage) ?: ContentType.UNKNOWN
+                        android.util.Log.d("MainViewModel", "🔍 RAG: Text-based classification → $classified")
+                        classified
+                    }
+                    
+                    android.util.Log.d("MainViewModel", "🔍 RAG: Final query type = $queryType")
+                    
+                    if (queryType == ContentType.THEOREM) {
+                        android.util.Log.d("MainViewModel", "📚 RAG: THEOREM query detected - attempting direct lookup")
+                        
+                        val enhancedQuery = if (!extractedKeywords.isNullOrEmpty()) {
+                            val keywordsText = extractedKeywords.joinToString(" ")
+                            android.util.Log.d("MainViewModel", "📚 RAG: Enhancing query with keywords: $keywordsText")
+                            "$userMessage $keywordsText"
+                        } else {
+                            userMessage
+                        }
+                        
+                        android.util.Log.d("MainViewModel", "📚 RAG: Enhanced query: '$enhancedQuery'")
+                        val theoremResult = ragRepository?.findTheorem(enhancedQuery)
+                        
+                        when (theoremResult) {
+                            is TheoremResult.Found -> {
+                                android.util.Log.d("MainViewModel", "✅ RAG: Theorem FOUND directly → '${theoremResult.theorem.nome}'")
+                                android.util.Log.d("MainViewModel", "💰 RAG: Skipping LLM call - returning pre-formatted content")
+                                android.util.Log.d("MainViewModel", "📄 RAG: Content length: ${theoremResult.formattedContent.length} chars")
+                                
+                                chatRepository.addMessage(
+                                    sessionId = sessionId,
+                                    role = "assistant",
+                                    content = theoremResult.formattedContent
+                                )
+                                _uiState.update { 
+                                    it.copy(
+                                        isLoading = false,
+                                        extractedKeywords = null,
+                                        isTheoryQuery = null
+                                    ) 
+                                }
+                                android.util.Log.d("MainViewModel", "✅ RAG: Theorem response saved - NO LLM COST!")
+                                return@launch
+                            }
+                            is TheoremResult.NotFound -> {
+                                android.util.Log.d("MainViewModel", "⚠️ RAG: Theorem NOT in database: ${theoremResult.reason}")
+                                android.util.Log.d("MainViewModel", "🔄 RAG: Falling back to LLM for answer")
+                            }
+                            null -> {
+                                android.util.Log.d("MainViewModel", "⚠️ RAG: Repository not available")
+                            }
+                        }
+                    } else {
+                        android.util.Log.d("MainViewModel", "📝 RAG: EXERCISE query - will use RAG context + LLM")
+                    }
+                }
+                
+                var ragContext: String? = null
+                if (_uiState.value.isAnalysisMode) {
+                    android.util.Log.d("MainViewModel", "sendMessage - RAG: Retrieving context for Analysis Mode")
+                    ragContext = try {
+                        mathContextRetriever?.retrieveContext(userMessage)
+                    } catch (e: Exception) {
+                        android.util.Log.w("MainViewModel", "sendMessage - RAG failed, using base prompt", e)
+                        null
+                    }
+                    
+                    if (ragContext != null) {
+                        android.util.Log.d("MainViewModel", "sendMessage - RAG: Found relevant context (${ragContext.length} chars)")
+                    } else {
+                        android.util.Log.d("MainViewModel", "sendMessage - RAG: No relevant context found, using base prompt")
+                    }
+                }
+                
                 android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}, lingua: $currentLanguage")
 
                 val result = openRouterService.sendMessage(
                     modelId = _uiState.value.selectedModel,
                     messages = messages,
                     isAnalysisMode = _uiState.value.isAnalysisMode,
-                    languageCode = currentLanguage
+                    languageCode = currentLanguage,
+                    ragContext = ragContext
                 )
 
                 android.util.Log.d("MainViewModel", "sendMessage - API risposta ricevuta")
@@ -310,14 +481,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             role = "assistant",
                             content = response
                         )
-                        _uiState.update { it.copy(isLoading = false) }
-                        android.util.Log.d("MainViewModel", "sendMessage - Messaggio AI salvato")
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                extractedKeywords = null,
+                                isTheoryQuery = null
+                            ) 
+                        }
+                        android.util.Log.d("MainViewModel", "sendMessage - Messaggio AI salvato, keywords cleared")
                     },
                     onFailure = { error ->
                         android.util.Log.e("MainViewModel", "sendMessage - ERRORE API: ${error.message}", error)
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
+                                extractedKeywords = null,
+                                isTheoryQuery = null,
                                 errorMessage = getApplication<Application>().getString(R.string.error_api, error.message)
                             )
                         }
@@ -329,6 +508,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
+                        extractedKeywords = null,
+                        isTheoryQuery = null,
                         errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message)
                     )
                 }
@@ -336,6 +517,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Starts audio recording via the bound service.
+     *
+     * @return `Unit` after initiating recording.
+     */
     fun startRecording() {
         if (!serviceBound) {
             bindService()
@@ -349,6 +535,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Performs the actual recording start once the service is bound.
+     *
+     * @return `Unit` after requesting recording start.
+     */
     private fun startRecordingInternal() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRecording = true) }
@@ -363,6 +554,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Stops audio recording and sends the recorded audio for processing.
+     *
+     * @return `Unit` after initiating stop workflow.
+     */
     fun stopRecording() {
         viewModelScope.launch {
             recordingService?.stopRecording()
@@ -387,6 +583,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Sends an audio file for transcription and updates UI state.
+     *
+     * @param audioFile audio file to process.
+     * @return `Unit` after launching transcription flow.
+     */
     fun sendAudioMessage(audioFile: File) {
         android.util.Log.d("MainViewModel", "sendAudioMessage - CHIAMATO: ${audioFile.absolutePath}")
 
@@ -407,24 +609,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val audioPath = audioFile.absolutePath
                 val currentLanguage = _uiState.value.selectedLanguage.code
 
-                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, languange: $currentLanguage")
+                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, language: $currentLanguage")
+                android.util.Log.d("MainViewModel", "📡 Starting transcription request...")
+                
                 val transcriptionResult = openRouterService.transcribeAudioWithGemini(
                     audioFile = audioFile,
                     languageCode = currentLanguage
                 )
 
                 transcriptionResult.fold(
-                    onSuccess = { transcription ->
-                        android.util.Log.d("MainViewModel", "transcription received: $transcription")
+                    onSuccess = { result ->
+                        android.util.Log.d("MainViewModel", "✅ Transcription received successfully")
+                        android.util.Log.d("MainViewModel", "📝 Raw transcription: '${result.transcription}'")
+                        android.util.Log.d("MainViewModel", "📌 Extracted keywords (${result.keywords.size}): ${result.keywords.joinToString(", ")}")
+                        android.util.Log.d("MainViewModel", "🔍 Is theory query: ${result.isTheoryQuery}")
+                        android.util.Log.d("MainViewModel", "👁️ Display text: '${result.displayText}'")
+                        
+                        android.util.Log.d("MainViewModel", "💾 Storing transcription result in UI state")
 
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                pendingTranscription = transcription,
+                                pendingTranscription = result.displayText,
                                 pendingAudioPath = audioPath,
+                                extractedKeywords = result.keywords,
+                                isTheoryQuery = result.isTheoryQuery,
                                 errorMessage = null
                             )
                         }
+                        
+                        android.util.Log.d("MainViewModel", "✅ UI state updated with transcription and keywords")
                     },
                     onFailure = { error ->
                         android.util.Log.e("MainViewModel", "sendAudioMessage - ERROR API: ${error.message}", error)
@@ -451,6 +665,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Synthesizes text to speech locally and stores the result.
+     *
+     * @param text text content to synthesize.
+     * @return `Unit` after launching synthesis.
+     */
     fun synthesizeTextLocally(text: String) {
         android.util.Log.d("MainViewModel", "synthesizeTextLocally - CHIAMATO: $text")
 
@@ -502,6 +722,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Deletes a chat session from storage.
+     *
+     * @param session session to delete.
+     * @return `Unit` after deletion attempt.
+     */
     fun deleteSession(session: ChatSession) {
         viewModelScope.launch {
             try {
@@ -514,10 +740,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Clears the current error message in UI state.
+     *
+     * @return `Unit` after updating state.
+     */
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    /**
+     * Plays an audio file at the given path.
+     *
+     * @param audioPath path to the audio file.
+     * @return `Unit` after playback starts or fails.
+     */
     fun playAudio(audioPath: String) {
         try {
             val audioFile = File(audioPath)
@@ -534,33 +771,66 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Stops audio playback if active.
+     *
+     * @return `Unit` after stopping playback.
+     */
     fun stopAudio() {
         audioPlayer.stopAudio()
     }
 
+    /**
+     * Confirms the pending transcription and sends it as a message.
+     *
+     * @return `Unit` after confirmation handling.
+     */
     fun confirmTranscription() {
         val transcription = _uiState.value.pendingTranscription ?: return
         val audioPath = _uiState.value.pendingAudioPath
 
+        android.util.Log.d("MainViewModel", "✅ User confirmed transcription")
+        android.util.Log.d("MainViewModel", "📝 Transcription: '$transcription'")
+        android.util.Log.d("MainViewModel", "📌 Keywords preserved: ${_uiState.value.extractedKeywords?.joinToString(", ") ?: "none"}")
+        
         _uiState.update { it.copy(pendingTranscription = null, pendingAudioPath = null) }
 
         sendMessage(transcription, audioPath)
     }
 
+    /**
+     * Cancels the pending transcription and clears related state.
+     *
+     * @return `Unit` after clearing state.
+     */
     fun cancelTranscription() {
+        android.util.Log.d("MainViewModel", "❌ User cancelled transcription - clearing keywords")
         _uiState.update {
             it.copy(
                 pendingTranscription = null,
                 pendingAudioPath = null,
+                extractedKeywords = null,
+                isTheoryQuery = null,
                 errorMessage = null
             )
         }
     }
 
+    /**
+     * Updates the pending transcription text.
+     *
+     * @param newText updated transcription text.
+     * @return `Unit` after updating state.
+     */
     fun updateTranscription(newText: String) {
         _uiState.update { it.copy(pendingTranscription = newText) }
     }
 
+    /**
+     * Increases the chat font size within allowed bounds.
+     *
+     * @return `Unit` after updating state.
+     */
     fun increaseFontSize() {
         _uiState.update { state ->
             val newSize = (state.fontSize + 1).coerceAtMost(16)
@@ -569,6 +839,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Decreases the chat font size within allowed bounds.
+     *
+     * @return `Unit` after updating state.
+     */
     fun decreaseFontSize() {
         _uiState.update { state ->
             val newSize = (state.fontSize - 1).coerceAtLeast(8)
@@ -577,6 +852,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Saves the selected language to user preferences.
+     *
+     * @param language language selection.
+     * @return `Unit` after persisting the preference.
+     */
     fun setLanguage(language: Language) {
         android.util.Log.d("MainViewModel", "User changed language to: ${language.displayName} (${language.code})")
         viewModelScope.launch {
@@ -584,6 +865,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Persists a language code and updates UI state.
+     *
+     * @param languageCode language code to save.
+     * @return `Unit` after saving the preference.
+     */
     fun saveLanguagePreference(languageCode: String) {
         android.util.Log.d("MainViewModel", "Saving language preference: $languageCode")
         viewModelScope.launch {
@@ -598,6 +885,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
+    /**
+     * Releases resources when the ViewModel is cleared.
+     *
+     * @return `Unit` after cleanup.
+     */
     override fun onCleared() {
         super.onCleared()
         ttsHelper.release()

@@ -12,6 +12,11 @@ class AudioRecorderHelper(private val context: Context) {
     private var audioFile: File? = null
     private var isRecording = false
 
+    /**
+     * Starts a microphone recording and creates a temporary audio file.
+     *
+     * @return recorded audio `File`.
+     */
     fun startRecording(): File {
         try {
             val timestamp = System.currentTimeMillis()
@@ -46,6 +51,11 @@ class AudioRecorderHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Stops the ongoing recording and returns the saved audio file.
+     *
+     * @return recorded audio `File`.
+     */
     fun stopRecording(): File {
         try {
             if (!isRecording) {
@@ -75,6 +85,11 @@ class AudioRecorderHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Cancels the current recording and removes temporary files.
+     *
+     * @return `Unit` after cleanup.
+     */
     fun cancelRecording() {
         try {
             if (isRecording) {
@@ -90,6 +105,11 @@ class AudioRecorderHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Releases recorder resources and clears temporary state.
+     *
+     * @return `Unit` after cleanup completes.
+     */
     private fun cleanup() {
         mediaRecorder?.release()
         mediaRecorder = null
@@ -98,6 +118,10 @@ class AudioRecorderHelper(private val context: Context) {
         isRecording = false
     }
 
+    /**
+     * Reports whether a recording session is active.
+     *
+     * @return `Boolean` indicating recording state.
+     */
     fun isRecording() = isRecording
 }
-

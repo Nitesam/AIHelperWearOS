@@ -29,8 +29,27 @@ class OpenRouterService(
 ) {
     private val userPreferences = UserPreferences(context)
     private val trustAllCertificates = object : X509TrustManager {
+        /**
+         * Accepts any client certificate without validation.
+         *
+         * @param chain certificate chain presented by the client.
+         * @param authType authentication type used.
+         * @return `Unit` after accepting the certificate.
+         */
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+        /**
+         * Accepts any server certificate without validation.
+         *
+         * @param chain certificate chain presented by the server.
+         * @param authType authentication type used.
+         * @return `Unit` after accepting the certificate.
+         */
         override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+        /**
+         * Returns the list of accepted issuers.
+         *
+         * @return empty `Array<X509Certificate>`.
+         */
         override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
     }
 
@@ -56,6 +75,12 @@ class OpenRouterService(
 
         install(Logging) {
             logger = object : Logger {
+                /**
+                 * Logs an HTTP client message using Android logging.
+                 *
+                 * @param message log message to output.
+                 * @return `Unit` after logging.
+                 */
                 override fun log(message: String) {
                     Log.d("OpenRouter", message)
                 }
@@ -80,20 +105,33 @@ class OpenRouterService(
         }
     }
 
+    /**
+     * Sends chat messages to the OpenRouter API.
+     *
+     * @param modelId model identifier to use.
+     * @param messages conversation messages to send.
+     * @param isAnalysisMode whether analysis-mode prompting is enabled.
+     * @param languageCode language code for prompts.
+     * @param ragContext optional RAG context to enrich prompts.
+     * @return `Result<String>` with the assistant response or error.
+     */
     suspend fun sendMessage(
         modelId: String,
         messages: List<Message>,
         isAnalysisMode: Boolean = false,
-        languageCode: String
+        languageCode: String,
+        ragContext: String? = null
     ): Result<String> {
         return try {
             Log.d("OpenRouter", "=== SEND MESSAGE START ===")
             Log.d("OpenRouter", "Language parameter received: '$languageCode'")
             Log.d("OpenRouter", "sendMessage - Using language: $languageCode, isAnalysisMode: $isAnalysisMode")
+            Log.d("OpenRouter", "sendMessage - RAG context provided: ${ragContext != null}")
 
             val allMessages = if (isAnalysisMode) {
-                val mathPrompt = com.base.aihelperwearos.data.Constants.getMathPrompt(languageCode)
+                val mathPrompt = com.base.aihelperwearos.data.Constants.getEnrichedMathPrompt(languageCode, ragContext)
                 Log.d("OpenRouter", "sendMessage - Math prompt language: ${if (languageCode == "en") "ENGLISH" else "ITALIANO"}")
+                Log.d("OpenRouter", "sendMessage - Prompt length: ${mathPrompt.length} chars (RAG: ${ragContext?.length ?: 0} chars)")
                 listOf(
                     Message(
                         role = "system",
@@ -126,6 +164,15 @@ class OpenRouterService(
         }
     }
 
+    /**
+     * Transcribes audio and solves the math problem using the selected model.
+     *
+     * @param audioFile audio file to transcribe.
+     * @param mathModel model identifier used for solving.
+     * @param previousMessages previous chat context.
+     * @param languageCode language code for prompts.
+     * @return `Result<MathSolution>` with transcription and solution.
+     */
     suspend fun solveAudioMathProblem(
         audioFile: File,
         mathModel: String = "anthropic/claude-4.5-sonnet",
@@ -137,15 +184,17 @@ class OpenRouterService(
             Log.d("OpenRouter", "Audio: ${audioFile.absolutePath}, size: ${audioFile.length()} bytes")
 
             Log.d("OpenRouter", "STEP 1: Transcribing with Whisper...")
-            val transcription = transcribeAudioWithGemini(audioFile, languageCode).getOrElse { error ->
+            val transcriptionResult = transcribeAudioWithGemini(audioFile, languageCode).getOrElse { error ->
                 return Result.failure(Exception("Error during Transcription: ${error.message}"))
             }
 
-            if (transcription.isBlank()) {
+            if (transcriptionResult.transcription.isBlank()) {
                 return Result.failure(Exception("Empty transcription, retry."))
             }
 
+            val transcription = transcriptionResult.displayText
             Log.d("OpenRouter", "Transcription: $transcription")
+            Log.d("OpenRouter", "Keywords: ${transcriptionResult.keywords.joinToString(", ")}")
 
             Log.d("OpenRouter", "STEP 2: Solving with $mathModel...")
             val solution = solveMathProblem(transcription, mathModel, previousMessages, languageCode).getOrElse { error ->
@@ -169,10 +218,17 @@ class OpenRouterService(
         }
     }
 
-    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String): Result<String> {
+    /**
+     * Transcribes audio using the Gemini model with keyword extraction.
+     *
+     * @param audioFile audio file to transcribe.
+     * @param languageCode language code for transcription prompt.
+     * @return `Result<TranscriptionResult>` with parsed transcript data.
+     */
+    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String): Result<com.base.aihelperwearos.data.models.TranscriptionResult> {
         return try {
             Log.d("OpenRouter", "=== TRANSCRIPTION START ===")
-            Log.d("OpenRouter", "Transcribing with Gemini 2.5 Flash (audio support)")
+            Log.d("OpenRouter", "Transcribing with Gemini 3.0 Flash (audio support)")
             Log.d("OpenRouter", "Language parameter received: '$languageCode'")
             Log.d("OpenRouter", "Transcription language: ${if (languageCode == "en") "ENGLISH" else "ITALIANO"} (code: $languageCode)")
 
@@ -186,6 +242,8 @@ class OpenRouterService(
             Log.d("OpenRouter", "Audio size: ${audioBytes.size} bytes → Base64: ${audioBase64.length} chars")
 
             val transcriptionPrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode)
+            Log.d("OpenRouter", "📋 Transcription prompt length: ${transcriptionPrompt.length} chars")
+            Log.d("OpenRouter", "📋 Prompt includes keyword extraction: ${transcriptionPrompt.contains("KEYWORDS")}")
 
             val requestBody = buildString {
                 append("{")
@@ -212,14 +270,15 @@ class OpenRouterService(
                 append("}")
             }
 
-            Log.d("OpenRouter", "Sending to Gemini 2.5 Flash for transcription...")
+            Log.d("OpenRouter", "🚀 Sending to Gemini 3.0 Flash for transcription...")
 
             val response: String = client.post("chat/completions") {
                 setBody(requestBody)
                 header("Content-Type", "application/json")
             }.body()
 
-            Log.d("OpenRouter", "Transcription response: ${response.take(200)}")
+            Log.d("OpenRouter", "📥 Transcription raw response received (${response.length} chars)")
+            Log.d("OpenRouter", "📥 Response preview: ${response.take(300)}")
 
             val jsonResponse = Json.parseToJsonElement(response) as kotlinx.serialization.json.JsonObject
 
@@ -227,22 +286,32 @@ class OpenRouterService(
             if (error != null) {
                 val errorMsg = (error["message"] as? kotlinx.serialization.json.JsonPrimitive)?.content
                     ?: "Errore sconosciuto"
-                Log.e("OpenRouter", "API Error: $errorMsg")
+                Log.e("OpenRouter", "❌ API Error: $errorMsg")
                 return Result.failure(Exception("Errore API: $errorMsg"))
             }
 
             val choices = jsonResponse["choices"] as? kotlinx.serialization.json.JsonArray
             val choice = choices?.firstOrNull() as? kotlinx.serialization.json.JsonObject
             val message = choice?.get("message") as? kotlinx.serialization.json.JsonObject
-            val text = (message?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content
+            val rawText = (message?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content
 
-            if (text.isNullOrBlank()) {
-                Log.e("OpenRouter", "Empty transcription from Gemini")
+            if (rawText.isNullOrBlank()) {
+                Log.e("OpenRouter", "❌ Empty transcription from Gemini")
                 return Result.failure(Exception("Trascrizione vuota - riprova parlando più chiaramente"))
             }
 
-            Log.d("OpenRouter", "✓ Transcription SUCCESS: $text")
-            Result.success(text.trim())
+            Log.d("OpenRouter", "📝 Raw transcription text received: $rawText")
+            Log.d("OpenRouter", "🔍 Starting keyword extraction...")
+            
+            val result = parseTranscriptionWithKeywords(rawText, languageCode)
+            
+            Log.d("OpenRouter", "✅ Transcription SUCCESS")
+            Log.d("OpenRouter", "📌 Keywords extracted: ${result.keywords.joinToString(", ")}")
+            Log.d("OpenRouter", "📌 Theory query: ${result.isTheoryQuery}")
+            Log.d("OpenRouter", "📌 Display text: ${result.displayText}")
+            Log.d("OpenRouter", "=== TRANSCRIPTION END ===")
+            
+            Result.success(result)
 
         } catch (e: Exception) {
             Log.e("OpenRouter", "Audio transcription failed", e)
@@ -257,6 +326,15 @@ class OpenRouterService(
         }
     }
 
+    /**
+     * Sends a math problem to the model and returns the solution text.
+     *
+     * @param problem problem statement text.
+     * @param model model identifier to use.
+     * @param previousMessages prior chat context.
+     * @param languageCode language code for prompts.
+     * @return `Result<String>` with the solution or error.
+     */
     private suspend fun solveMathProblem(
         problem: String,
         model: String,
@@ -299,22 +377,147 @@ class OpenRouterService(
         }
     }
 
+    /**
+     * Sends an audio message for transcription or full analysis pipeline.
+     *
+     * @param audioFile audio file to process.
+     * @param modelId model identifier used for analysis mode.
+     * @param previousMessages prior chat context.
+     * @param isAnalysisMode whether to solve the math problem.
+     * @param languageCode language code for prompts.
+     * @return `Result<TranscriptionResult>` with transcription output.
+     */
     suspend fun sendAudioMessage(
         audioFile: File,
         modelId: String,
         previousMessages: List<Message>,
         isAnalysisMode: Boolean = false,
         languageCode: String
-    ): Result<String> {
+    ): Result<com.base.aihelperwearos.data.models.TranscriptionResult> {
         return if (isAnalysisMode) {
-            solveAudioMathProblem(audioFile, modelId, previousMessages, languageCode).map { it.solution }
+            solveAudioMathProblem(audioFile, modelId, previousMessages, languageCode).map { 
+                com.base.aihelperwearos.data.models.TranscriptionResult(
+                    transcription = it.solution,
+                    keywords = emptyList(),
+                    displayText = it.solution
+                )
+            }
         } else {
             transcribeAudioWithGemini(audioFile, languageCode)
         }
     }
 
+    /**
+     * Parses a transcription response and extracts keywords.
+     *
+     * @param rawText raw response content from the model.
+     * @param languageCode language code to guide fallback extraction.
+     * @return `TranscriptionResult` with transcription and keywords.
+     */
+    private fun parseTranscriptionWithKeywords(rawText: String, languageCode: String): com.base.aihelperwearos.data.models.TranscriptionResult {
+        Log.d("OpenRouter", "🔍 parseTranscriptionWithKeywords - START")
+        Log.d("OpenRouter", "🔍 Input text length: ${rawText.length} chars")
+        Log.d("OpenRouter", "🔍 Input text: $rawText")
+        
+        val keywordPattern = Regex("""\[KEYWORDS?:\s*([^\]]+)\]""", RegexOption.IGNORE_CASE)
+        val transcriptionPattern = Regex("""\[(TRASCRIZIONE|TRANSCRIPTION):\s*([^\]]+)\]""", RegexOption.IGNORE_CASE)
+        
+        val keywordMatch = keywordPattern.find(rawText)
+        val transcriptionMatch = transcriptionPattern.find(rawText)
+        
+        Log.d("OpenRouter", "🔍 Keyword match found: ${keywordMatch != null}")
+        Log.d("OpenRouter", "🔍 Transcription match found: ${transcriptionMatch != null}")
+        
+        val keywords = if (keywordMatch != null) {
+            val keywordString = keywordMatch.groupValues[1].trim()
+            Log.d("OpenRouter", "🔍 Raw keyword string: '$keywordString'")
+            val parsedKeywords = keywordString.split(",")
+                .map { it.trim().lowercase() }
+                .filter { it.isNotEmpty() }
+            Log.d("OpenRouter", "🔍 Parsed ${parsedKeywords.size} keywords: ${parsedKeywords.joinToString(", ")}")
+            parsedKeywords
+        } else {
+            Log.w("OpenRouter", "⚠️ No keywords found in response - using fallback")
+            extractFallbackKeywords(rawText, languageCode)
+        }
+        
+        val transcription = if (transcriptionMatch != null) {
+            val extracted = transcriptionMatch.groupValues[2].trim()
+            Log.d("OpenRouter", "🔍 Extracted transcription: '$extracted'")
+            extracted
+        } else {
+            Log.w("OpenRouter", "⚠️ No transcription marker found - using cleaned raw text")
+            rawText.replace(keywordPattern, "").trim()
+        }
+        
+        val isTheory = keywords.firstOrNull() in listOf("teoria", "theory", "teorema", "theorem", "definizione", "definition")
+        Log.d("OpenRouter", "🔍 Is theory query: $isTheory (first keyword: ${keywords.firstOrNull()})")
+        
+        val result = com.base.aihelperwearos.data.models.TranscriptionResult(
+            transcription = transcription,
+            keywords = keywords,
+            displayText = transcription,
+            isTheoryQuery = isTheory
+        )
+        
+        Log.d("OpenRouter", "🔍 parseTranscriptionWithKeywords - END")
+        return result
+    }
+    
+    /**
+     * Extracts fallback keywords when the model response lacks markers.
+     *
+     * @param text raw transcription text.
+     * @param languageCode language code for keyword labeling.
+     * @return `List<String>` of extracted keywords.
+     */
+    private fun extractFallbackKeywords(text: String, languageCode: String): List<String> {
+        Log.d("OpenRouter", "🔍 extractFallbackKeywords - attempting pattern detection")
+        val lowerText = text.lowercase()
+        val keywords = mutableListOf<String>()
+        
+        val theoryIndicators = listOf("enuncia", "definizione", "cos'è", "cosa è", "teorema", "lemma", "corollario", "define", "state", "what is")
+        val exerciseIndicators = listOf("calcola", "risolvi", "trova", "determina", "compute", "calculate", "solve", "find")
+        
+        val hasTheory = theoryIndicators.any { lowerText.contains(it) }
+        val hasExercise = exerciseIndicators.any { lowerText.contains(it) }
+        
+        if (hasTheory) {
+            keywords.add(if (languageCode == "en") "theory" else "teoria")
+        } else if (hasExercise) {
+            keywords.add(if (languageCode == "en") "exercise" else "esercizio")
+        }
+        
+        val topics = mapOf(
+            "integrale" to "integrale",
+            "integral" to "integral",
+            "derivata" to "derivata",
+            "derivative" to "derivative",
+            "limite" to "limite",
+            "limit" to "limit",
+            "gauss" to "gauss",
+            "stokes" to "stokes",
+            "green" to "green",
+            "equazione" to "equazione",
+            "equation" to "equation"
+        )
+        
+        topics.forEach { (pattern, keyword) ->
+            if (lowerText.contains(pattern)) {
+                keywords.add(keyword)
+            }
+        }
+        
+        Log.d("OpenRouter", "🔍 Fallback extracted ${keywords.size} keywords: ${keywords.joinToString(", ")}")
+        return keywords.take(5)
+    }
+
+    /**
+     * Closes the underlying HTTP client.
+     *
+     * @return `Unit` after the client is closed.
+     */
     fun close() {
         client.close()
     }
 }
-
