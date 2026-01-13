@@ -68,29 +68,20 @@ object LatexParser {
             .replace("  ", " ")
             .replace("\n", " ")
 
-        val encoded = URLEncoder.encode(cleanLatex, "UTF-8")
+        // Aggiungi comando per aumentare la dimensione del font LaTeX
+        val sizedLatex = if (isDisplayMode) {
+            "\\large $cleanLatex"  // Più grande per formule display
+        } else {
+            cleanLatex
+        }
+
+        // URL encode per i.upmath.me
+        val encoded = URLEncoder.encode(sizedLatex, "UTF-8")
             .replace("+", "%20")
-            .replace("%28", "(")
-            .replace("%29", ")")
-            .replace("%5C", "\\")
 
-        val dpi = when {
-            isDisplayMode -> 200
-            textSizeSp > 16f -> 160
-            else -> 140
-        }
-
-        val size = when {
-            isDisplayMode -> "\\LARGE"
-            textSizeSp > 16f -> "\\large"
-            else -> "\\normalsize"
-        }
-
-        val url = "https://latex.codecogs.com/png.image?" +
-                "\\dpi{$dpi}" +
-                "\\bg{white}" +
-                "$size%20" +
-                encoded
+        // Usa i.upmath.me con SVG convertito in PNG ad alta risoluzione
+        // Aggiungi scala 2x per maggiore nitidezza
+        val url = "https://i.upmath.me/png/$encoded"
 
         Log.d("LatexParser", "URL: $url")
         return url

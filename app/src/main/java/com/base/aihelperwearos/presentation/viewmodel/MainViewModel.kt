@@ -143,7 +143,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun navigateTo(screen: Screen) {
+        // Se stiamo uscendo dalla chat/analysis, controlla se la sessione è vuota
+        val currentScreen = _uiState.value.currentScreen
+        if ((currentScreen == Screen.Chat || currentScreen == Screen.Analysis) && 
+            screen == Screen.Home) {
+            cleanupEmptySession()
+        }
         _uiState.update { it.copy(currentScreen = screen, errorMessage = null) }
+    }
+
+    /**
+     * Elimina la sessione corrente se non contiene risposte dell'AI.
+     * Questo evita di intasare la cronologia con chat vuote o incomplete.
+     */
+    private fun cleanupEmptySession() {
+        val sessionId = _uiState.value.currentSessionId ?: return
+        val messages = _uiState.value.chatMessages
+        
+        // Controlla se c'è almeno una risposta dell'AI
+        val hasAiResponse = messages.any { it.role == "assistant" }
+        
+        if (!hasAiResponse) {
+            android.util.Log.d("MainViewModel", "Cleaning up empty session $sessionId - no AI responses")
+            viewModelScope.launch {
+                try {
+                    chatRepository.deleteSession(sessionId)
+                    android.util.Log.d("MainViewModel", "Empty session $sessionId deleted successfully")
+                } catch (e: Exception) {
+                    android.util.Log.e("MainViewModel", "Error deleting empty session", e)
+                }
+            }
+        }
     }
 
     fun selectModel(modelId: String) {

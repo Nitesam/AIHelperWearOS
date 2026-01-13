@@ -336,6 +336,24 @@ fun ChatScreen(
     val context = LocalContext.current
     var showTtsDialog by remember { mutableStateOf(false) }
     var pendingText by remember { mutableStateOf("") }
+    
+    val listState = rememberScalingLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Autoscroll quando cambiano i messaggi o appare la trascrizione
+    LaunchedEffect(uiState.chatMessages.size, uiState.pendingTranscription) {
+        if (uiState.chatMessages.isNotEmpty() || uiState.pendingTranscription != null) {
+            coroutineScope.launch {
+                // Scrolla all'ultimo elemento
+                val targetIndex = if (uiState.pendingTranscription != null) {
+                    uiState.chatMessages.size + 3 // trascrizione è dopo i messaggi
+                } else {
+                    uiState.chatMessages.size
+                }
+                listState.animateScrollToItem(targetIndex.coerceAtLeast(0))
+            }
+        }
+    }
 
     if (uiState.isRecording) {
         KeepScreenOn()
@@ -375,6 +393,7 @@ fun ChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 8.dp),
+            state = listState,
             horizontalAlignment = Alignment.Start
     ) {
         item { Spacer(modifier = Modifier.height(40.dp)) }
@@ -556,44 +575,7 @@ fun ChatScreen(
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            item {
-                val editText = stringResource(R.string.edit_transcription)
-                Row(
-                    modifier = Modifier.fillMaxWidth(0.95f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Button(
-                        onClick = onCancelTranscription,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = MaterialTheme.colors.error
-                        )
-                    ) {
-                        Text(stringResource(R.string.cancel), style = MaterialTheme.typography.title3)
-                    }
-
-                    Button(
-                        onClick = {
-                            val intent = RemoteInputHelper.createRemoteInputIntent(editText)
-                            launcher.launch(intent)
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.secondaryButtonColors()
-                    ) {
-                        Text(stringResource(R.string.edit), style = MaterialTheme.typography.title3)
-                    }
-
-                    Button(
-                        onClick = onConfirmTranscription,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.primaryButtonColors()
-                    ) {
-                        Text(stringResource(R.string.confirm), style = MaterialTheme.typography.title3)
-                    }
-                }
-            }
+            item { Spacer(modifier = Modifier.height(60.dp)) }
         }
     }
         Row(
@@ -619,6 +601,35 @@ fun ChatScreen(
                 modifier = Modifier.weight(1f).padding(start = 8.dp)
             )
         }
+
+        // Bottoni di conferma trascrizione fissi a sinistra
+        uiState.pendingTranscription?.let {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = onConfirmTranscription,
+                    modifier = Modifier.size(36.dp),
+                    colors = ButtonDefaults.primaryButtonColors()
+                ) {
+                    Text("✓", style = MaterialTheme.typography.caption1)
+                }
+
+                Button(
+                    onClick = onCancelTranscription,
+                    modifier = Modifier.size(36.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.error
+                    )
+                ) {
+                    Text("✕", style = MaterialTheme.typography.caption1)
+                }
+            }
+        }
     }
 }
 
@@ -638,6 +649,23 @@ fun AnalysisScreen(
 ) {
     val context = LocalContext.current
     val microphonePermissionDenied = stringResource(R.string.microphone_permission_denied)
+    
+    val listState = rememberScalingLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Autoscroll quando cambiano i messaggi o appare la trascrizione
+    LaunchedEffect(uiState.chatMessages.size, uiState.pendingTranscription) {
+        if (uiState.chatMessages.isNotEmpty() || uiState.pendingTranscription != null) {
+            coroutineScope.launch {
+                val targetIndex = if (uiState.pendingTranscription != null) {
+                    uiState.chatMessages.size + 4 // trascrizione è dopo i messaggi + header
+                } else {
+                    uiState.chatMessages.size + 1
+                }
+                listState.animateScrollToItem(targetIndex.coerceAtLeast(0))
+            }
+        }
+    }
 
     if (uiState.isRecording) {
         KeepScreenOn()
@@ -674,6 +702,7 @@ fun AnalysisScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 8.dp),
+            state = listState,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item { Spacer(modifier = Modifier.height(40.dp)) }
@@ -823,46 +852,7 @@ fun AnalysisScreen(
                     }
                 }
 
-                item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                item {
-                    val editTranscription = stringResource(R.string.edit_transcription)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(0.95f),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Button(
-                            onClick = onCancelTranscription,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.error
-                            )
-                        ) {
-                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.title3)
-                        }
-
-                        Button(
-                            onClick = {
-                                val intent = RemoteInputHelper.createRemoteInputIntent(
-                                    label = editTranscription
-                                )
-                                textLauncher.launch(intent)
-                            },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.secondaryButtonColors()
-                        ) {
-                            Text(stringResource(R.string.edit), style = MaterialTheme.typography.title3)
-                        }
-
-                        Button(
-                            onClick = onConfirmTranscription,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.primaryButtonColors()
-                        ) {
-                            Text(stringResource(R.string.confirm), style = MaterialTheme.typography.title3)
-                        }
-                    }
-                }
+                item { Spacer(modifier = Modifier.height(60.dp)) }
             }
         }
         Row(
@@ -877,6 +867,35 @@ fun AnalysisScreen(
                 modifier = Modifier.size(36.dp)
             ) {
                 Text(stringResource(R.string.back_arrow), style = MaterialTheme.typography.caption1)
+            }
+        }
+
+        // Bottoni di conferma trascrizione fissi a sinistra
+        uiState.pendingTranscription?.let {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = onConfirmTranscription,
+                    modifier = Modifier.size(36.dp),
+                    colors = ButtonDefaults.primaryButtonColors()
+                ) {
+                    Text("✓", style = MaterialTheme.typography.caption1)
+                }
+
+                Button(
+                    onClick = onCancelTranscription,
+                    modifier = Modifier.size(36.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.error
+                    )
+                ) {
+                    Text("✕", style = MaterialTheme.typography.caption1)
+                }
             }
         }
     }

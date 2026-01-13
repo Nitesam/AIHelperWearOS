@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,10 +16,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
@@ -112,7 +116,7 @@ private fun LatexFullscreenDialog(
     var offset by remember { mutableStateOf(Offset.Zero) }
 
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
-        scale = (scale * zoomChange).coerceIn(1f, 5f)
+        scale = (scale * zoomChange).coerceIn(0.5f, 5f)
         offset += offsetChange
     }
 
@@ -123,8 +127,7 @@ private fun LatexFullscreenDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.95f))
-                .clickable { onDismiss() },
+                .background(Color.Black.copy(alpha = 0.95f)),
             contentAlignment = Alignment.Center
         ) {
             SubcomposeAsyncImage(
@@ -135,7 +138,7 @@ private fun LatexFullscreenDialog(
                 contentDescription = stringResource(R.string.zoomed_formula_description, latex),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .fillMaxSize(0.9f)
+                    .fillMaxSize(0.75f)
                     .graphicsLayer(
                         scaleX = scale,
                         scaleY = scale,
@@ -165,6 +168,37 @@ private fun LatexFullscreenDialog(
                 }
             )
 
+            // Bottoni zoom posizionati lungo il bordo curvo sinistro
+            // Bottone + in alto a sinistra (segue la curva)
+            Button(
+                onClick = { scale = (scale + 0.25f).coerceAtMost(5f) },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 45.dp, start = 6.dp)
+                    .size(32.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.primary
+                )
+            ) {
+                Text("+", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+
+            // Bottone - più in basso a sinistra (segue la curva)
+            Button(
+                onClick = { scale = (scale - 0.25f).coerceAtLeast(0.5f) },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 2.dp)
+                    .offset(y = (-30).dp)
+                    .size(32.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.secondary
+                )
+            ) {
+                Text("-", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+
+            // Testo zoom in basso
             Text(
                 text = stringResource(R.string.zoom_and_close_hint, (scale * 100).toInt()),
                 fontSize = 10.sp,
@@ -172,8 +206,9 @@ private fun LatexFullscreenDialog(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp)
-                    .background(Color.Black.copy(alpha = 0.7f))
+                    .background(Color.Black.copy(alpha = 0.7f), shape = CircleShape)
                     .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .clickable { onDismiss() }
             )
         }
     }
