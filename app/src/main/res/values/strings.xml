@@ -64,6 +64,7 @@ Hello, %1$s!</string>
     <string name="default_language">Default Language</string>
     <string name="default_transcription">Transcription Method</string>
     <string name="settings_saved">Settings saved!</string>
+    <string name="export_chat">Export Chat</string>
     <string name="save">Save</string>
 
     <string name="error_generic">Error: %s</string>

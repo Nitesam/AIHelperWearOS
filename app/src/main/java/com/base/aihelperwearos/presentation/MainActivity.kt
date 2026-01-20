@@ -138,6 +138,9 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                         viewModel.saveLanguagePreference(languageCode)
                         activity.recreate()
                     },
+                    onExport = { callback ->
+                        viewModel.exportChatHistory(callback)
+                    },
                     onBack = { viewModel.navigateTo(Screen.Home) }
                 )
                 Screen.Chat -> ChatScreen(
@@ -286,13 +289,25 @@ fun SettingsScreen(
     selectedModel: String,
     onModelSelected: (String) -> Unit,
     onLanguageChange: (String) -> Unit,
+    onExport: ((String) -> Unit) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    var exportMessage by remember { mutableStateOf<String?>(null) }
+
     val models = listOf(
         "google/gemini-3-pro-preview" to stringResource(R.string.model_gemini_pro),
         "anthropic/claude-sonnet-4.5" to stringResource(R.string.model_claude_sonnet),
         "openai/gpt-5.2" to stringResource(R.string.model_gpt5)
     )
+
+    // Show toast when export completes
+    LaunchedEffect(exportMessage) {
+        exportMessage?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
+            exportMessage = null
+        }
+    }
 
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -387,6 +402,20 @@ fun SettingsScreen(
                 ) {
                     Text("🇬🇧", style = MaterialTheme.typography.title2)
                 }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+
+        item {
+            Button(
+                onClick = { onExport { msg -> exportMessage = msg } },
+                modifier = Modifier.fillMaxWidth(0.85f),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.secondary
+                )
+            ) {
+                Text("📤 " + stringResource(R.string.export_chat))
             }
         }
     }

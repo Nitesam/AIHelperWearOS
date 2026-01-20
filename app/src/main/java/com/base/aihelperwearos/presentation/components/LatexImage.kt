@@ -184,31 +184,32 @@ private fun LatexFullscreenDialog(
                     )
                 }
             )
-
+            // Zoom In button - positioned safely within round screen bounds
             Button(
                 onClick = { scale = (scale + 0.25f).coerceAtMost(5f) },
                 modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(x = 2.dp, y = (-35).dp)
-                    .size(28.dp),
+                    .align(Alignment.TopStart)
+                    .padding(top = 55.dp, start = 12.dp)
+                    .size(32.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.85f)
+                    backgroundColor = Color(0xFF4CAF50)
                 )
             ) {
-                Text("+", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
+            // Zoom Out button
             Button(
                 onClick = { scale = (scale - 0.25f).coerceAtLeast(0.5f) },
                 modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(x = 2.dp, y = 35.dp)
-                    .size(28.dp),
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 55.dp, start = 12.dp)
+                    .size(32.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.secondary.copy(alpha = 0.85f)
+                    backgroundColor = Color(0xFFFF5722)
                 )
             ) {
-                Text("−", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
             Text(

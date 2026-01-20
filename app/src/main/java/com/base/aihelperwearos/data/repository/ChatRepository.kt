@@ -260,4 +260,27 @@ class ChatRepository(private val context: Context) {
         )
         saveChatData(updatedData)
     }
+
+    /**
+     * Exports all chat data to a JSON file in Downloads folder.
+     *
+     * @return `Result` with the file path on success or an error.
+     */
+    suspend fun exportToFile(): Result<String> {
+        return try {
+            val chatData = getChatData()
+            val jsonString = json.encodeToString(chatData)
+            
+            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            )
+            val exportFile = java.io.File(downloadsDir, "aihelper_chat_export.json")
+            
+            exportFile.writeText(jsonString)
+            
+            Result.success(exportFile.absolutePath)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -145,6 +145,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Exports chat history to Downloads folder.
+     *
+     * @param onResult callback with success message or error.
+     * @return `Unit` after export completes.
+     */
+    fun exportChatHistory(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = chatRepository.exportToFile()
+            result.fold(
+                onSuccess = { path -> onResult("Exported to: $path") },
+                onFailure = { e -> onResult("Export failed: ${e.message}") }
+            )
+        }
+    }
+
+    /**
      * Binds to the audio recording service if not already bound.
      *
      * @return `Unit` after the bind request is issued.
