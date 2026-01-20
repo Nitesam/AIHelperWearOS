@@ -59,7 +59,8 @@ Ciao, %1$s!</string>
     <string name="language_english">🇬🇧 Inglese</string>
     <string name="choose_language">Scegli la lingua</string>
 
-    <string name="settings">⚙️ Impostazioni</string>
+    <string name="settings">Impostazioni</string>
+    <string name="select_language">Lingua</string>
     <string name="default_language">Lingua predefinita</string>
     <string name="default_transcription">Metodo di trascrizione</string>
     <string name="settings_saved">Impostazioni salvate!</string>

@@ -18,6 +18,26 @@ class UserPreferences(private val context: Context) {
 
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
+        private val MODEL_KEY = stringPreferencesKey("selected_model")
+        private const val DEFAULT_MODEL = "anthropic/claude-sonnet-4.5"
+    }
+
+    val modelFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[MODEL_KEY] ?: DEFAULT_MODEL
+    }
+
+    suspend fun setModel(modelId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[MODEL_KEY] = modelId
+        }
+    }
+
+    fun getModel(): String {
+        return runBlocking {
+            context.dataStore.data.map { preferences ->
+                preferences[MODEL_KEY] ?: DEFAULT_MODEL
+            }.first()
+        }
     }
 
     /**

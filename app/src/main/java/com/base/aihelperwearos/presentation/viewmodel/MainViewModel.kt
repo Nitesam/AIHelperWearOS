@@ -32,7 +32,7 @@ import java.io.File
 
 enum class Screen {
     Home,
-    ModelSelection,
+    Settings,
     Chat,
     Analysis,
     History
@@ -126,6 +126,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         loadUserPreferences()
+        loadModelPreference()
+    }
+
+    private fun loadModelPreference() {
+        viewModelScope.launch {
+            userPreferences.modelFlow.collect { modelId ->
+                _uiState.update { it.copy(selectedModel = modelId) }
+            }
+        }
+    }
+
+    fun saveModelPreference(modelId: String) {
+        viewModelScope.launch {
+            userPreferences.setModel(modelId)
+            _uiState.update { it.copy(selectedModel = modelId) }
+        }
     }
 
     /**

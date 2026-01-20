@@ -116,31 +116,27 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
             when (uiState.currentScreen) {
                 Screen.Home -> HomeScreen(
                     onNewChat = {
-                        android.util.Log.d("MainActivity", "new chat clicked")
-                        viewModel.navigateTo(Screen.ModelSelection)
+                        viewModel.startNewChat(title = newChatTitle, isAnalysisMode = false)
                     },
                     onAnalysis = {
-                        android.util.Log.d("MainActivity", "analysis clicked")
-                        viewModel.selectModel("anthropic/claude-sonnet-4.5")
                         viewModel.startNewChat(title = analysisTitle, isAnalysisMode = true)
                     },
                     onHistory = {
-                        android.util.Log.d("MainActivity", "history clicked")
                         viewModel.navigateTo(Screen.History)
+                    },
+                    onSettings = {
+                        viewModel.navigateTo(Screen.Settings)
+                    }
+                )
+                Screen.Settings -> SettingsScreen(
+                    selectedModel = uiState.selectedModel,
+                    onModelSelected = { model ->
+                        viewModel.saveModelPreference(model)
                     },
                     onLanguageChange = { languageCode ->
                         setLocale(activity, languageCode)
-                        android.util.Log.d("MainActivity", "language changed to $languageCode")
-                        android.util.Log.d("MainActivity", "printing locale: ${Locale.getDefault()}")
                         viewModel.saveLanguagePreference(languageCode)
                         activity.recreate()
-                    }
-                )
-                Screen.ModelSelection -> ModelSelectionScreen(
-                    selectedModel = uiState.selectedModel,
-                    onModelSelected = { model ->
-                        viewModel.selectModel(model)
-                        viewModel.startNewChat(title = newChatTitle, isAnalysisMode = false)
                     },
                     onBack = { viewModel.navigateTo(Screen.Home) }
                 )
@@ -192,7 +188,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
  * @param onNewChat callback to start a new chat.
  * @param onAnalysis callback to start analysis mode.
  * @param onHistory callback to open chat history.
- * @param onLanguageChange callback with the selected language code.
+ * @param onSettings callback to open settings.
  * @return `Unit` after composing the screen.
  */
 @Composable
@@ -200,7 +196,7 @@ fun HomeScreen(
     onNewChat: () -> Unit,
     onAnalysis: () -> Unit,
     onHistory: () -> Unit,
-    onLanguageChange: (String) -> Unit
+    onSettings: () -> Unit
 ) {
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -260,49 +256,36 @@ fun HomeScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(8.dp)) }
 
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(0.7f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Button(
+                onClick = onSettings,
+                modifier = Modifier.fillMaxWidth(0.85f),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.surface
+                )
             ) {
-                Button(
-                    onClick = { onLanguageChange("it") },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = MaterialTheme.colors.surface
-                    )
-                ) {
-                    Text("🇮🇹", style = MaterialTheme.typography.title2)
-                }
-
-                Button(
-                    onClick = { onLanguageChange("en") },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = MaterialTheme.colors.surface
-                    )
-                ) {
-                    Text("🇬🇧", style = MaterialTheme.typography.title2)
-                }
+                Text("⚙️ " + stringResource(R.string.settings))
             }
         }
     }
 }
 
 /**
- * Displays the model selection list.
+ * Displays the settings screen with model and language selection.
  *
  * @param selectedModel currently selected model id.
  * @param onModelSelected callback with the chosen model id.
+ * @param onLanguageChange callback with the selected language code.
  * @param onBack callback to return to the previous screen.
  * @return `Unit` after composing the screen.
  */
 @Composable
-fun ModelSelectionScreen(
+fun SettingsScreen(
     selectedModel: String,
     onModelSelected: (String) -> Unit,
+    onLanguageChange: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val models = listOf(
@@ -327,13 +310,23 @@ fun ModelSelectionScreen(
 
         item {
             Text(
-                stringResource(R.string.choose_model),
+                stringResource(R.string.settings),
                 style = MaterialTheme.typography.title3,
                 textAlign = TextAlign.Center
             )
         }
 
-        item { Spacer(modifier = Modifier.height(12.dp)) }
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        item {
+            Text(
+                stringResource(R.string.choose_model),
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.onSurfaceVariant
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(4.dp)) }
 
         items(models.size) { index ->
             val (modelId, modelName) = models[index]
@@ -356,6 +349,45 @@ fun ModelSelectionScreen(
                 )
             )
             Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+
+        item {
+            Text(
+                stringResource(R.string.select_language),
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.onSurfaceVariant
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(4.dp)) }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(0.8f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { onLanguageChange("it") },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.surface
+                    )
+                ) {
+                    Text("🇮🇹", style = MaterialTheme.typography.title2)
+                }
+
+                Button(
+                    onClick = { onLanguageChange("en") },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.surface
+                    )
+                ) {
+                    Text("🇬🇧", style = MaterialTheme.typography.title2)
+                }
+            }
         }
     }
 }
