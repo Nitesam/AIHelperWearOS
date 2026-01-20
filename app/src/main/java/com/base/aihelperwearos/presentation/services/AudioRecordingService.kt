@@ -24,7 +24,8 @@ class AudioRecordingService : Service() {
     private val binder = LocalBinder()
     private var audioRecorder: AudioRecorder? = null
     private var wakeLock: PowerManager.WakeLock? = null
-    private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
+    private val serviceJob = Job()
+    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
     private var recordingCallback: ((Result<File>) -> Unit)? = null
 
@@ -207,9 +208,8 @@ class AudioRecordingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
 
-        serviceScope.launch {
-            audioRecorder?.cancelRecording()
-        }
+        // Cancel all coroutines
+        serviceJob.cancel()
 
         if (wakeLock?.isHeld == true) {
             wakeLock?.release()
@@ -218,8 +218,6 @@ class AudioRecordingService : Service() {
         wakeLock = null
         audioRecorder = null
         recordingCallback = null
-
-        Log.d(TAG, "Service destroyed")
     }
 
     companion object {

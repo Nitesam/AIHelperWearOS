@@ -291,7 +291,7 @@ fun SettingsScreen(
     val models = listOf(
         "google/gemini-3-pro-preview" to stringResource(R.string.model_gemini_pro),
         "anthropic/claude-sonnet-4.5" to stringResource(R.string.model_claude_sonnet),
-        "openai/gpt-5" to stringResource(R.string.model_gpt5)
+        "openai/gpt-5.2" to stringResource(R.string.model_gpt5)
     )
 
     ScalingLazyColumn(

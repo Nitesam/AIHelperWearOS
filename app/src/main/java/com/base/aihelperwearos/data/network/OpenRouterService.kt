@@ -73,20 +73,6 @@ class OpenRouterService(
             })
         }
 
-        install(Logging) {
-            logger = object : Logger {
-                /**
-                 * Logs an HTTP client message using Android logging.
-                 *
-                 * @param message log message to output.
-                 * @return `Unit` after logging.
-                 */
-                override fun log(message: String) {
-                    Log.d("OpenRouter", message)
-                }
-            }
-            level = LogLevel.BODY
-        }
 
         install(HttpTimeout) {
             requestTimeoutMillis = 60000

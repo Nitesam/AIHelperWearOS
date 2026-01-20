@@ -188,28 +188,27 @@ private fun LatexFullscreenDialog(
             Button(
                 onClick = { scale = (scale + 0.25f).coerceAtMost(5f) },
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = 45.dp, start = 6.dp)
-                    .size(32.dp),
+                    .align(Alignment.CenterStart)
+                    .offset(x = 2.dp, y = (-35).dp)
+                    .size(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.primary
+                    backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.85f)
                 )
             ) {
-                Text("+", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("+", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
             Button(
                 onClick = { scale = (scale - 0.25f).coerceAtLeast(0.5f) },
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 2.dp)
-                    .offset(y = (-30).dp)
-                    .size(32.dp),
+                    .offset(x = 2.dp, y = 35.dp)
+                    .size(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.secondary
+                    backgroundColor = MaterialTheme.colors.secondary.copy(alpha = 0.85f)
                 )
             ) {
-                Text("-", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("−", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
             Text(
