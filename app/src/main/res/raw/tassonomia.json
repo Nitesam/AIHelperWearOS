@@ -1,118 +1,346 @@
 {
-  "version": "1.0",
-  "last_updated": "2026-01-13",
+  "version": "2.0",
+  "last_updated": "2026-01-21",
+  "description": "Tassonomia per classificare esercizi di Analisi 2. Usata dal modello per identificare categoria e sottotipo.",
   "categorie": [
     {
       "nome": "Equazioni Differenziali",
-      "keywords": ["equazione differenziale", "EDO", "ODE", "dy/dx", "y'", "y''"],
+      "keywords": [
+        "equazione differenziale",
+        "EDO",
+        "ODE",
+        "dy/dx",
+        "y'",
+        "y''",
+        "risolvere l'equazione"
+      ],
       "sottotipi": [
         {
           "nome": "Lineari I Ordine",
-          "keywords": ["primo ordine", "lineare", "fattore integrante", "separabile"]
+          "keywords": [
+            "primo ordine",
+            "lineare",
+            "fattore integrante",
+            "separabile",
+            "omogenea I ordine"
+          ]
         },
         {
           "nome": "Lineari II Ordine - Omogenee",
-          "keywords": ["secondo ordine", "omogenea", "caratteristica", "radici"]
+          "keywords": [
+            "secondo ordine",
+            "omogenea",
+            "caratteristica",
+            "radici reali",
+            "radici complesse",
+            "molteplicità",
+            "radice doppia"
+          ]
         },
         {
-          "nome": "Lineari II Ordine - Non Omogenee",
-          "keywords": ["particolare", "variazione costanti", "somiglianza"]
+          "nome": "Lineari II Ordine - Complete",
+          "keywords": [
+            "completa",
+            "particolare",
+            "variazione costanti",
+            "somiglianza",
+            "risonanza",
+            "termine noto",
+            "Wronskiano"
+          ]
+        },
+        {
+          "nome": "Problema di Cauchy",
+          "keywords": [
+            "Cauchy",
+            "condizioni iniziali",
+            "y(0)",
+            "y'(0)",
+            "determinare le costanti",
+            "condizione iniziale"
+          ]
         },
         {
           "nome": "A Variabili Separabili",
-          "keywords": ["separabili", "separazione variabili"]
+          "keywords": [
+            "separabili",
+            "separazione variabili"
+          ]
         }
       ]
     },
     {
-      "nome": "Integrali",
-      "keywords": ["integrale", "primitiva", "antiderivata"],
+      "nome": "Integrali (1 Variabile)",
+      "keywords": [
+        "integrale",
+        "primitiva",
+        "antiderivata",
+        "∫",
+        "calcolare l'integrale"
+      ],
       "sottotipi": [
         {
-          "nome": "Integrali Doppi",
-          "keywords": ["doppio", "dominio", "area", "Fubini"]
+          "nome": "Metodi di Integrazione Indefinita",
+          "keywords": [
+            "per parti",
+            "sostituzione",
+            "ciclico",
+            "immediato",
+            "arcoseno",
+            "arcotangente",
+            "logaritmo",
+            "esponenziale"
+          ]
         },
         {
-          "nome": "Integrali Tripli",
-          "keywords": ["triplo", "volume", "sferico", "cilindrico"]
+          "nome": "Funzioni Razionali Fratte",
+          "keywords": [
+            "fratti semplici",
+            "delta negativo",
+            "razionale",
+            "polinomio",
+            "fattorizzazione",
+            "radici",
+            "decomposizione"
+          ]
         },
         {
-          "nome": "Integrali di Linea",
-          "keywords": ["linea", "curva", "parametrizzazione", "lavoro"]
-        },
-        {
-          "nome": "Integrali di Superficie",
-          "keywords": ["superficie", "flusso", "parametrica"]
+          "nome": "Integrale Definito e Improprio",
+          "keywords": [
+            "definito",
+            "estremi variabili",
+            "funzione integrale",
+            "improprio",
+            "convergenza",
+            "estremi"
+          ]
         }
       ]
     },
     {
       "nome": "Serie",
-      "keywords": ["serie", "somma", "convergenza", "divergenza"],
+      "keywords": [
+        "serie",
+        "somma",
+        "convergenza",
+        "divergenza",
+        "∑",
+        "sommatoria",
+        "carattere della serie"
+      ],
       "sottotipi": [
         {
           "nome": "Serie Numeriche",
-          "keywords": ["numerica", "criterio", "confronto", "rapporto", "radice"]
+          "keywords": [
+            "geometrica",
+            "telescopica",
+            "armonica",
+            "mengoli",
+            "somma",
+            "diverge",
+            "converge"
+          ]
         },
         {
-          "nome": "Serie di Potenze",
-          "keywords": ["potenze", "raggio", "Taylor", "MacLaurin"]
+          "nome": "Criteri di Convergenza",
+          "keywords": [
+            "criterio del rapporto",
+            "criterio della radice",
+            "confronto",
+            "asintotico",
+            "Leibniz",
+            "segni alterni",
+            "Raabe",
+            "stima errore"
+          ]
+        },
+        {
+          "nome": "Serie di Potenze e Taylor",
+          "keywords": [
+            "raggio di convergenza",
+            "serie di potenze",
+            "Taylor",
+            "MacLaurin",
+            "parametro x",
+            "intervallo",
+            "raggio"
+          ]
         },
         {
           "nome": "Serie di Fourier",
-          "keywords": ["Fourier", "periodica", "coefficienti", "armoniche"]
+          "keywords": [
+            "Fourier",
+            "periodica",
+            "coefficienti",
+            "armoniche"
+          ]
         }
       ]
     },
     {
-      "nome": "Limiti",
-      "keywords": ["limite", "continuità", "asintoto"],
+      "nome": "Funzioni di due variabili",
+      "keywords": [
+        "f(x,y)",
+        "(x,y)",
+        "due variabili",
+        "dominio",
+        "∂",
+        "multivariabile"
+      ],
       "sottotipi": [
         {
-          "nome": "Limiti in più variabili",
-          "keywords": ["due variabili", "polari", "restrizioni", "multivariabile"]
+          "nome": "Dominio",
+          "keywords": [
+            "dominio",
+            "definita",
+            "condizione",
+            "insieme",
+            "sottoinsieme",
+            "radice",
+            "logaritmo",
+            "corona"
+          ]
         },
         {
-          "nome": "Limiti notevoli",
-          "keywords": ["notevole", "fondamentale", "esponenziale", "logaritmo"]
-        }
-      ]
-    },
-    {
-      "nome": "Derivate",
-      "keywords": ["derivata", "gradiente", "Jacobiano", "Hessiano"],
-      "sottotipi": [
-        {
-          "nome": "Derivate Parziali",
-          "keywords": ["parziale", "multivariabile", "catena"]
+          "nome": "Limiti e Continuità",
+          "keywords": [
+            "limite",
+            "(x,y)→",
+            "coordinate polari",
+            "restrizione",
+            "rette",
+            "parabola",
+            "non esiste",
+            "carabinieri",
+            "composizione"
+          ]
         },
         {
-          "nome": "Derivate Direzionali",
-          "keywords": ["direzionale", "direzione", "versore", "gradiente"]
+          "nome": "Calcolo Differenziale",
+          "keywords": [
+            "derivata parziale",
+            "∂f/∂x",
+            "gradiente",
+            "∇f",
+            "derivata direzionale",
+            "versore",
+            "Hessiano",
+            "derivate seconde",
+            "derivate miste"
+          ]
+        },
+        {
+          "nome": "Differenziabilità",
+          "keywords": [
+            "differenziabile",
+            "piano tangente",
+            "Schwarz",
+            "derivate miste",
+            "condizione sufficiente",
+            "valore assoluto"
+          ]
         },
         {
           "nome": "Massimi e Minimi",
-          "keywords": ["massimo", "minimo", "critico", "Hessiano", "ottimizzazione"]
+          "keywords": [
+            "massimo",
+            "minimo",
+            "stazionario",
+            "sella",
+            "Hessiano",
+            "compatto",
+            "frontiera",
+            "assoluto",
+            "relativo",
+            "Fermat",
+            "Weierstrass",
+            "triangolo"
+          ]
         }
       ]
     },
     {
       "nome": "Campi Vettoriali",
-      "keywords": ["campo", "vettoriale", "rotore", "divergenza"],
+      "keywords": [
+        "campo",
+        "vettoriale",
+        "rotore",
+        "divergenza"
+      ],
       "sottotipi": [
         {
           "nome": "Teorema di Gauss",
-          "keywords": ["Gauss", "divergenza", "flusso", "chiusa"]
+          "keywords": [
+            "Gauss",
+            "divergenza",
+            "flusso",
+            "chiusa"
+          ]
         },
         {
           "nome": "Teorema di Stokes",
-          "keywords": ["Stokes", "rotore", "circuitazione"]
+          "keywords": [
+            "Stokes",
+            "rotore",
+            "circuitazione"
+          ]
         },
         {
           "nome": "Campi Conservativi",
-          "keywords": ["conservativo", "potenziale", "irrotazionale"]
+          "keywords": [
+            "conservativo",
+            "potenziale",
+            "irrotazionale"
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "Integrali Multipli",
+      "keywords": [
+        "integrale doppio",
+        "integrale triplo",
+        "Fubini"
+      ],
+      "sottotipi": [
+        {
+          "nome": "Integrali Doppi",
+          "keywords": [
+            "doppio",
+            "dominio",
+            "area",
+            "Fubini",
+            "coordinate polari"
+          ]
+        },
+        {
+          "nome": "Integrali Tripli",
+          "keywords": [
+            "triplo",
+            "volume",
+            "sferico",
+            "cilindrico"
+          ]
+        },
+        {
+          "nome": "Integrali di Linea",
+          "keywords": [
+            "linea",
+            "curva",
+            "parametrizzazione",
+            "lavoro"
+          ]
+        },
+        {
+          "nome": "Integrali di Superficie",
+          "keywords": [
+            "superficie",
+            "flusso",
+            "parametrica"
+          ]
         }
       ]
     }
-  ]
+  ],
+  "classification_prompt": "Analizza l'esercizio e classifica secondo questa tassonomia.\n\n1. Leggi il testo dell'esercizio\n2. Identifica le keywords matematiche\n3. Confronta con i keywords delle categorie\n4. Restituisci: {\"categoria\": \"...\", \"sottotipo\": \"...\", \"confidence\": 0.0-1.0}"
 }
