@@ -1,176 +1,202 @@
 {
-    "version": "1.0",
-    "last_updated": "2026-01-13",
-    "max_exercises": 100,
+    "version": "2.0",
+    "last_updated": "2026-01-21",
+    "total_exercises": 53,
     "exercises": [
         {
-            "id": "EX-DOM-001",
-            "categoria": "Funzioni di due variabili",
-            "sottotipo": "Limiti e Continuità",
+            "id": "EX-EDO-001",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Lineari II Ordine - Omogenee",
             "keywords": [
-                "dominio",
-                "radice"
+                "secondo ordine",
+                "omogenea",
+                "caratteristica",
+                "radici reali"
             ],
-            "testo": "Determinare il dominio della funzione:\n$$f(x,y) = \\sqrt{x - y}$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Trovare } D = \\{(x,y) : f(x,y) \\in \\mathbb{R}\\}$$\n\nANALISI:\n$$\\text{La radice richiede radicando } \\ge 0$$\n\nFASE 1: Impostazione\n$$x - y \\ge 0$$\n\nFASE 2: Risoluzione\n$$y \\le x$$\n\nRISPOSTA:\n$$\\text{Il dominio è il semipiano}$$\n$$\\text{definito da } y \\le x$$\n$$\\text{(bisettrice inclusa).}$$"
+            "testo": "Risolvere l'equazione differenziale y'' - 5y' + 6y = 0",
+            "svolgimento": "PROBLEMA:\n$$\\text{EDO II ordine a coeff. costanti}$$\n\nFASE 1: Eq. caratteristica\n$$\\lambda^2 - 5\\lambda + 6 = 0$$\n$$(\\lambda - 2)(\\lambda - 3) = 0$$\n$$\\lambda_1 = 2, \\quad \\lambda_2 = 3$$\n\nFASE 2: Soluzione\n$$\\text{Radici reali distinte}$$\n\nRISPOSTA:\n$$\\boxed{y(x) = c_1 e^{2x} + c_2 e^{3x}}$$"
         },
         {
-            "id": "EX-LIM-002",
-            "categoria": "Funzioni di due variabili",
-            "sottotipo": "Limiti e Continuità",
+            "id": "EX-EDO-002",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Lineari II Ordine - Omogenee",
             "keywords": [
-                "limiti",
-                "coordinate polari",
-                "carabinieri"
+                "secondo ordine",
+                "radici complesse",
+                "seno",
+                "coseno"
             ],
-            "testo": "Calcolare il limite:\n$$\\lim_{(x,y)\\to(0,0)} \\frac{x^2 y}{x^2 + y^2}$$",
-            "svolgimento": "PROBLEMA:\n$$L = \\lim_{(x,y)\\to(0,0)} \\frac{x^2 y}{x^2 + y^2}$$\n\nANALISI:\n$$\\text{Uso maggiorazioni e polari.}$$\n\nFASE 1: Maggiorazione\n$$\\text{Poiché } x^2 \\le x^2+y^2$$\n$$\\frac{x^2}{x^2+y^2} \\le 1$$\n\nFASE 2: Valore assoluto\n$$0 \\le \\left| \\frac{x^2 y}{x^2+y^2} \\right| =$$\n$$|y| \\cdot \\frac{x^2}{x^2+y^2} \\le |y|$$\n\nFASE 3: Conclusione\n$$\\text{Per } (x,y) \\to (0,0), \\ |y| \\to 0$$\n$$\\text{Per i Carabinieri:}$$\n\nRISPOSTA:\n$$\\boxed{L = 0}$$"
+            "testo": "Risolvere y'' + 4y = 0",
+            "svolgimento": "PROBLEMA:\n$$\\text{EDO II ordine omogenea}$$\n\nFASE 1: Eq. caratteristica\n$$\\lambda^2 + 4 = 0$$\n$$\\lambda = \\pm 2i$$\n\nFASE 2: Soluzione\n$$\\text{Radici complesse: } \\alpha \\pm i\\beta$$\n$$\\alpha = 0, \\quad \\beta = 2$$\n\nRISPOSTA:\n$$\\boxed{y(x) = c_1\\cos(2x) + c_2\\sin(2x)}$$"
         },
         {
-            "id": "EX-DIFF-003",
-            "categoria": "Funzioni di due variabili",
-            "sottotipo": "Calcolo Differenziale",
+            "id": "EX-EDO-003",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Lineari II Ordine - Omogenee",
             "keywords": [
-                "gradiente",
-                "derivata parziale"
+                "radice doppia",
+                "molteplicità"
             ],
-            "testo": "Calcolare il gradiente di:\n$$f(x,y) = x^3 y^4 - 2x$$\nnel punto generico $$(x,y)$$.",
-            "svolgimento": "PROBLEMA:\n$$\\text{Calcolare } \\nabla f = (f_x, f_y)$$\n\nANALISI:\n$$\\text{Derivo parzialmente.}$$\n\nFASE 1: Derivata su x\n$$\\text{y costante:}$$\n$$f_x = 3x^2 y^4 - 2$$\n\nFASE 2: Derivata su y\n$$\\text{x costante:}$$\n$$f_y = x^3 (4y^3) = 4x^3 y^3$$\n\nRISPOSTA:\n$$\\nabla f = (3x^2y^4 - 2, \\ 4x^3y^3)$$"
+            "testo": "Risolvere y'' - 4y' + 4y = 0",
+            "svolgimento": "PROBLEMA:\n$$\\text{EDO II ordine omogenea}$$\n\nFASE 1: Eq. caratteristica\n$$\\lambda^2 - 4\\lambda + 4 = 0$$\n$$(\\lambda - 2)^2 = 0$$\n$$\\lambda = 2 \\text{ (doppia)}$$\n\nFASE 2: Base delle soluzioni\n$$e^{2x}, \\quad x e^{2x}$$\n\nRISPOSTA:\n$$\\boxed{y(x) = (c_1 + c_2 x)e^{2x}}$$"
         },
         {
-            "id": "EX-DIR-004",
-            "categoria": "Funzioni di due variabili",
-            "sottotipo": "Calcolo Differenziale",
+            "id": "EX-EDO-004",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Lineari II Ordine - Complete",
             "keywords": [
-                "derivata direzionale",
-                "versore",
-                "formula gradiente"
+                "risonanza",
+                "coseno",
+                "somiglianza"
             ],
-            "testo": "Calcolare la derivata direzionale di:\n$$f(x,y) = xy$$\nnel punto $$(1,0)$$ lungo $$\\vec{v} = (\\frac{\\sqrt{2}}{2}, \\frac{\\sqrt{2}}{2})$$.",
-            "svolgimento": "PROBLEMA:\n$$\\text{Calcolare } D_{\\vec{v}}f(1,0)$$\n\nANALISI:\n$$\\text{1. f differenziabile.}$$\n$$\\text{2. Uso } \\nabla f \\cdot \\vec{v}$$\n\nFASE 1: Gradiente in (1,0)\n$$f_x = y \\to 0$$\n$$f_y = x \\to 1$$\n$$\\nabla f(1,0) = (0, 1)$$\n\nFASE 2: Prodotto scalare\n$$(0, 1) \\cdot (\\frac{\\sqrt{2}}{2}, \\frac{\\sqrt{2}}{2})$$\n$$= 0 + \\frac{\\sqrt{2}}{2}$$\n\nRISPOSTA:\n$$\\boxed{\\frac{\\sqrt{2}}{2}}$$"
+            "testo": "Risolvere y'' + y = cos(x)",
+            "svolgimento": "PROBLEMA:\n$$\\text{EDO completa con risonanza}$$\n\nFASE 1: Omogenea\n$$y_o = c_1\\cos x + c_2\\sin x$$\n\nFASE 2: Particolare (risonanza)\n$$\\bar{y} = x(A\\cos x + B\\sin x)$$\n$$\\text{Sostituendo: } A = 0, B = 1/2$$\n\nRISPOSTA:\n$$\\boxed{y = c_1\\cos x + c_2\\sin x + \\frac{x}{2}\\sin x}$$"
         },
         {
-            "id": "EX-MAXMIN-005",
-            "categoria": "Funzioni di due variabili",
-            "sottotipo": "Massimi e Minimi",
+            "id": "EX-EDO-005",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Lineari II Ordine - Complete",
             "keywords": [
-                "hessiano",
-                "sella",
-                "stazionari"
+                "risonanza",
+                "esponenziale"
             ],
-            "testo": "Classificare i punti stazionari di:\n$$f(x,y) = 2x^2 + xy - y$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Trovare estremi relativi.}$$\n\nANALISI:\n$$\\text{1. } \\nabla f = 0$$\n$$\\text{2. Segno Hessiano.}$$\n\nFASE 1: Sistema\n$$f_x = 4x + y = 0$$\n$$f_y = x - 1 = 0 \\to x=1$$\n$$\\text{Sostituisco: } 4(1)+y=0 \\to y=-4$$\n$$\\text{Punto } P(1, -4)$$\n\nFASE 2: Hessiano\n$$f_{xx} = 4, \\ f_{xy} = 1, \\ f_{yy} = 0$$\n$$H = 4(0) - (1)^2 = -1$$\n\nRISPOSTA:\n$$\\text{Poiché } H < 0:$$\n$$\\text{P(1, -4) è punto di SELLA.}$$"
+            "testo": "Risolvere y'' - 3y' + 2y = e^x",
+            "svolgimento": "PROBLEMA:\n$$\\text{Risonanza semplice}$$\n\nFASE 1: Omogenea\n$$\\lambda^2 - 3\\lambda + 2 = 0 \\to \\lambda = 1, 2$$\n$$y_o = c_1 e^x + c_2 e^{2x}$$\n\nFASE 2: Particolare\n$$\\alpha = 1 \\text{ è radice} \\to \\bar{y} = Axe^x$$\n$$\\text{Sostituendo: } A = -1$$\n\nRISPOSTA:\n$$\\boxed{y = c_1 e^x + c_2 e^{2x} - xe^x}$$"
         },
         {
-            "id": "EX-MAXMIN-006",
-            "categoria": "Funzioni di due variabili",
-            "sottotipo": "Massimi e Minimi",
+            "id": "EX-EDO-006",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Problema di Cauchy",
             "keywords": [
-                "minimo relativo",
-                "hessiano",
-                "sistema"
+                "cauchy",
+                "condizioni iniziali"
             ],
-            "testo": "Trovare gli estremi relativi di:\n$$f(x,y) = x^3 + y^2 - 2xy$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Classificare punti critici.}$$\n\nFASE 1: Gradiente nullo\n$$\\begin{cases} 3x^2 - 2y = 0 \\\\ 2y - 2x = 0 \\end{cases}$$\n$$\\text{Da eq.2: } y = x$$\n$$\\text{In eq.1: } 3x^2 - 2x = 0$$\n$$\\text{Punti: } O(0,0), A(\\frac{2}{3}, \\frac{2}{3})$$\n\nFASE 2: Hessiano\n$$f_{xx}=6x, f_{yy}=2, f_{xy}=-2$$\n$$H(x,y) = 12x - 4$$\n\nFASE 3: Analisi\n$$\\text{In O: } H = -4 \\to \\text{Sella}$$\n$$\\text{In A: } H = 4 > 0$$\n$$\\text{Essendo } f_{xx}(A) > 0:$$\n\nRISPOSTA:\n$$A(\\frac{2}{3}, \\frac{2}{3}) \\text{ è Minimo Relativo.}$$"
+            "testo": "Risolvere il problema di Cauchy:\n$$\\begin{cases} y'' + y = 0 \\\\ y(0) = 1 \\\\ y'(0) = 0 \\end{cases}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Determinare } c_1, c_2$$\n\nFASE 1: Sol. generale\n$$y = c_1\\cos x + c_2\\sin x$$\n\nFASE 2: Condizioni\n$$y(0) = c_1 = 1$$\n$$y'(0) = c_2 = 0$$\n\nRISPOSTA:\n$$\\boxed{y(x) = \\cos x}$$"
         },
         {
-            "id": "EX-MAXMIN-007",
-            "categoria": "Funzioni di due variabili",
-            "sottotipo": "Massimi e Minimi",
+            "id": "EX-EDO-007",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Lineari I Ordine",
             "keywords": [
-                "assoluti",
-                "quadrato",
-                "frontiera"
+                "primo ordine",
+                "omogenea"
             ],
-            "testo": "Trovare min e max assoluti di:\n$$f(x,y) = 2x^2 - xy - y$$\nnel quadrato di vertici $$(0,0), (1,0), (1,1), (0,1)$$.",
-            "svolgimento": "PROBLEMA:\n$$\\text{Estremi su compatto.}$$\n\nANALISI:\n$$\\text{1. Interno: } \\nabla f = 0$$\n$$\\text{2. Bordo: 4 segmenti.}$$\n\nFASE 1: Interno\n$$4x-y=0, -x-1=0$$\n$$x=-1 \\text{ (fuori dal dominio)}$$\n$$\\text{Nessun punto interno.}$$\n\nFASE 2: Bordo (analisi sintetica)\n$$\\text{Vertici: } f(0,0)=0, f(1,0)=2$$\n$$f(0,1)=-1, f(1,1)=0$$\n$$\\text{Lato } y=1: P(1/4, 1) \\to -9/8$$\n\nRISPOSTA:\n$$\\text{Max: } 2 \\text{ in } (1,0)$$\n$$\\text{Min: } -9/8 \\text{ in } (1/4, 1)$$"
+            "testo": "Risolvere y' + x^4 y = 0",
+            "svolgimento": "PROBLEMA:\n$$\\text{EDO I ordine omogenea}$$\n\nFASE 1: Primitiva\n$$A(x) = \\int x^4 dx = \\frac{x^5}{5}$$\n\nFASE 2: Formula\n$$y = k e^{-A(x)}$$\n\nRISPOSTA:\n$$\\boxed{y(x) = k e^{-x^5/5}, \\quad k \\in \\mathbb{R}}$$"
         },
         {
-            "id": "INT-CICLICO-001",
+            "id": "EX-EDO-008",
+            "categoria": "Equazioni Differenziali",
+            "sottotipo": "Problema di Cauchy",
+            "keywords": [
+                "cauchy",
+                "primo ordine",
+                "completa"
+            ],
+            "testo": "Risolvere il problema di Cauchy:\n$$\\begin{cases} y' + xy = x^3 \\\\ y(2) = 1 \\end{cases}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{EDO I ordine completa}$$\n\nFASE 1: Int. generale\n$$y = ke^{-x^2/2} + x^2 - 2$$\n\nFASE 2: Condizione iniziale\n$$y(2) = 1 \\to k = -e^2$$\n\nRISPOSTA:\n$$\\boxed{y = -e^{2-x^2/2} + x^2 - 2}$$"
+        },
+        {
+            "id": "EX-INT-001",
+            "categoria": "Integrali (1 Variabile)",
+            "sottotipo": "Metodi di Integrazione Indefinita",
+            "keywords": [
+                "arcotangente",
+                "immediato"
+            ],
+            "testo": "Calcolare:\n$$\\int \\frac{1}{x^2 + 4} dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Integrale immediato}$$\n\nFASE 1: Formula\n$$\\int \\frac{1}{x^2+a^2} dx = \\frac{1}{a}\\arctan\\frac{x}{a}$$\n\nRISPOSTA:\n$$\\boxed{\\frac{1}{2}\\arctan\\frac{x}{2} + c}$$"
+        },
+        {
+            "id": "EX-INT-002",
+            "categoria": "Integrali (1 Variabile)",
+            "sottotipo": "Metodi di Integrazione Indefinita",
+            "keywords": [
+                "arcoseno",
+                "immediato"
+            ],
+            "testo": "Calcolare:\n$$\\int \\frac{1}{\\sqrt{1 - x^2}} dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Integrale fondamentale}$$\n\nRISPOSTA:\n$$\\boxed{\\arcsin x + c}$$"
+        },
+        {
+            "id": "EX-INT-003",
             "categoria": "Integrali (1 Variabile)",
             "sottotipo": "Metodi di Integrazione Indefinita",
             "keywords": [
                 "per parti",
-                "ciclico",
-                "esponenziale",
-                "seno"
+                "esponenziale"
             ],
-            "testo": "Calcolare l'integrale:\n$$\\int e^x \\sin x \\ dx$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Integrale ciclico per parti.}$$\n\nFASE 1: Prima applicazione\n$$\\text{Fattore diff: } e^x$$\n$$\\int e^x \\sin x dx =$$\n$$e^x \\sin x - \\int e^x \\cos x dx$$\n\nFASE 2: Seconda applicazione\n$$\\text{Su } \\int e^x \\cos x dx$$\n$$= e^x \\cos x - \\int e^x (-\\sin x) dx$$\n$$= e^x \\cos x + \\int e^x \\sin x dx$$\n\nFASE 3: Equazione\n$$I = e^x \\sin x - (e^x \\cos x + I)$$\n$$2I = e^x(\\sin x - \\cos x)$$\n\nRISPOSTA:\n$$\\boxed{\\frac{e^x(\\sin x - \\cos x)}{2} + k}$$"
+            "testo": "Calcolare:\n$$\\int x e^x dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Integrazione per parti}$$\n\nFASE 1: Scelta\n$$f(x) = x, \\quad g'(x) = e^x$$\n\nFASE 2: Formula\n$$\\int fg' = fg - \\int f'g$$\n$$= xe^x - \\int e^x dx$$\n\nRISPOSTA:\n$$\\boxed{xe^x - e^x + c}$$"
         },
         {
-            "id": "INT-RICOR-002",
+            "id": "EX-INT-004",
             "categoria": "Integrali (1 Variabile)",
-            "sottotipo": "Funzioni Razionali Fratte",
+            "sottotipo": "Metodi di Integrazione Indefinita",
             "keywords": [
-                "ricorsivo",
-                "arcotangente",
-                "potenza"
-            ],
-            "testo": "Calcolare per parti (n=2):\n$$\\int \\frac{1}{(x^2+1)^2} \\ dx$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Ridurre l'esponente del denom.}$$\n\nANALISI:\n$$\\text{Aggiungo/tolgo } x^2$$\n\nFASE 1: Manipolazione\n$$\\int \\frac{1+x^2-x^2}{(x^2+1)^2} dx =$$\n$$\\int \\frac{1}{x^2+1} dx - \\int \\frac{x \\cdot x}{(x^2+1)^2} dx$$\n\nFASE 2: Per parti sul secondo\n$$\\text{Fatt diff: } \\frac{-x}{(x^2+1)^2} \\to \\frac{1}{2(x^2+1)}$$\n$$\\text{Fatt fin: } x \\to 1$$\n\nFASE 3: Risoluzione\n$$\\arctan x + \\frac{x}{2(x^2+1)} - \\frac{1}{2}\\int \\frac{dx}{x^2+1}$$\n\nRISPOSTA:\n$$\\frac{1}{2}\\arctan x + \\frac{x}{2(x^2+1)} + k$$"
-        },
-        {
-            "id": "INT-FRAT-DELTA-NEG",
-            "categoria": "Integrali (1 Variabile)",
-            "sottotipo": "Funzioni Razionali Fratte",
-            "keywords": [
-                "delta negativo",
-                "arcotangente",
+                "per parti",
                 "logaritmo"
             ],
-            "testo": "Calcolare l'integrale:\n$$\\int \\frac{x+4}{x^2+x+4} \\ dx$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Denom con } \\Delta < 0$$\n\nANALISI:\n$$\\text{1. Creare la derivata (2x+1)}$$\n$$\\text{2. Completare il quadrato}$$\n\nFASE 1: Logaritmo\n$$\\frac{1}{2} \\int \\frac{2x+8}{x^2+x+4} dx$$\n$$\\frac{1}{2} \\int \\frac{2x+1}{x^2+x+4} dx + \\frac{7}{2} \\int \\dots$$\n$$= \\frac{1}{2} \\log(x^2+x+4) + \\dots$$\n\nFASE 2: Arcotangente\n$$\\text{Denom: } (x+\\frac{1}{2})^2 + \\frac{7}{2}$$\n$$\\int \\frac{1}{(x+1/2)^2 + 7/2} dx$$\n\nRISPOSTA:\n$$\\frac{1}{2}\\log(x^2+x+4) +$$\n$$\\frac{7}{\\sqrt{7}}\\arctan\\left(\\frac{2x+1}{\\sqrt{7}}\\right) + k$$"
+            "testo": "Calcolare:\n$$\\int \\ln x \\, dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Per parti con 1}$$\n\nFASE 1: Scelta\n$$f(x) = \\ln x, \\quad g'(x) = 1$$\n\nFASE 2: Calcolo\n$$= x\\ln x - \\int x \\cdot \\frac{1}{x} dx$$\n$$= x\\ln x - x$$\n\nRISPOSTA:\n$$\\boxed{x\\ln x - x + c}$$"
         },
         {
-            "id": "INT-IMPROPRIO-POL",
-            "categoria": "Integrali (1 Variabile)",
-            "sottotipo": "Funzioni Razionali Fratte",
-            "keywords": [
-                "divisione polinomiale",
-                "grado numeratore"
-            ],
-            "testo": "Calcolare:\n$$\\int \\frac{x^4}{x^2+1} \\ dx$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Grado Num } \\ge \\text{ Grado Den}$$\n\nANALISI:\n$$\\text{Divisione o manipolazione.}$$\n\nFASE 1: Manipolazione\n$$x^4 = x^4 - 1 + 1$$\n$$\\frac{x^4-1}{x^2+1} + \\frac{1}{x^2+1}$$\n\nFASE 2: Semplificazione\n$$\\frac{(x^2-1)(x^2+1)}{x^2+1} = x^2 - 1$$\n\nFASE 3: Integrazione\n$$\\int (x^2 - 1) dx + \\int \\frac{1}{x^2+1} dx$$\n\nRISPOSTA:\n$$\\boxed{\\frac{x^3}{3} - x + \\arctan x + k}$$"
-        },
-        {
-            "id": "INT-SOST-IRRAZ",
+            "id": "EX-INT-005",
             "categoria": "Integrali (1 Variabile)",
             "sottotipo": "Metodi di Integrazione Indefinita",
             "keywords": [
                 "sostituzione",
-                "irrazionale",
-                "fratta"
+                "tangente"
             ],
-            "testo": "Calcolare:\n$$\\int \\sqrt{\\frac{2x+1}{x-3}} \\ dx$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Radice di fratta lineare.}$$\n\nANALISI:\n$$\\text{Pongo } t = \\sqrt{\\frac{2x+1}{x-3}}$$\n$$\\text{Ricavo x in funzione di t.}$$\n\nFASE 1: Inversione\n$$t^2 = \\frac{2x+1}{x-3} \\implies x = \\frac{3t^2+1}{t^2-2}$$\n\nFASE 2: Differenziale\n$$dx = g'(t) dt = \\frac{-14t}{(t^2-2)^2} dt$$\n\nFASE 3: Integrale in t\n$$\\int t \\cdot \\frac{-14t}{(t^2-2)^2} dt$$\n$$\\text{Si risolve come razionale fratta.}$$\n\nRISPOSTA:\n$$\\text{Vedi sviluppo razionale in t.}$$"
+            "testo": "Calcolare:\n$$\\int \\tan x \\, dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Forma } \\frac{g'}{g}$$\n\nFASE 1: Riscrittura\n$$\\int \\frac{\\sin x}{\\cos x} dx = -\\int \\frac{-\\sin x}{\\cos x} dx$$\n\nRISPOSTA:\n$$\\boxed{-\\ln|\\cos x| + c}$$"
         },
         {
-            "id": "INT-DEF-GEN",
+            "id": "EX-INT-006",
             "categoria": "Integrali (1 Variabile)",
             "sottotipo": "Integrale Definito e Improprio",
             "keywords": [
-                "funzione integrale",
-                "estremi variabili",
-                "derivata"
+                "definito",
+                "sostituzione trigonometrica"
             ],
-            "testo": "Calcolare la derivata di:\n$$F(x) = \\int_{x^4}^{\\log x} \\frac{\\sin t}{t} \\ dt$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Estremi entrambi variabili.}$$\n\nANALISI:\n$$\\text{Spezzo in } \\int_{x^4}^a + \\int_a^{\\log x}$$\n$$\\text{Cioè } \\int_a^{\\log x} - \\int_a^{x^4}$$\n\nFASE 1: Applico formula\n$$D[\\int_a^{g(x)} f(t)] = f(g(x))g'(x)$$\n\nFASE 2: Calcolo termini\n$$A: \\frac{\\sin(\\log x)}{\\log x} \\cdot \\frac{1}{x}$$\n$$B: \\frac{\\sin(x^4)}{x^4} \\cdot 4x^3$$\n\nRISPOSTA:\n$$\\frac{\\sin(\\log x)}{x \\log x} - \\frac{4 \\sin(x^4)}{x}$$"
+            "testo": "Calcolare:\n$$\\int_0^1 \\sqrt{1-x^2} \\, dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Sostituzione trigonometrica}$$\n\nFASE 1: Sostituzione\n$$x = \\sin t, \\quad dx = \\cos t \\, dt$$\n$$\\text{Estremi: } 0 \\to 0, \\quad 1 \\to \\pi/2$$\n\nFASE 2: Calcolo\n$$\\int_0^{\\pi/2} \\cos^2 t \\, dt = \\frac{\\pi}{4}$$\n\nRISPOSTA:\n$$\\boxed{\\frac{\\pi}{4}}$$"
         },
         {
-            "id": "EX-SERIE-GEOM",
+            "id": "EX-INT-007",
+            "categoria": "Integrali (1 Variabile)",
+            "sottotipo": "Funzioni Razionali Fratte",
+            "keywords": [
+                "fratti semplici",
+                "fattorizzazione"
+            ],
+            "testo": "Calcolare:\n$$\\int \\frac{1}{x^2 - 1} dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Fratti semplici}$$\n\nFASE 1: Decomposizione\n$$\\frac{1}{(x-1)(x+1)} = \\frac{A}{x-1} + \\frac{B}{x+1}$$\n$$A = 1/2, \\quad B = -1/2$$\n\nRISPOSTA:\n$$\\boxed{\\frac{1}{2}\\ln\\left|\\frac{x-1}{x+1}\\right| + c}$$"
+        },
+        {
+            "id": "EX-INT-008",
+            "categoria": "Integrali (1 Variabile)",
+            "sottotipo": "Funzioni Razionali Fratte",
+            "keywords": [
+                "fratti semplici"
+            ],
+            "testo": "Calcolare:\n$$\\int \\frac{2x + 3}{x^2 + 3x + 2} dx$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Fattorizzare il denominatore}$$\n\nFASE 1: Fattorizzazione\n$$x^2 + 3x + 2 = (x+1)(x+2)$$\n\nFASE 2: Decomposizione\n$$\\frac{2x+3}{(x+1)(x+2)} = \\frac{1}{x+1} + \\frac{1}{x+2}$$\n\nRISPOSTA:\n$$\\boxed{\\ln|x+1| + \\ln|x+2| + c}$$"
+        },
+        {
+            "id": "EX-SERIE-001",
             "categoria": "Serie",
             "sottotipo": "Serie Numeriche",
             "keywords": [
-                "geometrica",
-                "ragione",
-                "somma"
+                "armonica",
+                "diverge"
             ],
-            "testo": "Determinare il carattere della serie geometrica:\n$$\\sum_{n=0}^{\\infty} x^n$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Analisi al variare di x.}$$\n\nANALISI:\n$$\\text{Somma parziale: } s_n = \\frac{1-x^n}{1-x}$$\n\nFASE 1: Caso $$|x| < 1$$\n$$\\lim x^n = 0$$\n$$\\text{Somma } S = \\frac{1}{1-x}$$\n\nFASE 2: Caso $$x \\ge 1$$\n$$\\lim x^n \\ne 0$$\n$$\\text{Diverge positivamente.}$$\n\nFASE 3: Caso $$x \\le -1$$\n$$\\text{Indeterminata (oscilla).}$$\n\nRISPOSTA:\n$$\\text{Converge per } -1 < x < 1$$"
+            "testo": "Studiare il carattere della serie:\n$$\\sum_{n=1}^{\\infty} \\frac{1}{n}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Serie armonica}$$\n\nFASE 1: Raggruppamento\n$$S_{2^k} > 1 + \\frac{k}{2}$$\n\nFASE 2: Limite\n$$\\lim_{k \\to \\infty} S_{2^k} = +\\infty$$\n\nRISPOSTA:\n$$\\boxed{\\text{Diverge a } +\\infty}$$"
         },
         {
-            "id": "EX-SERIE-MENGOLI",
+            "id": "EX-SERIE-002",
             "categoria": "Serie",
             "sottotipo": "Serie Numeriche",
             "keywords": [
@@ -178,115 +204,331 @@
                 "mengoli",
                 "somma"
             ],
-            "testo": "Calcolare la somma della serie:\n$$\\sum_{n=1}^{\\infty} \\frac{1}{n(n+1)}$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Serie telescopica.}$$\n\nANALISI:\n$$\\text{Decomposizione in fratti semplici.}$$\n\nFASE 1: Fratti semplici\n$$\\frac{1}{n(n+1)} = \\frac{1}{n} - \\frac{1}{n+1}$$\n\nFASE 2: Somma parziale\n$$s_n = (1 - \\frac{1}{2}) + (\\frac{1}{2} - \\frac{1}{3}) + \\dots$$\n$$+ (\\frac{1}{n} - \\frac{1}{n+1})$$\n$$s_n = 1 - \\frac{1}{n+1}$$\n\nFASE 3: Limite\n$$\\lim_{n \\to \\infty} (1 - \\frac{1}{n+1}) = 1$$\n\nRISPOSTA:\n$$\\boxed{S = 1}$$"
+            "testo": "Calcolare la somma:\n$$\\sum_{n=1}^{\\infty} \\frac{1}{n(n+1)}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Serie telescopica}$$\n\nFASE 1: Fratti semplici\n$$\\frac{1}{n(n+1)} = \\frac{1}{n} - \\frac{1}{n+1}$$\n\nFASE 2: Somma parziale\n$$S_n = 1 - \\frac{1}{n+1}$$\n\nRISPOSTA:\n$$\\boxed{S = 1}$$"
         },
         {
-            "id": "EX-CRIT-RAPP-001",
+            "id": "EX-SERIE-003",
+            "categoria": "Serie",
+            "sottotipo": "Serie Numeriche",
+            "keywords": [
+                "geometrica",
+                "parametro"
+            ],
+            "testo": "Studiare al variare di x:\n$$\\sum_{n=0}^{\\infty} 2^{n(x-1)}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Serie geometrica parametrica}$$\n\nFASE 1: Ragione\n$$q = 2^{x-1}$$\n\nFASE 2: Condizione\n$$|q| < 1 \\iff x < 1$$\n\nRISPOSTA:\n$$\\text{Converge per } x < 1$$\n$$\\boxed{S = \\frac{1}{1-2^{x-1}}}$$"
+        },
+        {
+            "id": "EX-SERIE-004",
             "categoria": "Serie",
             "sottotipo": "Criteri di Convergenza",
             "keywords": [
                 "rapporto",
-                "fattoriale",
-                "esponenziale"
+                "fattoriale"
             ],
-            "testo": "Studiare la convergenza di:\n$$\\sum_{n=1}^{\\infty} \\frac{2^n}{3^{n+1} n!}$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Applicare criterio rapporto.}$$\n\nFASE 1: Calcolo rapporto\n$$\\frac{a_{n+1}}{a_n} = \\frac{2^{n+1}}{3^{n+2}(n+1)!} \\cdot \\frac{3^{n+1}n!}{2^n}$$\n\nFASE 2: Semplificazione\n$$= \\frac{2}{3} \\cdot \\frac{1}{n+1}$$\n\nFASE 3: Limite\n$$\\lim_{n \\to \\infty} \\frac{2}{3(n+1)} = 0$$\n\nRISPOSTA:\n$$\\text{Poiché } l = 0 < 1:$$\n$$\\text{La serie CONVERGE.}$$"
+            "testo": "Studiare la convergenza:\n$$\\sum \\frac{2^{n-1}}{(n+2)!}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Criterio del rapporto}$$\n\nFASE 1: Rapporto\n$$\\frac{a_{n+1}}{a_n} = \\frac{2}{n+3}$$\n\nFASE 2: Limite\n$$\\lim \\frac{2}{n+3} = 0 < 1$$\n\nRISPOSTA:\n$$\\boxed{\\text{Converge}}$$"
         },
         {
-            "id": "EX-CRIT-RAD-002",
+            "id": "EX-SERIE-005",
             "categoria": "Serie",
             "sottotipo": "Criteri di Convergenza",
             "keywords": [
                 "radice",
                 "potenza n-esima"
             ],
-            "testo": "Studiare la convergenza di:\n$$\\sum_{n=1}^{\\infty} \\left( \\frac{n+1}{3n+4} \\right)^n$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Applicare criterio radice.}$$\n\nFASE 1: Radice n-esima\n$$\\sqrt[n]{a_n} = \\frac{n+1}{3n+4}$$\n\nFASE 2: Limite\n$$\\lim_{n \\to \\infty} \\frac{n(1+1/n)}{n(3+4/n)} = \\frac{1}{3}$$\n\nRISPOSTA:\n$$\\text{Poiché } l = 1/3 < 1:$$\n$$\\text{La serie CONVERGE.}$$"
+            "testo": "Studiare la convergenza:\n$$\\sum \\left( \\frac{2n+1}{n+3} \\right)^n$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Criterio della radice}$$\n\nFASE 1: Radice n-esima\n$$\\sqrt[n]{a_n} = \\frac{2n+1}{n+3}$$\n\nFASE 2: Limite\n$$\\lim \\frac{2n+1}{n+3} = 2 > 1$$\n\nRISPOSTA:\n$$\\boxed{\\text{Diverge}}$$"
         },
         {
-            "id": "EX-SERIE-POT-003",
+            "id": "EX-SERIE-006",
+            "categoria": "Serie",
+            "sottotipo": "Criteri di Convergenza",
+            "keywords": [
+                "radice"
+            ],
+            "testo": "Studiare la convergenza:\n$$\\sum \\left( \\frac{2n+1}{5n+3} \\right)^n$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Criterio della radice}$$\n\nFASE 1: Limite\n$$\\lim \\frac{2n+1}{5n+3} = \\frac{2}{5} < 1$$\n\nRISPOSTA:\n$$\\boxed{\\text{Converge}}$$"
+        },
+        {
+            "id": "EX-SERIE-007",
+            "categoria": "Serie",
+            "sottotipo": "Criteri di Convergenza",
+            "keywords": [
+                "confronto",
+                "asintotico"
+            ],
+            "testo": "Studiare la convergenza:\n$$\\sum \\frac{n^2 + 1}{2n^3 + 4}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Confronto asintotico}$$\n\nFASE 1: Stima\n$$a_n \\sim \\frac{n^2}{2n^3} = \\frac{1}{2n}$$\n\nFASE 2: Confronto\n$$\\sum \\frac{1}{n} \\text{ diverge}$$\n\nRISPOSTA:\n$$\\boxed{\\text{Diverge}}$$"
+        },
+        {
+            "id": "EX-SERIE-008",
+            "categoria": "Serie",
+            "sottotipo": "Criteri di Convergenza",
+            "keywords": [
+                "confronto",
+                "asintotico"
+            ],
+            "testo": "Studiare la convergenza:\n$$\\sum \\frac{3n+1}{2n^3+6}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Confronto asintotico}$$\n\nFASE 1: Stima\n$$a_n \\sim \\frac{3n}{2n^3} = \\frac{3}{2n^2}$$\n\nFASE 2: Confronto\n$$\\alpha = 2 > 1 \\implies \\text{converge}$$\n\nRISPOSTA:\n$$\\boxed{\\text{Converge}}$$"
+        },
+        {
+            "id": "EX-SERIE-009",
+            "categoria": "Serie",
+            "sottotipo": "Criteri di Convergenza",
+            "keywords": [
+                "leibniz",
+                "segni alterni"
+            ],
+            "testo": "Studiare la convergenza:\n$$\\sum \\frac{(-1)^n}{n}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Criterio di Leibniz}$$\n\nFASE 1: Verifica\n$$a_n = \\frac{1}{n} \\text{ decrescente}$$\n$$\\lim a_n = 0$$\n\nRISPOSTA:\n$$\\boxed{\\text{Converge (non assolutamente)}}$$"
+        },
+        {
+            "id": "EX-SERIE-010",
+            "categoria": "Serie",
+            "sottotipo": "Criteri di Convergenza",
+            "keywords": [
+                "stima errore",
+                "leibniz"
+            ],
+            "testo": "Per la serie $$\\sum \\frac{(-1)^n}{n}$$, trovare n tale che $$|s - s_n| < 10^{-3}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Stima resto Leibniz}$$\n\nFASE 1: Formula\n$$|s - s_n| \\le a_{n+1} = \\frac{1}{n+1}$$\n\nFASE 2: Condizione\n$$\\frac{1}{n+1} < \\frac{1}{1000}$$\n$$n > 999$$\n\nRISPOSTA:\n$$\\boxed{n = 1000}$$"
+        },
+        {
+            "id": "EX-SERIE-011",
             "categoria": "Serie",
             "sottotipo": "Serie di Potenze e Taylor",
             "keywords": [
-                "raggio convergenza",
                 "parametro",
-                "segni alterni"
+                "raggio"
             ],
-            "testo": "Studiare al variare di x:\n$$\\sum_{n=1}^{\\infty} \\frac{(2x)^n}{n+2}$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Convergenza puntuale.}$$\n\nANALISI:\n$$\\text{Uso criterio rapporto modulo.}$$\n\nFASE 1: Rapporto\n$$\\left| \\frac{(2x)^{n+1}}{n+3} \\cdot \\frac{n+2}{(2x)^n} \\right| \\to |2x|$$\n\nFASE 2: Condizione\n$$|2x| < 1 \\implies |x| < 1/2$$\n$$\\text{Conv. assoluta in } (-1/2, 1/2)$$\n\nFASE 3: Estremi\n$$x=1/2 \\to \\sum \\frac{1}{n+2} \\text{ (Div)}$$\n$$x=-1/2 \\to \\sum \\frac{(-1)^n}{n+2} \\text{ (Conv)}$$\n\nRISPOSTA:\n$$\\text{Converge in } [-1/2, 1/2[$$"
+            "testo": "Studiare al variare di x:\n$$\\sum \\frac{x^n(n-2)}{n^2+1}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Serie parametrica}$$\n\nFASE 1: Rapporto\n$$\\lim \\left| \\frac{a_{n+1}}{a_n} \\right| = |x|$$\n\nFASE 2: Analisi\n$$|x| < 1: \\text{ conv. ass.}$$\n$$x = 1: \\sim \\sum 1/n \\text{ div.}$$\n$$x = -1: \\text{ Leibniz, conv.}$$\n\nRISPOSTA:\n$$\\boxed{\\text{Converge in } [-1, 1)}$$"
         },
         {
-            "id": "EX-EDO-COST-REAL-DIST",
-            "categoria": "Equazioni Differenziali",
-            "sottotipo": "Lineari II Ordine - Omogenee",
+            "id": "EX-SERIE-012",
+            "categoria": "Serie",
+            "sottotipo": "Criteri di Convergenza",
             "keywords": [
-                "radici reali",
-                "distinte",
-                "caratteristica"
+                "convergenza assoluta"
             ],
-            "testo": "Risolvere l'equazione:\n$$y'' + 2y' - 3y = 0$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Coefficienti costanti omogenea.}$$\n\nANALISI:\n$$\\text{Eq. caratteristica: } \\alpha^2 + 2\\alpha - 3 = 0$$\n\nFASE 1: Radici\n$$(\\alpha + 3)(\\alpha - 1) = 0$$\n$$\\alpha_1 = 1, \\quad \\alpha_2 = -3$$\n\nFASE 2: Soluzione\n$$\\text{Radici reali distinte.}$$\n$$y(x) = c_1 e^{1\\cdot x} + c_2 e^{-3x}$$\n\nRISPOSTA:\n$$\\boxed{y(x) = c_1 e^x + c_2 e^{-3x}}$$"
+            "testo": "Studiare la convergenza:\n$$\\sum \\frac{\\cos(n^2)}{n^2+1}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Convergenza assoluta}$$\n\nFASE 1: Maggiorazione\n$$|a_n| \\le \\frac{1}{n^2+1}$$\n\nFASE 2: Confronto\n$$\\sum \\frac{1}{n^2+1} \\text{ converge}$$\n\nRISPOSTA:\n$$\\boxed{\\text{Converge assolutamente}}$$"
         },
         {
-            "id": "EX-EDO-COST-REAL-MULT",
-            "categoria": "Equazioni Differenziali",
-            "sottotipo": "Lineari II Ordine - Omogenee",
+            "id": "EX-2VAR-001",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Limiti e Continuità",
             "keywords": [
-                "radici multiple",
-                "delta nullo",
-                "molteplicità"
+                "dominio",
+                "radice"
             ],
-            "testo": "Risolvere l'equazione:\n$$y'' - 4y' + 4y = 0$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Coefficienti costanti omogenea.}$$\n\nANALISI:\n$$\\text{Eq. caratteristica: } \\alpha^2 - 4\\alpha + 4 = 0$$\n\nFASE 1: Radici\n$$(\\alpha - 2)^2 = 0$$\n$$\\alpha = 2 \\text{ con molteplicità 2}$$\n\nFASE 2: Soluzione\n$$\\text{Base: } e^{2x}, x e^{2x}$$\n\nRISPOSTA:\n$$\\boxed{y(x) = c_1 e^{2x} + c_2 x e^{2x}}$$"
+            "testo": "Determinare il dominio di:\n$$f(x,y) = \\sqrt{x+y-1}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Trovare } D$$\n\nFASE 1: Condizione\n$$x + y - 1 \\ge 0$$\n$$y \\ge 1 - x$$\n\nRISPOSTA:\n$$\\boxed{\\text{Semipiano } y \\ge 1-x}$$"
         },
         {
-            "id": "EX-EDO-COST-COMPL",
-            "categoria": "Equazioni Differenziali",
-            "sottotipo": "Lineari II Ordine - Omogenee",
+            "id": "EX-2VAR-002",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Limiti e Continuità",
             "keywords": [
-                "radici complesse",
-                "seno",
-                "coseno"
+                "dominio",
+                "logaritmo"
             ],
-            "testo": "Risolvere l'equazione:\n$$y'' + 2y' + 3y = 0$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Coefficienti costanti omogenea.}$$\n\nANALISI:\n$$\\text{Eq. caratteristica: } \\alpha^2 + 2\\alpha + 3 = 0$$\n\nFASE 1: Radici\n$$\\Delta = 4 - 12 = -8$$\n$$\\alpha = \\frac{-2 \\pm i\\sqrt{8}}{2} = -1 \\pm i\\sqrt{2}$$\n\nFASE 2: Soluzione\n$$\\text{Parte reale } -1, \\text{ immag. } \\sqrt{2}$$\n$$e^{-x}(c_1 \\cos(\\sqrt{2}x) + c_2 \\sin(\\sqrt{2}x))$$\n\nRISPOSTA:\n$$\\boxed{e^{-x}(c_1 \\cos(\\sqrt{2}x) + c_2 \\sin(\\sqrt{2}x))}$$"
+            "testo": "Determinare il dominio di:\n$$f(x,y) = \\log(x^2+y^2-1)$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Argomento } > 0$$\n\nFASE 1: Condizione\n$$x^2 + y^2 > 1$$\n\nRISPOSTA:\n$$\\boxed{\\text{Esterno cerchio raggio 1}}$$"
         },
         {
-            "id": "EX-EDO-COMPLETA-EXP",
-            "categoria": "Equazioni Differenziali",
-            "sottotipo": "Lineari II Ordine - Complete",
+            "id": "EX-2VAR-003",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Limiti e Continuità",
             "keywords": [
-                "metodo somiglianza",
-                "esponenziale",
-                "risonanza"
+                "dominio",
+                "corona"
             ],
-            "testo": "Risolvere l'equazione completa:\n$$y'' - y' = e^{2x}$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Trovare integrale particolare.}$$\n\nANALISI:\n$$\\text{Omogenea: } \\alpha(\\alpha-1)=0 \\to 0, 1$$\n$$\\text{Termine noto: } e^{2x} (\\alpha=2)$$\n\nFASE 1: Somiglianza\n$$\\alpha=2 \\text{ non è radice omogenea.}$$\n$$\\bar{y}(x) = C e^{2x}$$\n\nFASE 2: Derivate e Sostituzione\n$$\\bar{y}' = 2Ce^{2x}, \\bar{y}'' = 4Ce^{2x}$$\n$$4Ce^{2x} - 2Ce^{2x} = e^{2x}$$\n$$2C = 1 \\implies C = 1/2$$\n\nRISPOSTA:\n$$\\boxed{y(x) = c_1 + c_2 e^x + \\frac{1}{2}e^{2x}}$$"
+            "testo": "Determinare il dominio di:\n$$f(x,y) = \\frac{\\log(1-x^2-y^2)}{\\sqrt{x^2+y^2-1/4}}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Sistema di condizioni}$$\n\nFASE 1: Log\n$$1 - x^2 - y^2 > 0$$\n\nFASE 2: Radice\n$$x^2 + y^2 > 1/4$$\n\nRISPOSTA:\n$$\\boxed{\\frac{1}{4} < x^2+y^2 < 1}$$\n$$\\text{Corona circolare}$$"
         },
         {
-            "id": "EX-EDO-COMPLETA-POLI-EXP",
-            "categoria": "Equazioni Differenziali",
-            "sottotipo": "Lineari II Ordine - Complete",
+            "id": "EX-LIM-001",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Limiti e Continuità",
             "keywords": [
-                "polinomio",
-                "risonanza",
-                "somiglianza"
+                "limite",
+                "infinito"
             ],
-            "testo": "Risolvere:\n$$y'' - y' = x^2 e^x$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Termine noto } P(x)e^{\\alpha x}$$\n\nANALISI:\n$$\\text{Radici omogenea: } 0, 1$$\n$$\\text{Qui } \\alpha=1 \\text{ (risonanza semplice).}$$\n\nFASE 1: Somiglianza\n$$\\text{Moltiplico per x:}$$\n$$\\bar{y}(x) = x(Ax^2 + Bx + C)e^x$$\n\nFASE 2: Calcoli (Omessi passaggi)\n$$\\text{Sostituendo si trova:}$$\n$$A=1/3, B=-1, C=2$$\n\nRISPOSTA:\n$$y(x) = c_1 + c_2 e^x +$$\n$$(\\frac{x^3}{3} - x^2 + 2x)e^x$$"
+            "testo": "Calcolare:\n$$\\lim_{(x,y)\\to(0,0)} \\frac{1}{x^2+y^2}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Limite infinito}$$\n\nFASE 1: Definizione\n$$\\frac{1}{x^2+y^2} > k \\iff x^2+y^2 < \\frac{1}{k}$$\n\nFASE 2: Scelta δ\n$$\\delta = \\frac{1}{\\sqrt{k}}$$\n\nRISPOSTA:\n$$\\boxed{+\\infty}$$"
         },
         {
-            "id": "EX-CAUCHY-001",
-            "categoria": "Equazioni Differenziali",
-            "sottotipo": "Problema di Cauchy",
+            "id": "EX-LIM-002",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Limiti e Continuità",
             "keywords": [
-                "cauchy",
-                "condizioni iniziali",
-                "costanti"
+                "limite",
+                "non esiste",
+                "restrizione"
             ],
-            "testo": "Risolvere il problema di Cauchy:\n$$\\begin{cases} y'' + 2y' - 3y = 0 \\\\ y(1) = 0 \\\\ y'(1) = 1 \\end{cases}$$",
-            "svolgimento": "PROBLEMA:\n$$\\text{Determinare } c_1, c_2$$\n\nANALISI:\n$$\\text{Sol. generale (vedi es. prec.):}$$\n$$y(x) = c_1 e^x + c_2 e^{-3x}$$\n\nFASE 1: Derivata\n$$y'(x) = c_1 e^x - 3c_2 e^{-3x}$$\n\nFASE 2: Sistema condizioni\n$$\\begin{cases} c_1 e + c_2 e^{-3} = 0 \\\\ c_1 e - 3c_2 e^{-3} = 1 \\end{cases}$$\n$$\\text{Sottraendo: } 4c_2 e^{-3} = -1$$\n$$c_2 = -\\frac{e^3}{4}, \\quad c_1 = \\frac{1}{4e}$$\n\nRISPOSTA:\n$$\\boxed{y(x) = \\frac{e^{x-1}}{4} - \\frac{e^{-3x+3}}{4}}$$"
+            "testo": "Studiare:\n$$\\lim_{(x,y)\\to(0,0)} \\frac{xy}{x^2+y^2}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Verifica esistenza}$$\n\nFASE 1: Restrizione y = mx\n$$\\lim_{x \\to 0} \\frac{mx^2}{x^2(1+m^2)} = \\frac{m}{1+m^2}$$\n\nFASE 2: Conclusione\n$$\\text{Dipende da m}$$\n\nRISPOSTA:\n$$\\boxed{\\text{Non esiste}}$$"
+        },
+        {
+            "id": "EX-LIM-003",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Limiti e Continuità",
+            "keywords": [
+                "limite",
+                "carabinieri"
+            ],
+            "testo": "Calcolare:\n$$\\lim_{(x,y)\\to(0,0)} \\frac{x^2 y}{x^2+y^2}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Teorema del confronto}$$\n\nFASE 1: Maggiorazione\n$$\\left| \\frac{x^2 y}{x^2+y^2} \\right| = |y| \\cdot \\frac{x^2}{x^2+y^2} \\le |y|$$\n\nFASE 2: Limite\n$$|y| \\to 0$$\n\nRISPOSTA:\n$$\\boxed{0}$$"
+        },
+        {
+            "id": "EX-LIM-004",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Limiti e Continuità",
+            "keywords": [
+                "limite",
+                "composizione",
+                "notevole"
+            ],
+            "testo": "Calcolare:\n$$\\lim_{(x,y)\\to(0,0)} \\frac{e^{xy^2} - 1}{xy^2}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Limite composto}$$\n\nFASE 1: Sostituzione\n$$t = xy^2 \\to 0$$\n\nFASE 2: Limite notevole\n$$\\lim_{t \\to 0} \\frac{e^t - 1}{t} = 1$$\n\nRISPOSTA:\n$$\\boxed{1}$$"
+        },
+        {
+            "id": "EX-DER-001",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Calcolo Differenziale",
+            "keywords": [
+                "derivata parziale",
+                "valore assoluto"
+            ],
+            "testo": "Studiare le derivate parziali di:\n$$f(x,y) = x|y|$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Esistenza derivate}$$\n\nFASE 1: Per y ≠ 0\n$$f_x = |y|, \\quad f_y = x \\cdot \\text{sgn}(y)$$\n\nFASE 2: In (a, 0)\n$$f_x(a,0) = 0$$\n$$f_y(a,0) \\text{ esiste} \\iff a = 0$$\n\nRISPOSTA:\n$$\\boxed{f_y(a,0) \\nexists \\text{ per } a \\ne 0}$$"
+        },
+        {
+            "id": "EX-DER-002",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Calcolo Differenziale",
+            "keywords": [
+                "derivate seconde",
+                "hessiano"
+            ],
+            "testo": "Data $$f(x,y) = 2x^3y - x^4 + y^2$$, calcolare le derivate seconde.",
+            "svolgimento": "PROBLEMA:\n$$\\text{Matrice Hessiana}$$\n\nFASE 1: Derivate prime\n$$f_x = 6x^2y - 4x^3$$\n$$f_y = 2x^3 + 2y$$\n\nFASE 2: Derivate seconde\n$$f_{xx} = 12xy - 12x^2$$\n$$f_{xy} = f_{yx} = 6x^2$$\n$$f_{yy} = 2$$\n\nRISPOSTA:\n$$\\boxed{H = \\begin{pmatrix} 12xy-12x^2 & 6x^2 \\\\ 6x^2 & 2 \\end{pmatrix}}$$"
+        },
+        {
+            "id": "EX-DER-003",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Calcolo Differenziale",
+            "keywords": [
+                "derivata direzionale",
+                "gradiente",
+                "versore"
+            ],
+            "testo": "Data $$f(x,y) = x^2y - 3y^2 + x$$, calcolare $$D_{\\vec{v}} f(1,2)$$ con $$\\vec{v} = (\\frac{1}{\\sqrt{2}}, \\frac{1}{\\sqrt{2}})$$",
+            "svolgimento": "PROBLEMA:\n$$D_{\\vec{v}} f = \\nabla f \\cdot \\vec{v}$$\n\nFASE 1: Gradiente\n$$\\nabla f = (2xy+1, x^2-6y)$$\n$$\\nabla f(1,2) = (5, -11)$$\n\nFASE 2: Prodotto scalare\n$$(5, -11) \\cdot (\\frac{1}{\\sqrt{2}}, \\frac{1}{\\sqrt{2}})$$\n$$= \\frac{5-11}{\\sqrt{2}} = -\\frac{6}{\\sqrt{2}}$$\n\nRISPOSTA:\n$$\\boxed{-3\\sqrt{2}}$$"
+        },
+        {
+            "id": "EX-DER-004",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Calcolo Differenziale",
+            "keywords": [
+                "differenziabilità",
+                "definizione"
+            ],
+            "testo": "Studiare la differenziabilità di $$f(x,y) = |xy|$$ in $$(0,0)$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Verifica definizione}$$\n\nFASE 1: Derivate parziali\n$$f_x(0,0) = f_y(0,0) = 0$$\n\nFASE 2: Limite\n$$\\lim \\frac{|hk|}{\\sqrt{h^2+k^2}}$$\n$$\\text{Polari: } r|\\cos\\theta\\sin\\theta| \\to 0$$\n\nRISPOSTA:\n$$\\boxed{\\text{Differenziabile in } (0,0)}$$"
+        },
+        {
+            "id": "EX-DER-005",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Calcolo Differenziale",
+            "keywords": [
+                "schwarz",
+                "derivate miste"
+            ],
+            "testo": "Mostrare un esempio dove $$f_{xy}(0,0) \\ne f_{yx}(0,0)$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Controesempio Schwarz}$$\n\nFASE 1: Funzione\n$$f(x,y) = \\frac{xy(x^2-y^2)}{x^2+y^2}$$\n$$f(0,0) = 0$$\n\nFASE 2: Calcolo\n$$f_{xy}(0,0) = -1$$\n$$f_{yx}(0,0) = 1$$\n\nRISPOSTA:\n$$\\boxed{f_{xy}(0,0) \\ne f_{yx}(0,0)}$$"
+        },
+        {
+            "id": "EX-MAX-001",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Massimi e Minimi",
+            "keywords": [
+                "stazionario",
+                "sella",
+                "hessiano"
+            ],
+            "testo": "Classificare i punti stazionari di:\n$$f(x,y) = xy$$",
+            "svolgimento": "PROBLEMA:\n$$\\nabla f = 0$$\n\nFASE 1: Sistema\n$$f_x = y = 0, \\quad f_y = x = 0$$\n$$P(0,0)$$\n\nFASE 2: Hessiano\n$$H = \\begin{vmatrix} 0 & 1 \\\\ 1 & 0 \\end{vmatrix} = -1 < 0$$\n\nRISPOSTA:\n$$\\boxed{(0,0) \\text{ è punto di SELLA}}$$"
+        },
+        {
+            "id": "EX-MAX-002",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Massimi e Minimi",
+            "keywords": [
+                "stazionario",
+                "classificazione"
+            ],
+            "testo": "Classificare i punti stazionari di:\n$$f(x,y) = xy^2 - y^3 + x^2$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Trovare e classificare}$$\n\nFASE 1: Sistema\n$$f_x = y^2 + 2x = 0$$\n$$f_y = 2xy - 3y^2 = 0$$\n$$\\text{Punti: } (0,0), (-9/2, -3)$$\n\nFASE 2: Hessiano\n$$H(P_1) = -18 < 0 \\to \\text{sella}$$\n$$H(0,0) = 0 \\to \\text{studio locale: sella}$$\n\nRISPOSTA:\n$$\\boxed{\\text{Entrambi punti di SELLA}}$$"
+        },
+        {
+            "id": "EX-MAX-003",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Massimi e Minimi",
+            "keywords": [
+                "assoluti",
+                "compatto",
+                "triangolo"
+            ],
+            "testo": "Trovare max e min assoluti di\n$$f(x,y) = x^2y + x - y^2$$\nnel triangolo A(0,2), B(0,0), C(-2,0)",
+            "svolgimento": "PROBLEMA:\n$$\\text{Estremi su compatto}$$\n\nFASE 1: Punto critico interno\n$$P(-1, 1/2): f(P) = -3/4$$\n\nFASE 2: Bordo e vertici\n$$f(A) = -4, f(B) = 0, f(C) = -2$$\n$$\\text{Punto Q sul lato AC: } f(Q) \\approx 1.44$$\n\nRISPOSTA:\n$$\\text{Max: } \\approx 1.44 \\text{ in Q}$$\n$$\\boxed{\\text{Min: } -4 \\text{ in } A(0,2)}$$"
+        },
+        {
+            "id": "EX-MAX-004",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Massimi e Minimi",
+            "keywords": [
+                "assoluti",
+                "compatto",
+                "triangolo"
+            ],
+            "testo": "Trovare max e min di\n$$f(x,y) = \\frac{2xy+1}{x+y}$$\nnel triangolo A(1,1), B(1,2), C(2,1)",
+            "svolgimento": "PROBLEMA:\n$$\\text{Weierstrass: esistono}$$\n\nFASE 1: Interno\n$$\\text{Punto critico fuori da T}$$\n\nFASE 2: Bordo BC\n$$\\text{Max in } (3/2, 3/2)$$\n$$f = 11/6$$\n\nRISPOSTA:\n$$\\text{Max: } \\frac{11}{6} \\text{ in } (3/2, 3/2)$$\n$$\\boxed{\\text{Min: } \\frac{3}{2} \\text{ in } A(1,1)}$$"
+        },
+        {
+            "id": "EX-DIF-001",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Calcolo Differenziale",
+            "keywords": [
+                "differenziabilità",
+                "valore assoluto"
+            ],
+            "testo": "Studiare la differenziabilità in $$\\mathbb{R}^2$$ di:\n$$f(x,y) = x|y| + x^2 - 2y^2$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Analisi per casi}$$\n\nFASE 1: y ≠ 0\n$$\\text{Differenziabile (C}^1\\text{)}$$\n\nFASE 2: y = 0, x ≠ 0\n$$f_y \\text{ non esiste}$$\n\nFASE 3: (0,0)\n$$\\nabla f = (0,0)$$\n$$\\text{Limite differenziabilità: OK}$$\n\nRISPOSTA:\n$$\\boxed{D = \\{y \\ne 0\\} \\cup \\{(0,0)\\}}$$"
+        },
+        {
+            "id": "EX-DIR-001",
+            "categoria": "Funzioni di due variabili",
+            "sottotipo": "Calcolo Differenziale",
+            "keywords": [
+                "direzionale",
+                "retta"
+            ],
+            "testo": "Data $$f(x,y) = 2x\\log(xy) - x^2 + 3$$, calcolare $$D_{\\vec{v}} f(1,1)$$ lungo $$r: 3x - y + 6 = 0$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Versore dalla retta}$$\n\nFASE 1: Gradiente\n$$\\nabla f(1,1) = (0, 2)$$\n\nFASE 2: Versore\n$$\\vec{v} = \\frac{(1, 3)}{\\sqrt{10}}$$\n\nFASE 3: Prodotto\n$$D_{\\vec{v}} f = (0,2) \\cdot \\frac{(1,3)}{\\sqrt{10}}$$\n\nRISPOSTA:\n$$\\boxed{\\frac{6}{\\sqrt{10}}}$$"
+        },
+        {
+            "id": "EX-SERIE-013",
+            "categoria": "Serie",
+            "sottotipo": "Serie di Potenze e Taylor",
+            "keywords": [
+                "raggio",
+                "potenze"
+            ],
+            "testo": "Studiare la convergenza di:\n$$\\sum \\frac{x^n \\cdot n}{n^2+4}$$",
+            "svolgimento": "PROBLEMA:\n$$\\text{Serie di potenze}$$\n\nFASE 1: Raggio\n$$R = 1$$\n\nFASE 2: Estremi\n$$x = 1: \\sim \\sum \\frac{1}{n} \\text{ (div)}$$\n$$x = -1: \\text{ Leibniz (conv)}$$\n\nRISPOSTA:\n$$\\boxed{\\text{Converge in } [-1, 1)}$$"
         }
     ]
 }
