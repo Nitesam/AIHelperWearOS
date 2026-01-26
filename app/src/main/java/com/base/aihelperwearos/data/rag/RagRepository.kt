@@ -233,12 +233,13 @@ class RagRepository(private val context: Context) {
         limit: Int = DEFAULT_RESULT_LIMIT
     ): RagResult = withContext(Dispatchers.IO) {
         
-        cacheMutex.withLock {
-            queryCache[query]?.let { cached ->
-                Log.d(TAG, "Cache hit for query: ${query.take(50)}...")
-                return@withContext cached
-            }
-        }
+        // Cache disabled
+        // cacheMutex.withLock {
+        //     queryCache[query]?.let { cached ->
+        //         Log.d(TAG, "Cache hit for query: ${query.take(50)}...")
+        //         return@withContext cached
+        //     }
+        // }
         
         if (!isInitialized) {
             Log.w(TAG, "RAG not initialized, attempting lazy init")
@@ -279,9 +280,10 @@ class RagRepository(private val context: Context) {
                 )
             }
             
-            cacheMutex.withLock {
-                queryCache[query] = result
-            }
+            // Cache disabled
+            // cacheMutex.withLock {
+            //     queryCache[query] = result
+            // }
             
             result
             
