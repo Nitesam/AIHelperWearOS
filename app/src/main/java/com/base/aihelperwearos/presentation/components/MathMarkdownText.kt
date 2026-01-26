@@ -46,6 +46,7 @@ fun MathMarkdownText(
                     LatexImage(
                         latex = part.content,
                         imageUrl = part.imageUrl,
+                        fallbackImageUrl = part.fallbackImageUrl,
                         isDisplayMode = part.isDisplayMode,
                         modifier = Modifier.fillMaxWidth()
                     )

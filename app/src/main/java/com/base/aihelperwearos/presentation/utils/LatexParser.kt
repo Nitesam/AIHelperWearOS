@@ -39,10 +39,12 @@ object LatexParser {
             }
 
             val cleanLatex = latexContent.trim()
+            val (svgUrl, pngUrl) = buildLatexUrls(cleanLatex, isDisplay)
             parts.add(
                 MathContentPart.LatexFormula(
                     content = cleanLatex,
-                    imageUrl = buildLatexImageUrl(cleanLatex, isDisplay),
+                    imageUrl = svgUrl,
+                    fallbackImageUrl = pngUrl,
                     isDisplayMode = isDisplay
                 )
             )
@@ -64,26 +66,18 @@ object LatexParser {
         return ParsedMathMessage(parts)
     }
 
-    /**
-     * Builds a URL for rendering a LaTeX expression as an image.
-     *
-     * @param latex LaTeX source string.
-     * @param isDisplayMode whether the formula is display-style.
-     * @param textSizeSp text size used for scaling.
-     * @return image URL as a `String`.
-     */
-    fun buildLatexImageUrl(
+    fun buildLatexUrls(
         latex: String,
         isDisplayMode: Boolean,
-        textSizeSp: Float = 14f
-    ): String {
+        sizeCommand: String = if (isDisplayMode) "\\large" else ""
+    ): Pair<String, String> {
         val cleanLatex = latex
             .trim()
             .replace("  ", " ")
             .replace("\n", " ")
 
-        val sizedLatex = if (isDisplayMode) {
-            "\\large $cleanLatex"
+        val sizedLatex = if (sizeCommand.isNotEmpty()) {
+            "$sizeCommand $cleanLatex"
         } else {
             cleanLatex
         }
@@ -91,9 +85,16 @@ object LatexParser {
         val encoded = URLEncoder.encode(sizedLatex, "UTF-8")
             .replace("+", "%20")
 
-        val url = "https://i.upmath.me/png/$encoded"
+        val svgUrl = "https://i.upmath.me/svg/$encoded"
+        val pngUrl = "https://i.upmath.me/png/$encoded"
 
-        Log.d("LatexParser", "URL: $url")
-        return url
+        Log.d("LatexParser", "SVG: $svgUrl")
+        Log.d("LatexParser", "PNG: $pngUrl")
+        
+        return Pair(svgUrl, pngUrl)
+    }
+
+    fun buildFullscreenLatexUrls(latex: String): Pair<String, String> {
+        return buildLatexUrls(latex, isDisplayMode = false, sizeCommand = "\\Huge")
     }
 }

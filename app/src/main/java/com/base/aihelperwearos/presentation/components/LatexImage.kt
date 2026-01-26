@@ -30,6 +30,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.res.stringResource
 import com.base.aihelperwearos.R
+import com.base.aihelperwearos.presentation.utils.LatexParser
 
 /**
  * Renders a LaTeX formula image with tap-to-zoom support.
@@ -44,6 +45,7 @@ import com.base.aihelperwearos.R
 fun LatexImage(
     latex: String,
     imageUrl: String,
+    fallbackImageUrl: String?,
     isDisplayMode: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -93,15 +95,41 @@ fun LatexImage(
                 )
             },
             error = {
-                Text(
-                    text = stringResource(R.string.formula_error, latex),
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colors.error,
-                    modifier = Modifier
-                        .background(Color(0xFF2A2A2A))
-                        .padding(8.dp)
-                )
+                if (fallbackImageUrl != null && imageUrl != fallbackImageUrl) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(fallbackImageUrl)
+                            .crossfade(300)
+                            .build(),
+                        contentDescription = stringResource(R.string.formula_description, latex),
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier
+                            .fillMaxWidth(0.95f)
+                            .background(Color.White)
+                            .padding(4.dp),
+                        error = {
+                            Text(
+                                text = stringResource(R.string.formula_error, latex),
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = MaterialTheme.colors.error,
+                                modifier = Modifier
+                                    .background(Color(0xFF2A2A2A))
+                                    .padding(8.dp)
+                            )
+                        }
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.formula_error, latex),
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colors.error,
+                        modifier = Modifier
+                            .background(Color(0xFF2A2A2A))
+                            .padding(8.dp)
+                    )
+                }
             }
         )
     }
@@ -109,6 +137,7 @@ fun LatexImage(
     if (showFullscreen) {
         LatexFullscreenDialog(
             imageUrl = imageUrl,
+            fallbackImageUrl = fallbackImageUrl,
             latex = latex,
             onDismiss = { showFullscreen = false }
         )
@@ -126,9 +155,14 @@ fun LatexImage(
 @Composable
 private fun LatexFullscreenDialog(
     imageUrl: String,
+    fallbackImageUrl: String?,
     latex: String,
     onDismiss: () -> Unit
 ) {
+    val (fullscreenSvgUrl, fullscreenPngUrl) = remember(latex) {
+        LatexParser.buildFullscreenLatexUrls(latex)
+    }
+    
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
@@ -149,7 +183,7 @@ private fun LatexFullscreenDialog(
         ) {
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl)
+                    .data(fullscreenSvgUrl)
                     .crossfade(300)
                     .build(),
                 contentDescription = stringResource(R.string.zoomed_formula_description, latex),
@@ -173,15 +207,48 @@ private fun LatexFullscreenDialog(
                     )
                 },
                 error = {
-                    Text(
-                        text = stringResource(R.string.formula_error, latex),
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color.Red,
-                        modifier = Modifier
-                            .background(Color.White)
-                            .padding(16.dp)
-                    )
+                    if (fullscreenPngUrl != null) {
+                        SubcomposeAsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(fullscreenPngUrl)
+                                .crossfade(300)
+                                .build(),
+                            contentDescription = stringResource(R.string.zoomed_formula_description, latex),
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize(0.75f)
+                                .graphicsLayer(
+                                    scaleX = scale,
+                                    scaleY = scale,
+                                    translationX = offset.x,
+                                    translationY = offset.y
+                                )
+                                .transformable(state = state)
+                                .background(Color.White)
+                                .padding(8.dp),
+                            error = {
+                                Text(
+                                    text = stringResource(R.string.formula_error, latex),
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color.Red,
+                                    modifier = Modifier
+                                        .background(Color.White)
+                                        .padding(16.dp)
+                                )
+                            }
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.formula_error, latex),
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color.Red,
+                            modifier = Modifier
+                                .background(Color.White)
+                                .padding(16.dp)
+                        )
+                    }
                 }
             )
             // Zoom In button - positioned safely within round screen bounds
