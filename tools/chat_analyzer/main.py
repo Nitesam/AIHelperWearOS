@@ -475,8 +475,15 @@ class ChatAnalyzer:
         
         processed = latex
         
-        # Convert \text{...} to \mathrm{...} (mathtext compatible)
-        processed = re.sub(r'\\text\{([^}]*)\}', r'\\mathrm{\1}', processed)
+        # Convert \text{...} to \mathrm{...} with proper spacing
+        # Replace spaces with \  (explicit space) to preserve them in mathtext
+        def convert_text_to_mathrm(match):
+            content = match.group(1)
+            # Replace spaces with explicit LaTeX spaces to preserve them
+            content_with_spaces = content.replace(' ', r'\ ')
+            return f'\\mathrm{{{content_with_spaces}}}'
+        
+        processed = re.sub(r'\\text\{([^}]*)\}', convert_text_to_mathrm, processed)
         
         # Convert \boxed{...} to a simple representation
         processed = re.sub(r'\\boxed\{([^}]*)\}', r'[\1]', processed)
