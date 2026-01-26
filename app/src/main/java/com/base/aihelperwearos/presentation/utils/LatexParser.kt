@@ -39,12 +39,12 @@ object LatexParser {
             }
 
             val cleanLatex = latexContent.trim()
-            val (svgUrl, pngUrl) = buildLatexUrls(cleanLatex, isDisplay)
+            val svgUrl = buildSvgUrl(cleanLatex, isDisplay)
             parts.add(
                 MathContentPart.LatexFormula(
                     content = cleanLatex,
                     imageUrl = svgUrl,
-                    fallbackImageUrl = pngUrl,
+                    fallbackImageUrl = null, // PNG will be built on-demand if SVG fails
                     isDisplayMode = isDisplay
                 )
             )
@@ -66,11 +66,36 @@ object LatexParser {
         return ParsedMathMessage(parts)
     }
 
-    fun buildLatexUrls(
+    /**
+     * Builds only the SVG URL for LaTeX rendering.
+     * PNG fallback URL should be built on-demand only if SVG fails.
+     */
+    fun buildSvgUrl(
         latex: String,
         isDisplayMode: Boolean,
         sizeCommand: String = if (isDisplayMode) "\\large" else ""
-    ): Pair<String, String> {
+    ): String {
+        val encoded = encodeLatex(latex, sizeCommand)
+        val svgUrl = "https://i.upmath.me/svg/$encoded"
+        Log.d("LatexParser", "SVG: $svgUrl")
+        return svgUrl
+    }
+
+    /**
+     * Builds PNG fallback URL - called only when SVG loading fails.
+     */
+    fun buildPngFallbackUrl(
+        latex: String,
+        isDisplayMode: Boolean,
+        sizeCommand: String = if (isDisplayMode) "\\large" else ""
+    ): String {
+        val encoded = encodeLatex(latex, sizeCommand)
+        val pngUrl = "https://i.upmath.me/png/$encoded"
+        Log.d("LatexParser", "PNG fallback: $pngUrl")
+        return pngUrl
+    }
+
+    private fun encodeLatex(latex: String, sizeCommand: String): String {
         val cleanLatex = latex
             .trim()
             .replace("  ", " ")
@@ -82,19 +107,15 @@ object LatexParser {
             cleanLatex
         }
 
-        val encoded = URLEncoder.encode(sizedLatex, "UTF-8")
+        return URLEncoder.encode(sizedLatex, "UTF-8")
             .replace("+", "%20")
-
-        val svgUrl = "https://i.upmath.me/svg/$encoded"
-        val pngUrl = "https://i.upmath.me/png/$encoded"
-
-        Log.d("LatexParser", "SVG: $svgUrl")
-        Log.d("LatexParser", "PNG: $pngUrl")
-        
-        return Pair(svgUrl, pngUrl)
     }
 
-    fun buildFullscreenLatexUrls(latex: String): Pair<String, String> {
-        return buildLatexUrls(latex, isDisplayMode = false, sizeCommand = "\\Huge")
+    fun buildFullscreenSvgUrl(latex: String): String {
+        return buildSvgUrl(latex, isDisplayMode = false, sizeCommand = "\\Huge")
+    }
+
+    fun buildFullscreenPngFallbackUrl(latex: String): String {
+        return buildPngFallbackUrl(latex, isDisplayMode = false, sizeCommand = "\\Huge")
     }
 }

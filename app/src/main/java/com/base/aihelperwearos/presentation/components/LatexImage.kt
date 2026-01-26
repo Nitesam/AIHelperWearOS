@@ -95,41 +95,33 @@ fun LatexImage(
                 )
             },
             error = {
-                if (fallbackImageUrl != null && imageUrl != fallbackImageUrl) {
-                    SubcomposeAsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(fallbackImageUrl)
-                            .crossfade(300)
-                            .build(),
+                // Build PNG fallback URL on-demand only when SVG fails
+                val pngFallbackUrl = remember(latex) {
+                    LatexParser.buildPngFallbackUrl(latex, isDisplayMode)
+                }
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(pngFallbackUrl)
+                        .crossfade(300)
+                        .build(),
                         contentDescription = stringResource(R.string.formula_description, latex),
                         contentScale = ContentScale.FillWidth,
                         modifier = Modifier
                             .fillMaxWidth(0.95f)
                             .background(Color.White)
                             .padding(4.dp),
-                        error = {
-                            Text(
-                                text = stringResource(R.string.formula_error, latex),
-                                fontSize = 10.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colors.error,
-                                modifier = Modifier
-                                    .background(Color(0xFF2A2A2A))
-                                    .padding(8.dp)
-                            )
-                        }
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.formula_error, latex),
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colors.error,
-                        modifier = Modifier
-                            .background(Color(0xFF2A2A2A))
-                            .padding(8.dp)
-                    )
-                }
+                    error = {
+                        Text(
+                            text = stringResource(R.string.formula_error, latex),
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colors.error,
+                            modifier = Modifier
+                                .background(Color(0xFF2A2A2A))
+                                .padding(8.dp)
+                        )
+                    }
+                )
             }
         )
     }
@@ -159,16 +151,18 @@ private fun LatexFullscreenDialog(
     latex: String,
     onDismiss: () -> Unit
 ) {
-    val (fullscreenSvgUrl, fullscreenPngUrl) = remember(latex) {
-        LatexParser.buildFullscreenLatexUrls(latex)
+    val fullscreenSvgUrl = remember(latex) {
+        LatexParser.buildFullscreenSvgUrl(latex)
     }
     
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
+    // Improved pan: scale the offset change inversely to zoom for consistent pan speed
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
         scale = (scale * zoomChange).coerceIn(0.5f, 5f)
-        offset += offsetChange
+        // Multiply offset by scale to make panning faster when zoomed in
+        offset += offsetChange * scale
     }
 
     Dialog(
@@ -185,6 +179,8 @@ private fun LatexFullscreenDialog(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(fullscreenSvgUrl)
                     .crossfade(300)
+                    // Request higher resolution for better zoom quality
+                    .size(coil.size.Size.ORIGINAL)
                     .build(),
                 contentDescription = stringResource(R.string.zoomed_formula_description, latex),
                 contentScale = ContentScale.Fit,
@@ -207,48 +203,41 @@ private fun LatexFullscreenDialog(
                     )
                 },
                 error = {
-                    if (fullscreenPngUrl != null) {
-                        SubcomposeAsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(fullscreenPngUrl)
-                                .crossfade(300)
-                                .build(),
-                            contentDescription = stringResource(R.string.zoomed_formula_description, latex),
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize(0.75f)
-                                .graphicsLayer(
-                                    scaleX = scale,
-                                    scaleY = scale,
-                                    translationX = offset.x,
-                                    translationY = offset.y
-                                )
-                                .transformable(state = state)
-                                .background(Color.White)
-                                .padding(8.dp),
-                            error = {
-                                Text(
-                                    text = stringResource(R.string.formula_error, latex),
-                                    fontSize = 12.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = Color.Red,
-                                    modifier = Modifier
-                                        .background(Color.White)
-                                        .padding(16.dp)
-                                )
-                            }
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.formula_error, latex),
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = Color.Red,
-                            modifier = Modifier
-                                .background(Color.White)
-                                .padding(16.dp)
-                        )
+                    // Build PNG fallback URL on-demand only when SVG fails
+                    val fullscreenPngUrl = remember(latex) {
+                        LatexParser.buildFullscreenPngFallbackUrl(latex)
                     }
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(fullscreenPngUrl)
+                            .crossfade(300)
+                            .size(coil.size.Size.ORIGINAL)
+                            .build(),
+                        contentDescription = stringResource(R.string.zoomed_formula_description, latex),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize(0.75f)
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale,
+                                translationX = offset.x,
+                                translationY = offset.y
+                            )
+                            .transformable(state = state)
+                            .background(Color.White)
+                            .padding(8.dp),
+                        error = {
+                            Text(
+                                text = stringResource(R.string.formula_error, latex),
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color.Red,
+                                modifier = Modifier
+                                    .background(Color.White)
+                                    .padding(16.dp)
+                            )
+                        }
+                    )
                 }
             )
             // Zoom In button - positioned safely within round screen bounds

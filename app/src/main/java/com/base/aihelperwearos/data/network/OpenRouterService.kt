@@ -75,7 +75,7 @@ class OpenRouterService(
 
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 60000
+            requestTimeoutMillis = 180000
             connectTimeoutMillis = 60000
             socketTimeoutMillis = 60000
         }

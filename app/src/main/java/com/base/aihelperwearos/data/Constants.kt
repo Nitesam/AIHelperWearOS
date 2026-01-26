@@ -11,6 +11,7 @@ object Constants {
         Ogni sezione deve essere un BLOCCO LaTeX INDIPENDENTE racchiuso tra doppio dollaro $$.
         NON usare \begin{aligned}. NON usare testo markdown fuori dai blocchi LaTeX.
         UN BLOCCO PUO' ESSERE O SOLTANTO ALGEBRICO O SOLTANTO DI TESTO.
+        IL TESTO LADDOVE POSSIBILE VA MESSO FUORI LATEX.
         NON unire mai più di 2 passaggi algebrici nello stesso blocco.
 
         📐 STRUTTURA OBBLIGATORIA DELLA RISPOSTA:
