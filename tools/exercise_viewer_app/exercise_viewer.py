@@ -248,10 +248,28 @@ class ExerciseViewer(QMainWindow):
             
         result = text
         
-        # Escape HTML
+        # Escape HTML (ma NON i backslash del LaTeX)
         result = result.replace('&', '&amp;')
         result = result.replace('<', '&lt;')
         result = result.replace('>', '&gt;')
+        
+        # Prima gestisci $$...$$ (display math) con placeholder
+        import re
+        
+        # Salva le formule display in un placeholder per non confonderle con inline
+        display_formulas = []
+        def save_display(match):
+            display_formulas.append(match.group(1))
+            return f"__DISPLAY_{len(display_formulas)-1}__"
+        
+        result = re.sub(r'\$\$(.+?)\$\$', save_display, result, flags=re.DOTALL)
+        
+        # Ora converti le formule inline $...$ in \(...\)
+        result = re.sub(r'\$([^$]+?)\$', r'\\(\1\\)', result)
+        
+        # Ripristina le formule display come \[...\]
+        for i, formula in enumerate(display_formulas):
+            result = result.replace(f"__DISPLAY_{i}__", f"\\[{formula}\\]")
         
         # Converti newline in <br>
         result = result.replace('\\n', '<br>')
@@ -262,19 +280,15 @@ class ExerciseViewer(QMainWindow):
         result = result.replace('FASE 1:', '<div class="phase">FASE 1:</div>')
         result = result.replace('FASE 2:', '<div class="phase">FASE 2:</div>')
         result = result.replace('FASE 3:', '<div class="phase">FASE 3:</div>')
+        result = result.replace('FASE 4:', '<div class="phase">FASE 4:</div>')
+        result = result.replace('FASE 5:', '<div class="phase">FASE 5:</div>')
+        result = result.replace('FASE 6:', '<div class="phase">FASE 6:</div>')
         
         # Evidenzia risposta
         if 'RISPOSTA:' in result:
             parts = result.split('RISPOSTA:')
             if len(parts) == 2:
                 result = parts[0] + '<div class="result"><span class="result-label">✅ RISPOSTA:</span><br>' + parts[1] + '</div>'
-        
-        # Converti $$...$$ in display math \[...\]
-        result = result.replace('$$', '\\[', 1)
-        while '$$' in result:
-            result = result.replace('$$', '\\]', 1)
-            if '$$' in result:
-                result = result.replace('$$', '\\[', 1)
                 
         return result
         
