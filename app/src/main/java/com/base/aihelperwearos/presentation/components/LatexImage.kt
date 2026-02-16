@@ -30,6 +30,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.res.stringResource
 import com.base.aihelperwearos.R
+import com.base.aihelperwearos.presentation.utils.LatexParser
 
 /**
  * Renders a LaTeX formula image with tap-to-zoom support.
@@ -44,6 +45,7 @@ import com.base.aihelperwearos.R
 fun LatexImage(
     latex: String,
     imageUrl: String,
+    fallbackImageUrl: String?,
     isDisplayMode: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -93,14 +95,32 @@ fun LatexImage(
                 )
             },
             error = {
-                Text(
-                    text = stringResource(R.string.formula_error, latex),
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colors.error,
-                    modifier = Modifier
-                        .background(Color(0xFF2A2A2A))
-                        .padding(8.dp)
+                // Build PNG fallback URL on-demand only when SVG fails
+                val pngFallbackUrl = remember(latex) {
+                    LatexParser.buildPngFallbackUrl(latex, isDisplayMode)
+                }
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(pngFallbackUrl)
+                        .crossfade(300)
+                        .build(),
+                        contentDescription = stringResource(R.string.formula_description, latex),
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier
+                            .fillMaxWidth(0.95f)
+                            .background(Color.White)
+                            .padding(4.dp),
+                    error = {
+                        Text(
+                            text = stringResource(R.string.formula_error, latex),
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colors.error,
+                            modifier = Modifier
+                                .background(Color(0xFF2A2A2A))
+                                .padding(8.dp)
+                        )
+                    }
                 )
             }
         )
@@ -109,6 +129,7 @@ fun LatexImage(
     if (showFullscreen) {
         LatexFullscreenDialog(
             imageUrl = imageUrl,
+            fallbackImageUrl = fallbackImageUrl,
             latex = latex,
             onDismiss = { showFullscreen = false }
         )
@@ -126,15 +147,22 @@ fun LatexImage(
 @Composable
 private fun LatexFullscreenDialog(
     imageUrl: String,
+    fallbackImageUrl: String?,
     latex: String,
     onDismiss: () -> Unit
 ) {
+    val fullscreenSvgUrl = remember(latex) {
+        LatexParser.buildFullscreenSvgUrl(latex)
+    }
+    
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
+    // Improved pan: scale the offset change inversely to zoom for consistent pan speed
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
         scale = (scale * zoomChange).coerceIn(0.5f, 5f)
-        offset += offsetChange
+        // Multiply offset by scale to make panning faster when zoomed in
+        offset += offsetChange * scale
     }
 
     Dialog(
@@ -149,8 +177,10 @@ private fun LatexFullscreenDialog(
         ) {
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl)
+                    .data(fullscreenSvgUrl)
                     .crossfade(300)
+                    // Request higher resolution for better zoom quality
+                    .size(coil.size.Size.ORIGINAL)
                     .build(),
                 contentDescription = stringResource(R.string.zoomed_formula_description, latex),
                 contentScale = ContentScale.Fit,
@@ -173,14 +203,40 @@ private fun LatexFullscreenDialog(
                     )
                 },
                 error = {
-                    Text(
-                        text = stringResource(R.string.formula_error, latex),
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color.Red,
+                    // Build PNG fallback URL on-demand only when SVG fails
+                    val fullscreenPngUrl = remember(latex) {
+                        LatexParser.buildFullscreenPngFallbackUrl(latex)
+                    }
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(fullscreenPngUrl)
+                            .crossfade(300)
+                            .size(coil.size.Size.ORIGINAL)
+                            .build(),
+                        contentDescription = stringResource(R.string.zoomed_formula_description, latex),
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
+                            .fillMaxSize(0.75f)
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale,
+                                translationX = offset.x,
+                                translationY = offset.y
+                            )
+                            .transformable(state = state)
                             .background(Color.White)
-                            .padding(16.dp)
+                            .padding(8.dp),
+                        error = {
+                            Text(
+                                text = stringResource(R.string.formula_error, latex),
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color.Red,
+                                modifier = Modifier
+                                    .background(Color.White)
+                                    .padding(16.dp)
+                            )
+                        }
                     )
                 }
             )

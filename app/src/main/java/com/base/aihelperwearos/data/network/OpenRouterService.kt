@@ -75,7 +75,7 @@ class OpenRouterService(
 
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 60000
+            requestTimeoutMillis = 180000
             connectTimeoutMillis = 60000
             socketTimeoutMillis = 60000
         }
@@ -161,7 +161,7 @@ class OpenRouterService(
      */
     suspend fun solveAudioMathProblem(
         audioFile: File,
-        mathModel: String = "anthropic/claude-4.5-sonnet",
+        mathModel: String = "openai/gpt-5.2",
         previousMessages: List<Message> = emptyList(),
         languageCode: String
     ): Result<com.base.aihelperwearos.data.models.MathSolution> {

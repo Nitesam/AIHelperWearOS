@@ -6,6 +6,7 @@ sealed class MathContentPart {
     data class LatexFormula(
         val content: String,
         val imageUrl: String,
+        val fallbackImageUrl: String?,
         val isDisplayMode: Boolean
     ) : MathContentPart()
 }

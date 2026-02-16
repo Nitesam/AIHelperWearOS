@@ -14,8 +14,7 @@ import com.base.aihelperwearos.R
 import com.base.aihelperwearos.data.Constants
 import com.base.aihelperwearos.data.rag.MathContextRetriever
 import com.base.aihelperwearos.data.rag.RagRepository
-import com.base.aihelperwearos.data.rag.TheoremResult
-import com.base.aihelperwearos.data.rag.models.ContentType
+
 import com.base.aihelperwearos.data.repository.ChatRepository
 import com.base.aihelperwearos.data.repository.ChatSession
 import com.base.aihelperwearos.data.repository.ChatMessage
@@ -46,7 +45,7 @@ enum class Language(val code: String, val displayName: String) {
 
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
-    val selectedModel: String = "anthropic/claude-sonnet-4.5",
+    val selectedModel: String = "openai/gpt-5.2",
     val currentSessionId: Long? = null,
     val chatMessages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
@@ -412,68 +411,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (extractedKeywords != null) {
                     android.util.Log.d("MainViewModel", "📊 RAG - Extracted keywords (${extractedKeywords.size}): ${extractedKeywords.joinToString(", ")}")
                     android.util.Log.d("MainViewModel", "📊 RAG - Is theory query from transcription: $isTheoryFromTranscription")
-                }
-                
-                if (_uiState.value.isAnalysisMode) {
-                    android.util.Log.d("MainViewModel", "🔍 RAG: Analyzing query type")
-                    
-                    val queryType = if (isTheoryFromTranscription == true) {
-                        android.util.Log.d("MainViewModel", "🔍 RAG: Using transcription classification → THEOREM")
-                        ContentType.THEOREM
-                    } else {
-                        val classified = ragRepository?.classifyQueryType(userMessage) ?: ContentType.UNKNOWN
-                        android.util.Log.d("MainViewModel", "🔍 RAG: Text-based classification → $classified")
-                        classified
-                    }
-                    
-                    android.util.Log.d("MainViewModel", "🔍 RAG: Final query type = $queryType")
-                    
-                    if (queryType == ContentType.THEOREM) {
-                        android.util.Log.d("MainViewModel", "📚 RAG: THEOREM query detected - attempting direct lookup")
-                        
-                        val enhancedQuery = if (!extractedKeywords.isNullOrEmpty()) {
-                            val keywordsText = extractedKeywords.joinToString(" ")
-                            android.util.Log.d("MainViewModel", "📚 RAG: Enhancing query with keywords: $keywordsText")
-                            "$userMessage $keywordsText"
-                        } else {
-                            userMessage
-                        }
-                        
-                        android.util.Log.d("MainViewModel", "📚 RAG: Enhanced query: '$enhancedQuery'")
-                        val theoremResult = ragRepository?.findTheorem(enhancedQuery)
-                        
-                        when (theoremResult) {
-                            is TheoremResult.Found -> {
-                                android.util.Log.d("MainViewModel", "✅ RAG: Theorem FOUND directly → '${theoremResult.theorem.nome}'")
-                                android.util.Log.d("MainViewModel", "💰 RAG: Skipping LLM call - returning pre-formatted content")
-                                android.util.Log.d("MainViewModel", "📄 RAG: Content length: ${theoremResult.formattedContent.length} chars")
-                                
-                                chatRepository.addMessage(
-                                    sessionId = sessionId,
-                                    role = "assistant",
-                                    content = theoremResult.formattedContent
-                                )
-                                _uiState.update { 
-                                    it.copy(
-                                        isLoading = false,
-                                        extractedKeywords = null,
-                                        isTheoryQuery = null
-                                    ) 
-                                }
-                                android.util.Log.d("MainViewModel", "✅ RAG: Theorem response saved - NO LLM COST!")
-                                return@launch
-                            }
-                            is TheoremResult.NotFound -> {
-                                android.util.Log.d("MainViewModel", "⚠️ RAG: Theorem NOT in database: ${theoremResult.reason}")
-                                android.util.Log.d("MainViewModel", "🔄 RAG: Falling back to LLM for answer")
-                            }
-                            null -> {
-                                android.util.Log.d("MainViewModel", "⚠️ RAG: Repository not available")
-                            }
-                        }
-                    } else {
-                        android.util.Log.d("MainViewModel", "📝 RAG: EXERCISE query - will use RAG context + LLM")
-                    }
                 }
                 
                 var ragContext: String? = null

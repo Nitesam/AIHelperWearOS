@@ -7,6 +7,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import coil.ImageLoader
+import coil.decode.SvgDecoder
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 
 class AIHelperApplication : Application() {
 
@@ -35,6 +39,7 @@ class AIHelperApplication : Application() {
         super.onCreate()
         Log.d(TAG, "AIHelperApplication onCreate")
 
+        initializeCoil()
         initializeRagSystem()
     }
 
@@ -43,6 +48,29 @@ class AIHelperApplication : Application() {
      *
      * @return `Unit` after launching the initialization coroutine.
      */
+    private fun initializeCoil() {
+        val imageLoader = ImageLoader.Builder(this)
+            .components {
+                add(SvgDecoder.Factory())
+            }
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("latex_cache"))
+                    .maxSizeBytes(50 * 1024 * 1024)
+                    .build()
+            }
+            .respectCacheHeaders(false)
+            .build()
+
+        coil.Coil.setImageLoader(imageLoader)
+        Log.d(TAG, "Coil ImageLoader initialized with SVG support")
+    }
+
     private fun initializeRagSystem() {
         applicationScope.launch {
             try {

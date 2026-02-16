@@ -19,7 +19,7 @@ class UserPreferences(private val context: Context) {
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
         private val MODEL_KEY = stringPreferencesKey("selected_model")
-        private const val DEFAULT_MODEL = "anthropic/claude-sonnet-4.5"
+        private const val DEFAULT_MODEL = "openai/gpt-5.2"
     }
 
     val modelFlow: Flow<String> = context.dataStore.data.map { preferences ->
