@@ -30,6 +30,9 @@ class OpenRouterService(
 ) {
     companion object {
         private const val TRANSCRIPTION_MODEL = "google/gemini-3-flash-preview"
+        private const val ANALYSIS_MAX_TOKENS = 8000
+        private const val CHAT_MAX_TOKENS = 1000
+        private const val CONTINUATION_MAX_TOKENS = 6000
     }
 
     private val appContext = context.applicationContext
@@ -138,16 +141,48 @@ class OpenRouterService(
             val request = OpenRouterRequest(
                 model = modelId,
                 messages = allMessages,
-                maxTokens = if (isAnalysisMode) 3000 else 1000,
+                maxTokens = if (isAnalysisMode) ANALYSIS_MAX_TOKENS else CHAT_MAX_TOKENS,
                 temperature = if (isAnalysisMode) 0.2 else 0.7
             )
 
-            val response: OpenRouterResponse = client.post("chat/completions") {
-                setBody(request)
-            }.body()
-
-            val content = response.choices.firstOrNull()?.message?.content
+            val response: OpenRouterResponse = requestChatCompletion(request)
+            val firstChoice = response.choices.firstOrNull()
                 ?: return Result.failure(Exception("Nessuna risposta dall'AI"))
+            var content = firstChoice.message.content
+            val initialFinishReason = firstChoice.finishReason
+            Log.d(
+                "OpenRouter",
+                "sendMessage - Finish reason: ${initialFinishReason ?: "unknown"}, usage=${response.usage?.totalTokens ?: -1}"
+            )
+
+            // If response is cut by token limit, request one continuation and append it.
+            if (isAnalysisMode && initialFinishReason == "length") {
+                Log.w("OpenRouter", "sendMessage - Response truncated (finish_reason=length), requesting continuation")
+                val continuationInstruction = if (languageCode == "en") {
+                    "Continue EXACTLY from where you stopped. Do not repeat previous text. Complete any open LaTeX blocks."
+                } else {
+                    "Continua ESATTAMENTE dal punto in cui ti sei fermato. Non ripetere il testo precedente. Completa eventuali blocchi LaTeX aperti."
+                }
+                val continuationRequest = OpenRouterRequest(
+                    model = modelId,
+                    messages = allMessages + Message(role = "assistant", content = content) + Message(
+                        role = "user",
+                        content = continuationInstruction
+                    ),
+                    maxTokens = CONTINUATION_MAX_TOKENS,
+                    temperature = 0.2
+                )
+                val continuationResponse = requestChatCompletion(continuationRequest)
+                val continuationChoice = continuationResponse.choices.firstOrNull()
+                val continuationText = continuationChoice?.message?.content.orEmpty()
+                Log.d(
+                    "OpenRouter",
+                    "sendMessage - Continuation finish reason: ${continuationChoice?.finishReason ?: "unknown"}, usage=${continuationResponse.usage?.totalTokens ?: -1}"
+                )
+                if (continuationText.isNotBlank()) {
+                    content = content.trimEnd() + "\n" + continuationText.trimStart()
+                }
+            }
 
             Result.success(content)
 
@@ -155,6 +190,12 @@ class OpenRouterService(
             Log.e("OpenRouter", "Errore chiamata API", e)
             Result.failure(e)
         }
+    }
+
+    private suspend fun requestChatCompletion(request: OpenRouterRequest): OpenRouterResponse {
+        return client.post("chat/completions") {
+            setBody(request)
+        }.body()
     }
 
     /**
