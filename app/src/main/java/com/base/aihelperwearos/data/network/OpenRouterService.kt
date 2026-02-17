@@ -28,6 +28,10 @@ class OpenRouterService(
     private val apiKey: String,
     context: Context
 ) {
+    companion object {
+        private const val TRANSCRIPTION_MODEL = "google/gemini-3-flash-preview"
+    }
+
     private val appContext = context.applicationContext
     private val userPreferences = UserPreferences(appContext)
     private val taxonomyGuideCache = mutableMapOf<String, String>()
@@ -217,7 +221,7 @@ class OpenRouterService(
     suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String): Result<com.base.aihelperwearos.data.models.TranscriptionResult> {
         return try {
             Log.d("OpenRouter", "=== TRANSCRIPTION START ===")
-            Log.d("OpenRouter", "Transcribing with Gemini 3.0 Flash (audio support)")
+            Log.d("OpenRouter", "Transcribing with $TRANSCRIPTION_MODEL (audio support)")
             Log.d("OpenRouter", "Language parameter received: '$languageCode'")
             Log.d("OpenRouter", "Transcription language: ${if (languageCode == "en") "ENGLISH" else "ITALIANO"} (code: $languageCode)")
 
@@ -236,7 +240,7 @@ class OpenRouterService(
 
             val requestBody = buildString {
                 append("{")
-                append("\"model\":\"google/gemini-2.5-flash\",")
+                append("\"model\":\"$TRANSCRIPTION_MODEL\",")
                 append("\"messages\":[{")
                 append("\"role\":\"user\",")
                 append("\"content\":[")
@@ -259,7 +263,7 @@ class OpenRouterService(
                 append("}")
             }
 
-            Log.d("OpenRouter", "🚀 Sending to Gemini 3.0 Flash for transcription...")
+            Log.d("OpenRouter", "🚀 Sending to $TRANSCRIPTION_MODEL for transcription...")
 
             val response: String = client.post("chat/completions") {
                 setBody(requestBody)
