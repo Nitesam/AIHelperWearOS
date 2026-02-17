@@ -1,5 +1,6 @@
 package com.base.aihelperwearos.presentation.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -167,8 +168,15 @@ private fun LatexFullscreenDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
     ) {
+        // Consume back inside dialog to avoid accidental Activity close during fast gestures.
+        BackHandler(enabled = true) { onDismiss() }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -179,8 +187,8 @@ private fun LatexFullscreenDialog(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(fullscreenSvgUrl)
                     .crossfade(300)
-                    // Request higher resolution for better zoom quality
-                    .size(coil.size.Size.ORIGINAL)
+                    // Avoid huge ORIGINAL decodes on Wear OS to reduce jank/pressure.
+                    .size(1024)
                     .build(),
                 contentDescription = stringResource(R.string.zoomed_formula_description, latex),
                 contentScale = ContentScale.Fit,
@@ -211,7 +219,7 @@ private fun LatexFullscreenDialog(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(fullscreenPngUrl)
                             .crossfade(300)
-                            .size(coil.size.Size.ORIGINAL)
+                            .size(1024)
                             .build(),
                         contentDescription = stringResource(R.string.zoomed_formula_description, latex),
                         contentScale = ContentScale.Fit,
