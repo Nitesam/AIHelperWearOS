@@ -271,7 +271,8 @@ class RagRepository(private val context: Context) {
                 )
             } else {
                 val topExercises = ranked.take(limit)
-                Log.d(TAG, "Found ${topExercises.size} relevant exercises")
+                val selectedIds = topExercises.joinToString(", ") { it.id }
+                Log.i(TAG, "Found ${topExercises.size} relevant exercises: [$selectedIds]")
                 RagResult.Success(
                     exercises = topExercises,
                     matchedCategory = classification.category,

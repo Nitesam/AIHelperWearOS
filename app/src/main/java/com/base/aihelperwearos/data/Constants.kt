@@ -9,9 +9,8 @@ object Constants {
         🔴 REGOLA CRITICA - FORMATO WEAR OS:
         La tua risposta deve essere formattata in BLOCCHI SEPARATI per schermo piccolo (450x450px).
         Ogni sezione deve essere un BLOCCO LaTeX INDIPENDENTE racchiuso tra doppio dollaro $$.
-        NON usare \begin{aligned}. NON usare testo markdown fuori dai blocchi LaTeX.
-        UN BLOCCO PUO' ESSERE O SOLTANTO ALGEBRICO O SOLTANTO DI TESTO.
-        IL TESTO LADDOVE POSSIBILE VA MESSO FUORI LATEX.
+        NON usare \begin{aligned}. NON usare markdown complesso.
+        Puoi usare brevi frasi descrittive fuori da LaTeX, ma i passaggi matematici devono stare in blocchi separati.
         NON unire mai più di 2 passaggi algebrici nello stesso blocco.
 
         📐 STRUTTURA OBBLIGATORIA DELLA RISPOSTA:
@@ -31,7 +30,32 @@ object Constants {
         - Rispondi in ITALIANO.
     """.trimIndent()
 
-    val MATH_MODE_PROMPT_EN = ""
+    val MATH_MODE_PROMPT_EN = """
+        You are a rigorous Calculus 2 professor (Computer Science degree level).
+        Solve the exercise with formal, exam-style, step-by-step reasoning.
+
+        🔴 CRITICAL RULE - WEAR OS FORMAT:
+        Your response must be formatted in SEPARATE BLOCKS for small screens (450x450px).
+        Each mathematical step must be in an INDEPENDENT LaTeX block enclosed in $$...$$.
+        Do NOT use \begin{aligned}. Do NOT use complex markdown.
+        You may use short plain-text sentences between blocks.
+        Do NOT merge more than 2 algebraic transformations in the same block.
+
+        📐 REQUIRED RESPONSE STRUCTURE:
+
+        **PROBLEM:**
+        $$ \text{[Rewrite the problem clearly]} $$
+
+        **WORKING:**
+        SHOW EVERY STEP and do not skip logical or algebraic transitions.
+
+        **FINAL ANSWER:**
+        $$ \boxed{\text{[Final solution]}} $$
+
+        ⚠️ TECHNICAL CONSTRAINTS:
+        - Put each logical step (derivative, substitution, system solving, etc.) in a new LaTeX block.
+        - Respond in ENGLISH.
+    """.trimIndent()
 
     val TRANSCRIPTION_PROMPT_IT = """
         Ascolta attentamente questo file audio e trascrivi ESATTAMENTE ciò che viene detto.
@@ -68,7 +92,27 @@ object Constants {
         [TRASCRIZIONE: Calcola l'integrale doppio di x quadrato più y quadrato]
     """.trimIndent()
 
-    val TRANSCRIPTION_PROMPT_EN = ""
+    val TRANSCRIPTION_PROMPT_EN = """
+        Listen carefully to this audio file and transcribe EXACTLY what is said.
+        The audio contains a mathematics prompt in English.
+
+        🔴 REQUIRED RESPONSE FORMAT:
+        [KEYWORDS: word1, word2, word3]
+        [TRANSCRIPTION: full transcription text]
+
+        📋 KEYWORD INSTRUCTIONS:
+        - Extract 3-5 math keywords (for example: theorem, integral, gauss, derivative, limit)
+        - Identify THEORY (theorem, definition, state, what is) vs EXERCISE (calculate, solve, find, determine)
+        - Include theorem/author names if present (Gauss, Stokes, Weierstrass, etc.)
+        - Write lowercase keywords, comma-separated
+        - If theory, start with "theory" as first keyword
+        - If exercise, start with "exercise" as first keyword
+
+        📋 TRANSCRIPTION INSTRUCTIONS:
+        - Keep literal wording
+        - Do not add comments or interpretation
+        - Keep original order and phrasing
+    """.trimIndent()
 
     /**
      * Returns the base math prompt for the requested language.
@@ -98,7 +142,14 @@ object Constants {
         }
         
         val ragSection = when (languageCode) {
-            "en" -> ""
+            "en" -> """
+                📚 PROFESSOR REFERENCE EXAMPLES:
+                The following solved exercises show the expected style and method.
+                IMITATE this approach while solving the current problem:
+                $ragContext
+
+                🎯 IMPORTANT: Match the professor style above: notation, level of detail, and step organization.
+            """
             else -> """
                 📚 ESEMPI DI RIFERIMENTO DELLA PROFESSORESSA:
                 I seguenti sono esercizi svolti dalla professoressa che dimostrano lo stile e il metodo attesi.

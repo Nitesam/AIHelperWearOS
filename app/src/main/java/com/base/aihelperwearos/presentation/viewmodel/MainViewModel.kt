@@ -75,12 +75,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val audioPlayer = AudioPlayer(application)
     private val userPreferences = com.base.aihelperwearos.data.preferences.UserPreferences(application)
 
-    private val ragRepository: RagRepository? by lazy {
-        AIHelperApplication.getRagRepository()
-    }
-    
-    private val mathContextRetriever: MathContextRetriever? by lazy {
-        ragRepository?.let { MathContextRetriever(it) }
+    private var cachedRagRepository: RagRepository? = null
+    private var cachedMathContextRetriever: MathContextRetriever? = null
+
+    /**
+     * Returns a live MathContextRetriever bound to the current application RAG repository.
+     *
+     * Avoids sticky-null behavior caused by lazy initialization when app startup is still in progress.
+     */
+    private fun getMathContextRetriever(): MathContextRetriever? {
+        val currentRepository = AIHelperApplication.getRagRepository() ?: return null
+        if (currentRepository !== cachedRagRepository || cachedMathContextRetriever == null) {
+            cachedRagRepository = currentRepository
+            cachedMathContextRetriever = MathContextRetriever(currentRepository)
+        }
+        return cachedMathContextRetriever
     }
 
     private var recordingService: AudioRecordingService? = null
@@ -398,35 +407,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     chatRepository.updateSessionTitle(sessionId, newTitle)
                 }
 
-                val messages = _uiState.value.chatMessages.map { msg ->
+                val messages = chatRepository.getMessagesForSession(sessionId).first().map { msg ->
                     Message(role = msg.role, content = msg.content)
                 }
 
                 val currentLanguage = _uiState.value.selectedLanguage.code
-                
-                val extractedKeywords = _uiState.value.extractedKeywords
-                val isTheoryFromTranscription = _uiState.value.isTheoryQuery
-                
-                android.util.Log.d("MainViewModel", "📊 RAG Context - Keywords available: ${extractedKeywords != null}")
-                if (extractedKeywords != null) {
-                    android.util.Log.d("MainViewModel", "📊 RAG - Extracted keywords (${extractedKeywords.size}): ${extractedKeywords.joinToString(", ")}")
-                    android.util.Log.d("MainViewModel", "📊 RAG - Is theory query from transcription: $isTheoryFromTranscription")
-                }
-                
+
                 var ragContext: String? = null
                 if (_uiState.value.isAnalysisMode) {
-                    android.util.Log.d("MainViewModel", "sendMessage - RAG: Retrieving context for Analysis Mode")
-                    ragContext = try {
-                        mathContextRetriever?.retrieveContext(userMessage)
+                    val ragMetadata = try {
+                        getMathContextRetriever()?.retrieveContextWithMetadata(userMessage)
                     } catch (e: Exception) {
                         android.util.Log.w("MainViewModel", "sendMessage - RAG failed, using base prompt", e)
                         null
                     }
-                    
-                    if (ragContext != null) {
-                        android.util.Log.d("MainViewModel", "sendMessage - RAG: Found relevant context (${ragContext.length} chars)")
+
+                    ragContext = ragMetadata?.context
+
+                    if (ragMetadata?.success == true && ragMetadata.sentExerciseIds.isNotEmpty()) {
+                        val sentSummary = ragMetadata.sentExerciseIds.zip(ragMetadata.sentExerciseLabels)
+                            .joinToString(" | ") { (id, label) -> "$id [$label]" }
+                        android.util.Log.i("MainViewModel", "RAG examples sent to AI: $sentSummary")
                     } else {
-                        android.util.Log.d("MainViewModel", "sendMessage - RAG: No relevant context found, using base prompt")
+                        val reason = when {
+                            ragMetadata == null -> "repository unavailable"
+                            !ragMetadata.fallbackReason.isNullOrBlank() -> ragMetadata.fallbackReason
+                            else -> "no match"
+                        }
+                        android.util.Log.i("MainViewModel", "RAG examples sent to AI: none ($reason)")
                     }
                 }
                 

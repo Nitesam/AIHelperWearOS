@@ -30,7 +30,7 @@ data class Exercise(
      */
     fun formatForPrompt(): String {
         return buildString {
-            appendLine("📝 Esercizio [$categoria - $sottotipo]:")
+            appendLine("📝 Esercizio [ID: $id | $categoria - $sottotipo]:")
             appendLine(testo)
             appendLine()
             appendLine("✅ Svolgimento della professoressa:")

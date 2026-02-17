@@ -58,20 +58,15 @@ class ChatRepository(private val context: Context) {
      * @return `ChatData` with sessions/messages from storage or defaults.
      */
     private suspend fun getChatData(): ChatData {
-        android.util.Log.d("ChatRepository", "getChatData - START")
         return try {
             val data = context.dataStore.data.map { preferences ->
                 val jsonString = preferences[CHAT_DATA_KEY]
-                android.util.Log.d("ChatRepository", "getChatData - jsonString: ${jsonString?.take(100)}")
 
                 if (jsonString == null) {
-                    android.util.Log.d("ChatRepository", "getChatData - No data, returning empty ChatData")
                     ChatData()
                 } else {
                     try {
-                        val decoded = json.decodeFromString<ChatData>(jsonString)
-                        android.util.Log.d("ChatRepository", "getChatData - Decoded data: sessions=${decoded.sessions.size}")
-                        decoded
+                        json.decodeFromString<ChatData>(jsonString)
                     } catch (e: Exception) {
                         android.util.Log.e("ChatRepository", "getChatData - Decode error", e)
                         ChatData()
@@ -79,7 +74,6 @@ class ChatRepository(private val context: Context) {
                 }
             }.firstOrNull() ?: ChatData()
 
-            android.util.Log.d("ChatRepository", "getChatData - SUCCESS - sessions: ${data.sessions.size}")
             data
         } catch (e: Exception) {
             android.util.Log.e("ChatRepository", "getChatData - ERROR", e)
@@ -94,14 +88,11 @@ class ChatRepository(private val context: Context) {
      * @return `Unit` after data is saved.
      */
     private suspend fun saveChatData(data: ChatData) {
-        android.util.Log.d("ChatRepository", "saveChatData - START")
         try {
             context.dataStore.edit { preferences ->
                 val jsonString = json.encodeToString(data)
                 preferences[CHAT_DATA_KEY] = jsonString
-                android.util.Log.d("ChatRepository", "saveChatData - Saved ${jsonString.length} chars")
             }
-            android.util.Log.d("ChatRepository", "saveChatData - SUCCESS")
         } catch (e: Exception) {
             android.util.Log.e("ChatRepository", "saveChatData - ERROR", e)
             throw e

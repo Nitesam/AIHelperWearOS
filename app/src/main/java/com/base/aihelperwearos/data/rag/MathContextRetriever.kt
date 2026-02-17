@@ -23,19 +23,18 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
             Log.d(TAG, "Empty query, skipping RAG")
             return null
         }
-        
-        if (!ragRepository.isReady()) {
-            Log.w(TAG, "RAG repository not ready")
-            return null
-        }
-        
-        return when (val result = ragRepository.findRelevantExercises(query, MAX_EXERCISES)) {
+
+        val result = runCatching { ragRepository.findRelevantExercises(query, MAX_EXERCISES) }
+            .onFailure { Log.w(TAG, "Failed to retrieve RAG context", it) }
+            .getOrNull() ?: return null
+
+        return when (result) {
             is RagResult.Success -> {
                 if (result.exercises.isEmpty()) {
                     Log.d(TAG, "No exercises in success result")
                     null
                 } else {
-                    formatContextForPrompt(result)
+                    formatContextForPrompt(result).text
                 }
             }
             is RagResult.NoMatch -> {
@@ -56,7 +55,7 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
      * @return `ContextWithMetadata` describing the retrieval result.
      */
     suspend fun retrieveContextWithMetadata(query: String): ContextWithMetadata {
-        if (query.isBlank() || !ragRepository.isReady()) {
+        if (query.isBlank()) {
             return ContextWithMetadata(
                 context = null,
                 success = false,
@@ -66,16 +65,33 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
                 exerciseCount = 0
             )
         }
-        
-        return when (val result = ragRepository.findRelevantExercises(query, MAX_EXERCISES)) {
+
+        val result = runCatching { ragRepository.findRelevantExercises(query, MAX_EXERCISES) }
+            .onFailure { Log.w(TAG, "Failed to retrieve RAG context metadata", it) }
+            .getOrNull() ?: return ContextWithMetadata(
+            context = null,
+            success = false,
+            category = null,
+            subtype = null,
+            confidence = 0f,
+            exerciseCount = 0,
+            fallbackReason = "repository unavailable"
+        )
+
+        return when (result) {
             is RagResult.Success -> {
+                val promptContext = formatContextForPrompt(result)
                 ContextWithMetadata(
-                    context = formatContextForPrompt(result),
+                    context = promptContext.text,
                     success = true,
                     category = result.matchedCategory,
                     subtype = result.matchedSubtype,
                     confidence = result.confidence,
-                    exerciseCount = result.exercises.size
+                    exerciseCount = promptContext.includedExercises.size,
+                    sentExerciseIds = promptContext.includedExercises.map { it.id },
+                    sentExerciseLabels = promptContext.includedExercises.map {
+                        "${it.categoria} / ${it.sottotipo}"
+                    }
                 )
             }
             is RagResult.NoMatch -> {
@@ -86,6 +102,8 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
                     subtype = null,
                     confidence = 0f,
                     exerciseCount = 0,
+                    sentExerciseIds = emptyList(),
+                    sentExerciseLabels = emptyList(),
                     fallbackReason = result.reason
                 )
             }
@@ -97,6 +115,8 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
                     subtype = null,
                     confidence = 0f,
                     exerciseCount = 0,
+                    sentExerciseIds = emptyList(),
+                    sentExerciseLabels = emptyList(),
                     fallbackReason = result.message
                 )
             }
@@ -109,16 +129,22 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
      * @param result successful RAG result to format.
      * @return prompt context `String?`, or `null` if empty.
      */
-    private fun formatContextForPrompt(result: RagResult.Success): String? {
-        if (result.exercises.isEmpty()) return null
+    private fun formatContextForPrompt(result: RagResult.Success): PromptContext {
+        if (result.exercises.isEmpty()) return PromptContext(null, emptyList())
         
         val formatted = result.formatForPrompt()
         
         return if (formatted.length > MAX_PROMPT_LENGTH) {
             Log.w(TAG, "Context too long (${formatted.length}), truncating to $MAX_PROMPT_LENGTH")
-            truncateContext(result.exercises, MAX_PROMPT_LENGTH)
+            PromptContext(
+                text = truncateContext(result.exercises, MAX_PROMPT_LENGTH),
+                includedExercises = result.exercises.take(1)
+            )
         } else {
-            formatted
+            PromptContext(
+                text = formatted,
+                includedExercises = result.exercises
+            )
         }
     }
     
@@ -157,6 +183,11 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
      * @return `Boolean` indicating readiness.
      */
     fun isAvailable(): Boolean = ragRepository.isReady()
+
+    private data class PromptContext(
+        val text: String?,
+        val includedExercises: List<Exercise>
+    )
 }
 
 data class ContextWithMetadata(
@@ -166,5 +197,7 @@ data class ContextWithMetadata(
     val subtype: String?,
     val confidence: Float,
     val exerciseCount: Int,
+    val sentExerciseIds: List<String> = emptyList(),
+    val sentExerciseLabels: List<String> = emptyList(),
     val fallbackReason: String? = null
 )
