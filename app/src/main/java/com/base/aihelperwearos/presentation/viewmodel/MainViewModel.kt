@@ -412,11 +412,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 val currentLanguage = _uiState.value.selectedLanguage.code
+                val extractedKeywords = _uiState.value.extractedKeywords
+                val ragQuery = if (!extractedKeywords.isNullOrEmpty()) {
+                    "$userMessage ${extractedKeywords.joinToString(" ")}"
+                } else {
+                    userMessage
+                }
 
                 var ragContext: String? = null
                 if (_uiState.value.isAnalysisMode) {
                     val ragMetadata = try {
-                        getMathContextRetriever()?.retrieveContextWithMetadata(userMessage)
+                        getMathContextRetriever()?.retrieveContextWithMetadata(ragQuery)
                     } catch (e: Exception) {
                         android.util.Log.w("MainViewModel", "sendMessage - RAG failed, using base prompt", e)
                         null

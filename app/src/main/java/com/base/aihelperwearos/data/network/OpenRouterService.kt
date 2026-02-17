@@ -2,6 +2,7 @@ package com.base.aihelperwearos.data.network
 
 import android.content.Context
 import android.util.Log
+import com.base.aihelperwearos.data.rag.ExerciseParser
 import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.models.OpenRouterRequest
 import com.base.aihelperwearos.data.models.OpenRouterResponse
@@ -27,7 +28,9 @@ class OpenRouterService(
     private val apiKey: String,
     context: Context
 ) {
-    private val userPreferences = UserPreferences(context)
+    private val appContext = context.applicationContext
+    private val userPreferences = UserPreferences(appContext)
+    private val taxonomyGuideCache = mutableMapOf<String, String>()
     private val trustAllCertificates = object : X509TrustManager {
         /**
          * Accepts any client certificate without validation.
@@ -227,7 +230,7 @@ class OpenRouterService(
 
             Log.d("OpenRouter", "Audio size: ${audioBytes.size} bytes → Base64: ${audioBase64.length} chars")
 
-            val transcriptionPrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode)
+            val transcriptionPrompt = getTranscriptionPromptWithTaxonomy(languageCode)
             Log.d("OpenRouter", "📋 Transcription prompt length: ${transcriptionPrompt.length} chars")
             Log.d("OpenRouter", "📋 Prompt includes keyword extraction: ${transcriptionPrompt.contains("KEYWORDS")}")
 
@@ -496,6 +499,66 @@ class OpenRouterService(
         
         Log.d("OpenRouter", "🔍 Fallback extracted ${keywords.size} keywords: ${keywords.joinToString(", ")}")
         return keywords.take(5)
+    }
+
+    /**
+     * Returns the transcription prompt enriched with the available taxonomy choices.
+     *
+     * This constrains the transcription model to classify within real app categories/subtypes.
+     */
+    private fun getTranscriptionPromptWithTaxonomy(languageCode: String): String {
+        val basePrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode)
+        val taxonomyGuide = getTaxonomyGuide(languageCode)
+        return if (taxonomyGuide.isBlank()) basePrompt else "$basePrompt\n\n$taxonomyGuide"
+    }
+
+    /**
+     * Builds a language-specific taxonomy guide from `tassonomia.json`.
+     */
+    private fun getTaxonomyGuide(languageCode: String): String {
+        synchronized(taxonomyGuideCache) {
+            taxonomyGuideCache[languageCode]?.let { return it }
+        }
+
+        val taxonomy = ExerciseParser.loadSynchronizedTaxonomyFromResources(appContext).getOrNull()
+            ?: return ""
+
+        val categoriesBlock = taxonomy.categorie.joinToString("\n") { category ->
+            val subtypeList = category.sottotipi.joinToString("; ") { it.nome }
+            "- ${category.nome} -> $subtypeList"
+        }
+        Log.i("OpenRouter", "Transcription taxonomy loaded: ${taxonomy.categorie.size} categories")
+
+        val guide = if (languageCode == "en") {
+            """
+                AVAILABLE CATEGORIES CENSUS (CHOOSE ONLY FROM THIS LIST):
+                $categoriesBlock
+
+                CLASSIFICATION CONSTRAINT:
+                In [KEYWORDS: ...], include in this exact order:
+                1) theory or exercise
+                2) one exact category name from the list above
+                3) one exact subtype name from the list above (if identifiable)
+                then add any other useful math keywords.
+            """.trimIndent()
+        } else {
+            """
+                CENSIMENTO CATEGORIE DISPONIBILI (SCEGLI SOLO DA QUESTA LISTA):
+                $categoriesBlock
+
+                VINCOLO DI CLASSIFICAZIONE:
+                Nella riga [KEYWORDS: ...], inserisci in questo ordine:
+                1) teoria oppure esercizio
+                2) un nome categoria esatto dalla lista sopra
+                3) un nome sottotipo esatto dalla lista sopra (se identificabile)
+                poi eventuali altre parole chiave utili.
+            """.trimIndent()
+        }
+
+        synchronized(taxonomyGuideCache) {
+            taxonomyGuideCache[languageCode] = guide
+        }
+        return guide
     }
 
     /**

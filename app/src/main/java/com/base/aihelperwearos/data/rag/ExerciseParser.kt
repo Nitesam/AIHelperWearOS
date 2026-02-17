@@ -3,8 +3,10 @@ package com.base.aihelperwearos.data.rag
 import android.content.Context
 import android.util.Log
 import com.base.aihelperwearos.R
+import com.base.aihelperwearos.data.rag.models.Categoria
 import com.base.aihelperwearos.data.rag.models.Exercise
 import com.base.aihelperwearos.data.rag.models.ExerciseDatabase
+import com.base.aihelperwearos.data.rag.models.Sottotipo
 import com.base.aihelperwearos.data.rag.models.Taxonomy
 import com.base.aihelperwearos.data.rag.models.Theorem
 import com.base.aihelperwearos.data.rag.models.TheoremDatabase
@@ -101,6 +103,31 @@ object ExerciseParser {
             Result.failure(e)
         }
     }
+
+    /**
+     * Loads a taxonomy synchronized with real categories/subtypes present in exercises.
+     *
+     * This prevents drift when `tassonomia.json` is stale compared to `esercizi_analisi2.json`.
+     *
+     * @param context context used to access raw resources.
+     * @return `Result<Taxonomy>` with merged taxonomy or failure.
+     */
+    fun loadSynchronizedTaxonomyFromResources(context: Context): Result<Taxonomy> {
+        val baseTaxonomy = loadTaxonomyFromResources(context).getOrNull()
+        val exercisesDb = loadExercisesFromResources(context).getOrNull()
+
+        if (baseTaxonomy == null && exercisesDb == null) {
+            return Result.failure(IllegalStateException("Neither taxonomy nor exercises could be loaded"))
+        }
+
+        if (exercisesDb == null) {
+            Log.w(TAG, "Synchronized taxonomy fallback: exercises unavailable, using raw taxonomy")
+            return Result.success(baseTaxonomy!!)
+        }
+
+        val merged = synchronizeTaxonomyWithExercises(baseTaxonomy, exercisesDb)
+        return Result.success(merged)
+    }
     
     
     /**
@@ -188,5 +215,126 @@ object ExerciseParser {
                 }
             }
         }
+    }
+
+    /**
+     * Merges raw taxonomy with categories/subtypes actually present in exercises.
+     */
+    private fun synchronizeTaxonomyWithExercises(
+        baseTaxonomy: Taxonomy?,
+        exercisesDb: ExerciseDatabase
+    ): Taxonomy {
+        val baseByCategory = baseTaxonomy?.categorie
+            ?.associateBy { it.nome.lowercase().trim() }
+            ?.toMutableMap()
+            ?: mutableMapOf()
+
+        val categoriesFromExercises = exercisesDb.exercises.groupBy { it.categoria }
+        val mergedCategories = mutableListOf<Categoria>()
+        var missingSubtypeCount = 0
+        var missingCategoryCount = 0
+
+        categoriesFromExercises.forEach { (categoryName, exercisesInCategory) ->
+            val baseCategory = baseByCategory.remove(categoryName.lowercase().trim())
+            if (baseCategory == null) missingCategoryCount++
+
+            val exerciseCategoryKeywords = exercisesInCategory
+                .flatMap { it.keywords }
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+
+            val mergedCategoryKeywords = mergeKeywords(
+                baseCategory?.keywords ?: emptyList(),
+                exerciseCategoryKeywords + tokenizeLabel(categoryName)
+            )
+
+            val baseSubtypeMap = baseCategory?.sottotipi
+                ?.associateBy { it.nome.lowercase().trim() }
+                ?.toMutableMap()
+                ?: mutableMapOf()
+
+            val subtypesFromExercises = exercisesInCategory.groupBy { it.sottotipo }
+            val mergedSubtypes = mutableListOf<Sottotipo>()
+
+            subtypesFromExercises.forEach { (subtypeName, exercisesInSubtype) ->
+                val baseSubtype = baseSubtypeMap.remove(subtypeName.lowercase().trim())
+                if (baseSubtype == null) missingSubtypeCount++
+
+                val exerciseSubtypeKeywords = exercisesInSubtype
+                    .flatMap { it.keywords }
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+
+                val mergedSubtypeKeywords = mergeKeywords(
+                    baseSubtype?.keywords ?: emptyList(),
+                    exerciseSubtypeKeywords + tokenizeLabel(subtypeName)
+                )
+
+                mergedSubtypes += Sottotipo(
+                    nome = subtypeName,
+                    keywords = mergedSubtypeKeywords
+                )
+            }
+
+            if (baseSubtypeMap.isNotEmpty()) {
+                mergedSubtypes += baseSubtypeMap.values
+            }
+
+            mergedCategories += Categoria(
+                nome = categoryName,
+                keywords = mergedCategoryKeywords,
+                sottotipi = mergedSubtypes
+            )
+        }
+
+        if (baseByCategory.isNotEmpty()) {
+            mergedCategories += baseByCategory.values
+        }
+
+        val effectiveVersion = baseTaxonomy?.version ?: exercisesDb.version
+        val effectiveLastUpdated = exercisesDb.lastUpdated
+
+        Log.i(
+            TAG,
+            "Synchronized taxonomy ready: ${mergedCategories.size} categories, " +
+                "$missingCategoryCount missing categories added, $missingSubtypeCount missing subtypes added"
+        )
+
+        return Taxonomy(
+            version = effectiveVersion,
+            lastUpdated = effectiveLastUpdated,
+            categorie = mergedCategories
+        )
+    }
+
+    /**
+     * Merges keyword lists preserving order and removing blanks/duplicates.
+     */
+    private fun mergeKeywords(primary: List<String>, secondary: List<String>): List<String> {
+        val merged = LinkedHashSet<String>()
+        primary.forEach { keyword ->
+            val cleaned = keyword.trim()
+            if (cleaned.isNotBlank()) merged.add(cleaned)
+        }
+        secondary.forEach { keyword ->
+            val cleaned = keyword.trim()
+            if (cleaned.isNotBlank()) merged.add(cleaned)
+        }
+        return merged.toList()
+    }
+
+    /**
+     * Splits a label into keyword tokens useful for matching.
+     */
+    private fun tokenizeLabel(label: String): List<String> {
+        return label
+            .lowercase()
+            .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+            .split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.length > 2 }
+            .distinct()
     }
 }

@@ -72,7 +72,7 @@ class RagRepository(private val context: Context) {
                 Log.d(TAG, "Starting RAG initialization...")
                 val startTime = System.currentTimeMillis()
                 
-                val taxonomyResult = ExerciseParser.loadTaxonomyFromResources(context)
+                val taxonomyResult = ExerciseParser.loadSynchronizedTaxonomyFromResources(context)
                 if (taxonomyResult.isSuccess) {
                     taxonomy = taxonomyResult.getOrNull()
                     Log.d(TAG, "Taxonomy loaded: ${taxonomy?.categorie?.size ?: 0} categories")
