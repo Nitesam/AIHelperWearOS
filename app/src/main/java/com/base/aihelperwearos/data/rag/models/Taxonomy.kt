@@ -18,10 +18,25 @@ data class Sottotipo(
      */
     fun getSearchableTerms(): Set<String> {
         return buildSet {
-            addAll(keywords.map { it.lowercase() })
+            addAll(
+                keywords.map { it.trim().lowercase() }
+                    .filter { it.isNotBlank() }
+            )
             add(nome.lowercase())
-            addAll(nome.lowercase().split(" ", "-"))
+            addAll(tokenizeLabel(nome))
         }
+    }
+
+    /**
+     * Tokenizes labels and removes short/noisy chunks.
+     */
+    private fun tokenizeLabel(label: String): List<String> {
+        return label.lowercase()
+            .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+            .split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.length > 2 }
+            .distinct()
     }
 }
 
@@ -43,11 +58,26 @@ data class Categoria(
      */
     fun getSearchableTerms(): Set<String> {
         return buildSet {
-            addAll(keywords.map { it.lowercase() })
+            addAll(
+                keywords.map { it.trim().lowercase() }
+                    .filter { it.isNotBlank() }
+            )
             add(nome.lowercase())
-            addAll(nome.lowercase().split(" ", "-"))
+            addAll(tokenizeLabel(nome))
             sottotipi.forEach { addAll(it.getSearchableTerms()) }
         }
+    }
+
+    /**
+     * Tokenizes labels and removes short/noisy chunks.
+     */
+    private fun tokenizeLabel(label: String): List<String> {
+        return label.lowercase()
+            .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+            .split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.length > 2 }
+            .distinct()
     }
 }
 

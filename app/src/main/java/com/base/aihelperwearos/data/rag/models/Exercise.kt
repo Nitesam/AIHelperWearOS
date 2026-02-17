@@ -45,12 +45,27 @@ data class Exercise(
      */
     fun getSearchableTerms(): Set<String> {
         return buildSet {
-            addAll(keywords.map { it.lowercase() })
+            addAll(
+                keywords.map { it.trim().lowercase() }
+                    .filter { it.isNotBlank() }
+            )
             add(categoria.lowercase())
             add(sottotipo.lowercase())
-            addAll(categoria.lowercase().split(" ", "-"))
-            addAll(sottotipo.lowercase().split(" ", "-"))
+            addAll(tokenizeLabel(categoria))
+            addAll(tokenizeLabel(sottotipo))
         }
+    }
+
+    /**
+     * Tokenizes labels and removes short/noisy chunks.
+     */
+    private fun tokenizeLabel(label: String): List<String> {
+        return label.lowercase()
+            .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+            .split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.length > 2 }
+            .distinct()
     }
 }
 

@@ -29,6 +29,17 @@ class RagRepository(private val context: Context) {
         private const val TAG = "RagRepository"
         private const val MAX_CACHE_SIZE = 10
         private const val DEFAULT_RESULT_LIMIT = 2
+        private const val CATEGORY_FILTER_MIN_CONFIDENCE = 0.5f
+        private val QUERY_STOPWORDS = setOf(
+            "della", "delle", "degli", "dello", "dalla", "dalle", "dagli", "dallo",
+            "nella", "nelle", "negli", "nello", "sulla", "sulle", "sugli", "sullo",
+            "dell", "all", "nell", "sull",
+            "del", "dei", "dai", "dal", "con", "per", "che", "non", "tra", "fra",
+            "una", "uno", "alla", "agli", "allo", "dopo", "prima", "come", "tale",
+            "apri", "chiudi", "tonda", "quadra", "graffa", "parentesi", "valore",
+            "inizio", "fine", "elevato", "elevata", "sopra", "sotto", "quindi",
+            "this", "that", "with", "from", "into", "then", "open", "close"
+        )
     }
     
     private var exerciseDatabase: ExerciseDatabase? = null
@@ -259,18 +270,34 @@ class RagRepository(private val context: Context) {
         
         try {
             val classification = classifyQuery(query)
-            
+            Log.i(
+                TAG,
+                "Classification: category=${classification.category ?: "none"}, " +
+                    "subtype=${classification.subtype ?: "none"}, " +
+                    "confidence=${"%.2f".format(classification.confidence)}, " +
+                    "matched=${classification.matchedKeywords.take(4).joinToString(",")}"
+            )
+             
             val candidates = findCandidatesByKeywords(query)
             
             val ranked = rankCandidates(candidates, query, classification)
-            
-            val result = if (ranked.isEmpty()) {
+            val rankedInCategory = if (
+                classification.category != null &&
+                classification.confidence >= CATEGORY_FILTER_MIN_CONFIDENCE
+            ) {
+                ranked.filter { it.categoria.equals(classification.category, ignoreCase = true) }
+            } else {
+                emptyList()
+            }
+            val finalRanked = if (rankedInCategory.isNotEmpty()) rankedInCategory else ranked
+             
+            val result = if (finalRanked.isEmpty()) {
                 Log.d(TAG, "No matching exercises found for: ${query.take(50)}...")
                 RagResult.NoMatch(
                     reason = "Nessun esercizio simile trovato. Procedo con risoluzione standard."
                 )
             } else {
-                val topExercises = ranked.take(limit)
+                val topExercises = finalRanked.take(limit)
                 val selectedIds = topExercises.joinToString(", ") { it.id }
                 Log.i(TAG, "Found ${topExercises.size} relevant exercises: [$selectedIds]")
                 RagResult.Success(
@@ -356,7 +383,9 @@ class RagRepository(private val context: Context) {
                 exerciseScores[exerciseId] = (exerciseScores[exerciseId] ?: 0) + 2
             }
             
-            exerciseKeywordIndex.keys.filter { it.contains(term) || term.contains(it) }.forEach { key ->
+            exerciseKeywordIndex.keys.filter { key ->
+                key.length > 2 && key.contains(term)
+            }.forEach { key ->
                 exerciseKeywordIndex[key]?.forEach { exerciseId ->
                     exerciseScores[exerciseId] = (exerciseScores[exerciseId] ?: 0) + 1
                 }
@@ -402,9 +431,9 @@ class RagRepository(private val context: Context) {
             val exerciseTerms = exercise.getSearchableTerms()
             val queryTerms = extractQueryTerms(query)
             score += queryTerms.count { term ->
-                exerciseTerms.any { it.contains(term) || term.contains(it) }
+                exerciseTerms.any { it.length > 2 && it.contains(term) }
             }
-            
+             
             score
         }
     }
@@ -417,9 +446,11 @@ class RagRepository(private val context: Context) {
      */
     private fun extractQueryTerms(query: String): Set<String> {
         return query.lowercase()
-            .replace(Regex("[\\$\\\\{}^_]"), " ")
+            .replace(Regex("[\\$\\\\{}^_'’`]"), " ")
             .split(Regex("[\\s,;.!?()\\[\\]]+"))
+            .map { it.trim() }
             .filter { it.length > 2 }
+            .filter { it !in QUERY_STOPWORDS }
             .toSet()
     }
     
