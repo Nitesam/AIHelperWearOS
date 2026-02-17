@@ -356,13 +356,25 @@ class ChatAnalyzer:
 
     def insert_with_latex(self, content):
         """Insert text with LaTeX formulas rendered as images"""
-        # Pattern for LaTeX: $$...$$, $...$, \[...\], \(...\), \begin{...}...\end{...}
-        # More strict pattern to avoid false matches
-        latex_pattern = r'(\$\$[^$]+\$\$|(?<!\\)\$[^$\n]+\$(?!\d)|\\begin\{[^}]+\}.*?\\end\{[^}]+\}|\\\[[^\]]+\\\]|\\\([^)]+\\\))'
-        
-        parts = re.split(latex_pattern, content, flags=re.DOTALL)
+        # Pattern for LaTeX:
+        # - $$...$$ (display)
+        # - $...$ (inline, also multiline when model wraps badly)
+        # - \[...\], \(...\)
+        # - \begin{...}...\end{...}
+        #
+        # IMPORTANT: keep $$...$$ before $...$ to avoid partial captures.
+        latex_pattern = (
+            r'(\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}'
+            r'|\\\[[\s\S]*?\\\]'
+            r'|\\\([\s\S]*?\\\)'
+            r'|\$\$[\s\S]*?\$\$'
+            r'|(?<!\\)\$(?!\$)[\s\S]*?(?<!\\)\$(?!\$))'
+        )
+        latex_regex = re.compile(latex_pattern, re.DOTALL)
+
+        parts = latex_regex.split(content)
         for part in parts:
-            if part and re.match(latex_pattern, part, re.DOTALL):
+            if part and latex_regex.fullmatch(part):
                 if LATEX_AVAILABLE:
                     self.render_latex_image(part)
                 else:
