@@ -88,45 +88,25 @@ object ExerciseParser {
     }
     
     /**
-     * Loads taxonomy from raw resources.
+     * Builds a taxonomy from real categories/subtypes present in exercises.
+     *
+     * Source of truth is `esercizi_analisi2.json`.
      *
      * @param context context used to access raw resources.
-     * @return `Result<Taxonomy>` with parsed taxonomy or failure.
-     */
-    fun loadTaxonomyFromResources(context: Context): Result<Taxonomy> {
-        return try {
-            context.resources.openRawResource(R.raw.tassonomia).use { stream ->
-                parseTaxonomy(stream)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to open taxonomy resource", e)
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Loads a taxonomy synchronized with real categories/subtypes present in exercises.
-     *
-     * This prevents drift when `tassonomia.json` is stale compared to `esercizi_analisi2.json`.
-     *
-     * @param context context used to access raw resources.
-     * @return `Result<Taxonomy>` with merged taxonomy or failure.
+     * @return `Result<Taxonomy>` with generated taxonomy or failure.
      */
     fun loadSynchronizedTaxonomyFromResources(context: Context): Result<Taxonomy> {
-        val baseTaxonomy = loadTaxonomyFromResources(context).getOrNull()
         val exercisesDb = loadExercisesFromResources(context).getOrNull()
 
-        if (baseTaxonomy == null && exercisesDb == null) {
-            return Result.failure(IllegalStateException("Neither taxonomy nor exercises could be loaded"))
-        }
-
         if (exercisesDb == null) {
-            Log.w(TAG, "Synchronized taxonomy fallback: exercises unavailable, using raw taxonomy")
-            return Result.success(baseTaxonomy!!)
+            return Result.failure(IllegalStateException("Exercises could not be loaded"))
         }
 
-        val merged = synchronizeTaxonomyWithExercises(baseTaxonomy, exercisesDb)
-        return Result.success(merged)
+        val taxonomyFromExercises = synchronizeTaxonomyWithExercises(
+            baseTaxonomy = null,
+            exercisesDb = exercisesDb
+        )
+        return Result.success(taxonomyFromExercises)
     }
     
     

@@ -513,7 +513,7 @@ class OpenRouterService(
     }
 
     /**
-     * Builds a language-specific taxonomy guide from `tassonomia.json`.
+     * Builds a language-specific taxonomy guide from exercise-derived taxonomy.
      */
     private fun getTaxonomyGuide(languageCode: String): String {
         synchronized(taxonomyGuideCache) {
