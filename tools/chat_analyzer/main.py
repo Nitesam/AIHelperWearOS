@@ -13,19 +13,17 @@ import threading
 import re
 import io
 import tempfile
+import urllib.parse
+import urllib.request
 
-# LaTeX rendering imports
+# LaTeX image support for online rendering
 try:
-    import matplotlib
-    matplotlib.use('Agg')  # Non-interactive backend
-    import matplotlib.pyplot as plt
-    from matplotlib import mathtext
     from PIL import Image, ImageTk
     LATEX_AVAILABLE = True
 except ImportError:
     LATEX_AVAILABLE = False
-    print("Warning: matplotlib or PIL not installed. LaTeX rendering disabled.")
-    print("Install with: pip install matplotlib pillow")
+    print("Warning: pillow not installed. Online LaTeX image rendering disabled.")
+    print("Install with: pip install pillow")
 
 
 class ChatAnalyzer:
@@ -56,6 +54,7 @@ class ChatAnalyzer:
         self.chat_data = None
         self.current_session_messages = []
         self.latex_images = []  # Keep references to prevent garbage collection
+        self.latex_image_cache = {}
 
         self.setup_styles()
         self.create_widgets()
@@ -216,6 +215,11 @@ class ChatAnalyzer:
 
         # Initial refresh
         self.root.after(500, self.refresh_devices)
+        if not LATEX_AVAILABLE:
+            self.root.after(
+                1000,
+                lambda: self.status_var.set("⚠ LaTeX renderer non disponibile (fallback testuale)")
+            )
 
     def refresh_devices(self):
         try:
@@ -327,6 +331,8 @@ class ChatAnalyzer:
     def display_session_messages(self, session_id):
         self.messages_text.config(state=tk.NORMAL)
         self.messages_text.delete(1.0, tk.END)
+        # Reset image references per session to avoid unbounded growth/memory pressure.
+        self.latex_images.clear()
 
         if not self.chat_data:
             return
@@ -368,7 +374,10 @@ class ChatAnalyzer:
             r'|\\\[[\s\S]*?\\\]'
             r'|\\\([\s\S]*?\\\)'
             r'|\$\$[\s\S]*?\$\$'
-            r'|(?<!\\)\$(?!\$)[\s\S]*?(?<!\\)\$(?!\$))'
+            # Inline math must not start/end on a '$' that belongs to '$$...$$'
+            # Multiline inline is allowed because model outputs can wrap badly.
+            # Lookarounds prevent grabbing delimiters that belong to $$...$$ blocks.
+            r'|(?<![\\$])\$(?!\$)[\s\S]*?(?<![\\$])\$(?!\$))'
         )
         latex_regex = re.compile(latex_pattern, re.DOTALL)
 
@@ -382,7 +391,32 @@ class ChatAnalyzer:
                     readable = self.latex_to_readable(part)
                     self.messages_text.insert(tk.END, readable, "latex")
             elif part:  # Only insert non-empty parts
-                self.messages_text.insert(tk.END, part)
+                self.insert_with_dollar_salvage(part)
+
+    def insert_with_dollar_salvage(self, text_part):
+        """Second-pass salvage for malformed $...$ segments left in plain text."""
+        if "$" not in text_part:
+            self.messages_text.insert(tk.END, text_part)
+            return
+
+        chunks = text_part.split("$")
+        if len(chunks) < 3:
+            self.messages_text.insert(tk.END, text_part)
+            return
+
+        for idx, chunk in enumerate(chunks):
+            if idx % 2 == 0:
+                if chunk:
+                    self.messages_text.insert(tk.END, chunk)
+            else:
+                candidate = chunk.strip()
+                if not candidate:
+                    continue
+                wrapped = f"${candidate}$"
+                if LATEX_AVAILABLE:
+                    self.render_latex_image(wrapped)
+                else:
+                    self.insert_formatted_latex(wrapped, is_display=("\n" in candidate))
 
     def render_latex_image(self, latex_str):
         """Render LaTeX string as an image and insert it into the text widget"""
@@ -404,59 +438,21 @@ class ChatAnalyzer:
                 clean_latex = clean_latex[2:-2]
             
             clean_latex = clean_latex.strip()
+            # Heuristic repair: if a multiline display-looking block is wrapped in single '$',
+            # promote it to display mode handling to avoid raw/glitched output.
+            if clean_latex.startswith('$') and clean_latex.endswith('$') and '\n' in clean_latex:
+                clean_latex = clean_latex[1:-1].strip()
+                is_display = True
             
             if not clean_latex:
                 return
-            
-            # Preprocess LaTeX for mathtext compatibility
-            processed_latex = self.preprocess_latex(clean_latex)
-            
-            # If preprocessing returns None, use formatted fallback
-            if processed_latex is None:
+
+            photo = self.get_online_latex_photo(clean_latex, is_display)
+            if photo is None:
                 self.insert_formatted_latex(latex_str, is_display)
                 return
-            
-            # Create figure for rendering
-            fontsize = 14 if is_display else 11
-            
-            # Configure matplotlib for dark theme
-            fig = plt.figure(figsize=(0.01, 0.01))
-            fig.patch.set_facecolor(self.colors["editor"])
-            
-            # Render the LaTeX
-            text = fig.text(0, 0, f'${processed_latex}$', 
-                          fontsize=fontsize,
-                          color=self.colors["yellow"],
-                          usetex=False,  # Use mathtext instead of full LaTeX
-                          math_fontfamily='cm')
-            
-            # Get the bounding box
-            fig.canvas.draw()
-            bbox = text.get_window_extent(fig.canvas.get_renderer())
-            
-            # Resize figure to fit text with padding
-            width = bbox.width / fig.dpi + 0.2
-            height = bbox.height / fig.dpi + 0.1
-            fig.set_size_inches(width, height)
-            
-            # Reposition text
-            text.set_position((0.1 / width, 0.05 / height))
-            
-            # Save to buffer
-            buf = io.BytesIO()
-            fig.savefig(buf, format='png', dpi=100, 
-                       facecolor=self.colors["editor"],
-                       edgecolor='none',
-                       bbox_inches='tight',
-                       pad_inches=0.05)
-            plt.close(fig)
-            
-            # Create PhotoImage
-            buf.seek(0)
-            pil_image = Image.open(buf)
-            photo = ImageTk.PhotoImage(pil_image)
-            
-            # Keep reference to prevent garbage collection
+
+            # Keep reference to prevent garbage collection.
             self.latex_images.append(photo)
             
             # Insert newline before display math
@@ -473,6 +469,35 @@ class ChatAnalyzer:
         except Exception as e:
             # If rendering fails, use formatted fallback
             self.insert_formatted_latex(latex_str, latex_str.startswith('$$'))
+
+    def get_online_latex_photo(self, latex, is_display):
+        """Render LaTeX via upmath PNG endpoint and return a Tk PhotoImage."""
+        cache_key = ("display" if is_display else "inline", latex)
+        cached = self.latex_image_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        size_command = "\\large " if is_display else ""
+        normalized = " ".join(latex.strip().split())
+        payload = f"{size_command}{normalized}".strip()
+        encoded = urllib.parse.quote(payload, safe="")
+        png_url = f"https://i.upmath.me/png/{encoded}"
+
+        request = urllib.request.Request(
+            png_url,
+            headers={"User-Agent": "AIHelperChatAnalyzer/1.0"}
+        )
+        with urllib.request.urlopen(request, timeout=12) as response:
+            data = response.read()
+
+        pil_image = Image.open(io.BytesIO(data))
+        photo = ImageTk.PhotoImage(pil_image)
+
+        # Small bounded cache to avoid repeated network fetches.
+        if len(self.latex_image_cache) > 200:
+            self.latex_image_cache.clear()
+        self.latex_image_cache[cache_key] = photo
+        return photo
 
     def preprocess_latex(self, latex):
         """Convert unsupported LaTeX commands to mathtext-compatible versions"""
