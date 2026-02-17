@@ -17,7 +17,7 @@ object LatexParser {
         val parts = mutableListOf<MathContentPart>()
 
         val combinedPattern = Regex(
-            pattern = """\$\$(.+?)\$\$|\$(.+?)\$""",
+            pattern = """\$\$(.+?)\$\$|\\\[(.+?)\\\]|\\\((.+?)\\\)|\$(.+?)\$""",
             option = RegexOption.DOT_MATCHES_ALL
         )
 
@@ -31,11 +31,17 @@ object LatexParser {
                 }
             }
 
-            val isDisplay = match.value.startsWith("$$")
-            val latexContent = if (isDisplay) {
-                match.groupValues[1]
-            } else {
-                match.groupValues[2]
+            val blockDollar = match.groupValues[1]
+            val blockBracket = match.groupValues[2]
+            val inlineParen = match.groupValues[3]
+            val inlineDollar = match.groupValues[4]
+
+            val isDisplay = blockDollar.isNotEmpty() || blockBracket.isNotEmpty()
+            val latexContent = when {
+                blockDollar.isNotEmpty() -> blockDollar
+                blockBracket.isNotEmpty() -> blockBracket
+                inlineParen.isNotEmpty() -> inlineParen
+                else -> inlineDollar
             }
 
             val cleanLatex = latexContent.trim()
