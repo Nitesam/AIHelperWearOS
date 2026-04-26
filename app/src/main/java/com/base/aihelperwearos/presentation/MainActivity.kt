@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
 import com.base.aihelperwearos.R
+import com.base.aihelperwearos.data.Constants
 import com.base.aihelperwearos.presentation.components.MathMarkdownText
 import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
 import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
@@ -115,6 +116,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
 
             when (uiState.currentScreen) {
                 Screen.Home -> HomeScreen(
+                    isAnalysisEnabled = Constants.ANALYSIS_MODULE_ENABLED,
                     onNewChat = {
                         viewModel.startNewChat(title = newChatTitle, isAnalysisMode = false)
                     },
@@ -196,6 +198,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
  */
 @Composable
 fun HomeScreen(
+    isAnalysisEnabled: Boolean,
     onNewChat: () -> Unit,
     onAnalysis: () -> Unit,
     onHistory: () -> Unit,
@@ -235,19 +238,21 @@ fun HomeScreen(
 
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
-        item {
-            Button(
-                onClick = onAnalysis,
-                modifier = Modifier.fillMaxWidth(0.85f),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.secondary
-                )
-            ) {
-                Text(stringResource(R.string.analysis_mode), color = MaterialTheme.colors.onSecondary)
+        if (isAnalysisEnabled) {
+            item {
+                Button(
+                    onClick = onAnalysis,
+                    modifier = Modifier.fillMaxWidth(0.85f),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = MaterialTheme.colors.secondary
+                    )
+                ) {
+                    Text(stringResource(R.string.analysis_mode), color = MaterialTheme.colors.onSecondary)
+                }
             }
-        }
 
-        item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+        }
 
         item {
             Button(

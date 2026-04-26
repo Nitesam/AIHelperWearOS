@@ -1,6 +1,7 @@
 package com.base.aihelperwearos.data
 
 object Constants {
+    const val ANALYSIS_MODULE_ENABLED = false
 
     val MATH_MODE_PROMPT_IT = """
         Sei un professore rigoroso di Analisi Matematica 2 (Corso di Laurea in Informatica).

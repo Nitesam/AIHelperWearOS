@@ -234,11 +234,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun navigateTo(screen: Screen) {
         val currentScreen = _uiState.value.currentScreen
+        val destination = if (screen == Screen.Analysis && !Constants.ANALYSIS_MODULE_ENABLED) {
+            Screen.Home
+        } else {
+            screen
+        }
         if ((currentScreen == Screen.Chat || currentScreen == Screen.Analysis) && 
-            screen == Screen.Home) {
+            destination == Screen.Home) {
             cleanupEmptySession()
         }
-        _uiState.update { it.copy(currentScreen = screen, errorMessage = null) }
+        _uiState.update { it.copy(currentScreen = destination, errorMessage = null) }
     }
 
     /**
@@ -285,27 +290,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun startNewChat(title: String, isAnalysisMode: Boolean = false) {
         viewModelScope.launch {
             try {
-                android.util.Log.d("MainViewModel", "startNewChat - START - isAnalysisMode: $isAnalysisMode")
+                val effectiveAnalysisMode = isAnalysisMode && Constants.ANALYSIS_MODULE_ENABLED
+                val effectiveTitle = if (effectiveAnalysisMode) {
+                    title
+                } else if (isAnalysisMode) {
+                    getApplication<Application>().getString(R.string.new_chat)
+                } else {
+                    title
+                }
+
+                android.util.Log.d("MainViewModel", "startNewChat - START - isAnalysisMode: $effectiveAnalysisMode")
                 android.util.Log.d("MainViewModel", "Selected model: ${_uiState.value.selectedModel}")
 
-                android.util.Log.d("MainViewModel", "Creating session with title: $title")
+                android.util.Log.d("MainViewModel", "Creating session with title: $effectiveTitle")
 
                 val sessionId = chatRepository.createSession(
                     modelId = _uiState.value.selectedModel,
-                    title = title,
-                    isAnalysisMode = isAnalysisMode
+                    title = effectiveTitle,
+                    isAnalysisMode = effectiveAnalysisMode
                 )
 
                 android.util.Log.d("MainViewModel", "Session created - ID: $sessionId")
 
-                val newScreen = if (isAnalysisMode) Screen.Analysis else Screen.Chat
+                val newScreen = if (effectiveAnalysisMode) Screen.Analysis else Screen.Chat
                 android.util.Log.d("MainViewModel", "Navigating to: $newScreen")
 
                 _uiState.update {
                     it.copy(
                         currentSessionId = sessionId,
                         currentScreen = newScreen,
-                        isAnalysisMode = isAnalysisMode,
+                        isAnalysisMode = effectiveAnalysisMode,
                         chatMessages = emptyList()
                     )
                 }
@@ -335,12 +349,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val session = chatRepository.getSession(sessionId)
                 if (session != null) {
+                    val effectiveAnalysisMode = session.isAnalysisMode && Constants.ANALYSIS_MODULE_ENABLED
                     _uiState.update {
                         it.copy(
                             currentSessionId = sessionId,
                             selectedModel = session.modelId,
-                            isAnalysisMode = session.isAnalysisMode,
-                            currentScreen = if (session.isAnalysisMode) Screen.Analysis else Screen.Chat
+                            isAnalysisMode = effectiveAnalysisMode,
+                            currentScreen = if (effectiveAnalysisMode) Screen.Analysis else Screen.Chat
                         )
                     }
                     observeMessages(sessionId)
