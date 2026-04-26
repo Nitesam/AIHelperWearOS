@@ -28,6 +28,9 @@ render.experimental.xml
 *.jks
 *.keystore
 
+Metodi Matematici e Statistici
+metodi_resource_builder
+
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
