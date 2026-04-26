@@ -19,11 +19,12 @@ class UserPreferences(private val context: Context) {
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
         private val MODEL_KEY = stringPreferencesKey("selected_model")
-        private const val DEFAULT_MODEL = "openai/gpt-5.2"
+        private const val DEFAULT_MODEL = "openai/gpt-5.5"
+        private const val LEGACY_GPT_MODEL = "openai/gpt-5.2"
     }
 
     val modelFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[MODEL_KEY] ?: DEFAULT_MODEL
+        normalizeModel(preferences[MODEL_KEY])
     }
 
     suspend fun setModel(modelId: String) {
@@ -35,8 +36,15 @@ class UserPreferences(private val context: Context) {
     fun getModel(): String {
         return runBlocking {
             context.dataStore.data.map { preferences ->
-                preferences[MODEL_KEY] ?: DEFAULT_MODEL
+                normalizeModel(preferences[MODEL_KEY])
             }.first()
+        }
+    }
+
+    private fun normalizeModel(modelId: String?): String {
+        return when (modelId) {
+            null, LEGACY_GPT_MODEL -> DEFAULT_MODEL
+            else -> modelId
         }
     }
 

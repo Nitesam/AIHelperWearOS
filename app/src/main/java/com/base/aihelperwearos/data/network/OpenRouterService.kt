@@ -209,7 +209,7 @@ class OpenRouterService(
      */
     suspend fun solveAudioMathProblem(
         audioFile: File,
-        mathModel: String = "openai/gpt-5.2",
+        mathModel: String = "openai/gpt-5.5",
         previousMessages: List<Message> = emptyList(),
         languageCode: String
     ): Result<com.base.aihelperwearos.data.models.MathSolution> {

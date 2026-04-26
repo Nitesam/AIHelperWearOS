@@ -45,7 +45,7 @@ enum class Language(val code: String, val displayName: String) {
 
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
-    val selectedModel: String = "openai/gpt-5.2",
+    val selectedModel: String = "openai/gpt-5.5",
     val currentSessionId: Long? = null,
     val chatMessages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
