@@ -4,6 +4,8 @@
 Hello, %1$s!</string>
     <string name="new_chat">New Chat</string>
     <string name="analysis_mode">Analysis Mode</string>
+    <string name="metodi_theory_mode">📘 Theory</string>
+    <string name="metodi_code_mode">🐍 Code</string>
     <string name="history">History</string>
     <string name="ai_helper">AI Helper</string>
     <string name="wear_os">Wear OS</string>
@@ -29,6 +31,8 @@ Hello, %1$s!</string>
     <string name="decrease_font_size">↓</string>
     <string name="no_saved_chats">No saved chats</string>
     <string name="analysis">📊 Analysis</string>
+    <string name="metodi_theory_short">📘 Theory</string>
+    <string name="metodi_code_short">🐍 Code</string>
     <string name="delete">🗑</string>
     <string name="close">Close</string>
     <string name="zoom_level">Zoom: %d%%</string>
@@ -43,7 +47,7 @@ Hello, %1$s!</string>
     <string name="model_polaris">Polaris (Free)</string>
     <string name="model_gemini_pro">Gemini Pro 3.0</string>
     <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
-    <string name="model_gpt5">GPT 5.2</string>
+    <string name="model_gpt5">GPT 5.5</string>
     <string name="choose_input_method">Choose input method:</string>
     <string name="send_text_only">📝 Send text only</string>
     <string name="synthesize_locally">🔊 Synthesize locally</string>

@@ -3,6 +3,7 @@ package com.base.aihelperwearos.data.network
 import android.content.Context
 import android.util.Log
 import com.base.aihelperwearos.data.rag.ExerciseParser
+import com.base.aihelperwearos.data.models.ChatMode
 import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.models.OpenRouterRequest
 import com.base.aihelperwearos.data.models.OpenRouterResponse
@@ -17,6 +18,9 @@ import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import android.util.Base64
 import java.io.File
 import io.ktor.client.engine.android.Android
@@ -31,6 +35,7 @@ class OpenRouterService(
     companion object {
         private const val TRANSCRIPTION_MODEL = "google/gemini-3-flash-preview"
         private const val ANALYSIS_MAX_TOKENS = 8000
+        private const val METODI_MAX_TOKENS = 3500
         private const val CHAT_MAX_TOKENS = 1000
         private const val CONTINUATION_MAX_TOKENS = 6000
     }
@@ -109,6 +114,7 @@ class OpenRouterService(
      * @param isAnalysisMode whether analysis-mode prompting is enabled.
      * @param languageCode language code for prompts.
      * @param ragContext optional RAG context to enrich prompts.
+     * @param chatMode specialized chat mode for prompt selection.
      * @return `Result<String>` with the assistant response or error.
      */
     suspend fun sendMessage(
@@ -116,33 +122,47 @@ class OpenRouterService(
         messages: List<Message>,
         isAnalysisMode: Boolean = false,
         languageCode: String,
-        ragContext: String? = null
+        ragContext: String? = null,
+        chatMode: ChatMode = if (isAnalysisMode) ChatMode.ANALYSIS else ChatMode.GENERAL
     ): Result<String> {
         return try {
             Log.d("OpenRouter", "=== SEND MESSAGE START ===")
             Log.d("OpenRouter", "Language parameter received: '$languageCode'")
-            Log.d("OpenRouter", "sendMessage - Using language: $languageCode, isAnalysisMode: $isAnalysisMode")
+            Log.d("OpenRouter", "sendMessage - Using language: $languageCode, mode: $chatMode")
             Log.d("OpenRouter", "sendMessage - RAG context provided: ${ragContext != null}")
 
-            val allMessages = if (isAnalysisMode) {
-                val mathPrompt = com.base.aihelperwearos.data.Constants.getEnrichedMathPrompt(languageCode, ragContext)
-                Log.d("OpenRouter", "sendMessage - Math prompt language: ${if (languageCode == "en") "ENGLISH" else "ITALIANO"}")
-                Log.d("OpenRouter", "sendMessage - Prompt length: ${mathPrompt.length} chars (RAG: ${ragContext?.length ?: 0} chars)")
-                listOf(
-                    Message(
-                        role = "system",
-                        content = mathPrompt
-                    )
-                ) + messages
-            } else {
-                messages
+            val systemPrompt = when (chatMode) {
+                ChatMode.ANALYSIS -> {
+                    com.base.aihelperwearos.data.Constants.getEnrichedMathPrompt(languageCode, ragContext)
+                }
+                ChatMode.METODI_TEORIA,
+                ChatMode.METODI_CODICE -> {
+                    com.base.aihelperwearos.data.Constants.getMetodiPrompt(chatMode, languageCode, ragContext)
+                }
+                ChatMode.GENERAL -> null
             }
+
+            val allMessages = systemPrompt?.let { prompt ->
+                Log.d(
+                    "OpenRouter",
+                    "sendMessage - Prompt length: ${prompt.length} chars (RAG: ${ragContext?.length ?: 0} chars)"
+                )
+                listOf(Message(role = "system", content = prompt)) + messages
+            } ?: messages
 
             val request = OpenRouterRequest(
                 model = modelId,
                 messages = allMessages,
-                maxTokens = if (isAnalysisMode) ANALYSIS_MAX_TOKENS else CHAT_MAX_TOKENS,
-                temperature = if (isAnalysisMode) 0.2 else 0.7
+                maxTokens = when (chatMode) {
+                    ChatMode.ANALYSIS -> ANALYSIS_MAX_TOKENS
+                    ChatMode.METODI_TEORIA, ChatMode.METODI_CODICE -> METODI_MAX_TOKENS
+                    ChatMode.GENERAL -> CHAT_MAX_TOKENS
+                },
+                temperature = when (chatMode) {
+                    ChatMode.GENERAL -> 0.7
+                    ChatMode.METODI_CODICE -> 0.15
+                    else -> 0.2
+                }
             )
 
             val response: OpenRouterResponse = requestChatCompletion(request)
@@ -156,7 +176,7 @@ class OpenRouterService(
             )
 
             // If response is cut by token limit, request one continuation and append it.
-            if (isAnalysisMode && initialFinishReason == "length") {
+            if (chatMode != ChatMode.GENERAL && initialFinishReason == "length") {
                 Log.w("OpenRouter", "sendMessage - Response truncated (finish_reason=length), requesting continuation")
                 val continuationInstruction = if (languageCode == "en") {
                     "Continue EXACTLY from where you stopped. Do not repeat previous text. Complete any open LaTeX blocks."
@@ -259,7 +279,11 @@ class OpenRouterService(
      * @param languageCode language code for transcription prompt.
      * @return `Result<TranscriptionResult>` with parsed transcript data.
      */
-    suspend fun transcribeAudioWithGemini(audioFile: File, languageCode: String): Result<com.base.aihelperwearos.data.models.TranscriptionResult> {
+    suspend fun transcribeAudioWithGemini(
+        audioFile: File,
+        languageCode: String,
+        chatMode: ChatMode = ChatMode.GENERAL
+    ): Result<com.base.aihelperwearos.data.models.TranscriptionResult> {
         return try {
             Log.d("OpenRouter", "=== TRANSCRIPTION START ===")
             Log.d("OpenRouter", "Transcribing with $TRANSCRIPTION_MODEL (audio support)")
@@ -275,40 +299,38 @@ class OpenRouterService(
 
             Log.d("OpenRouter", "Audio size: ${audioBytes.size} bytes → Base64: ${audioBase64.length} chars")
 
-            val transcriptionPrompt = getTranscriptionPromptWithTaxonomy(languageCode)
+            val transcriptionPrompt = getTranscriptionPromptWithTaxonomy(languageCode, chatMode)
             Log.d("OpenRouter", "📋 Transcription prompt length: ${transcriptionPrompt.length} chars")
             Log.d("OpenRouter", "📋 Prompt includes keyword extraction: ${transcriptionPrompt.contains("KEYWORDS")}")
 
-            val requestBody = buildString {
-                append("{")
-                append("\"model\":\"$TRANSCRIPTION_MODEL\",")
-                append("\"messages\":[{")
-                append("\"role\":\"user\",")
-                append("\"content\":[")
-
-                append("{")
-                append("\"type\":\"text\",")
-                append("\"text\":\"${transcriptionPrompt.replace("\"", "\\\"")}\"")
-                append("},")
-
-                append("{")
-                append("\"type\":\"input_audio\",")
-                append("\"input_audio\":{")
-                append("\"data\":\"$audioBase64\",")
-                append("\"format\":\"wav\"")
-                append("}")
-                append("}")
-
-                append("]")
-                append("}]")
-                append("}")
+            val requestBody = buildJsonObject {
+                put("model", TRANSCRIPTION_MODEL)
+                put("temperature", 0.0)
+                put("max_tokens", 450)
+                put("messages", buildJsonArray {
+                    add(buildJsonObject {
+                        put("role", "user")
+                        put("content", buildJsonArray {
+                            add(buildJsonObject {
+                                put("type", "text")
+                                put("text", transcriptionPrompt)
+                            })
+                            add(buildJsonObject {
+                                put("type", "input_audio")
+                                put("input_audio", buildJsonObject {
+                                    put("data", audioBase64)
+                                    put("format", "wav")
+                                })
+                            })
+                        })
+                    })
+                })
             }
 
             Log.d("OpenRouter", "🚀 Sending to $TRANSCRIPTION_MODEL for transcription...")
 
             val response: String = client.post("chat/completions") {
                 setBody(requestBody)
-                header("Content-Type", "application/json")
             }.body()
 
             Log.d("OpenRouter", "📥 Transcription raw response received (${response.length} chars)")
@@ -551,8 +573,12 @@ class OpenRouterService(
      *
      * This constrains the transcription model to classify within real app categories/subtypes.
      */
-    private fun getTranscriptionPromptWithTaxonomy(languageCode: String): String {
-        val basePrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode)
+    private fun getTranscriptionPromptWithTaxonomy(languageCode: String, chatMode: ChatMode): String {
+        val basePrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode, chatMode)
+        if (chatMode == ChatMode.METODI_TEORIA || chatMode == ChatMode.METODI_CODICE) {
+            return basePrompt
+        }
+
         val taxonomyGuide = getTaxonomyGuide(languageCode)
         return if (taxonomyGuide.isBlank()) basePrompt else "$basePrompt\n\n$taxonomyGuide"
     }

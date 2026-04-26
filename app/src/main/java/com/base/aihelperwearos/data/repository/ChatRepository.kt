@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.base.aihelperwearos.data.models.ChatMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -23,8 +24,13 @@ data class ChatSession(
     val modelId: String,
     val title: String,
     val timestamp: Long,
-    val isAnalysisMode: Boolean = false
-)
+    val isAnalysisMode: Boolean = false,
+    val mode: ChatMode = ChatMode.GENERAL
+) {
+    fun effectiveMode(): ChatMode {
+        return if (mode == ChatMode.GENERAL && isAnalysisMode) ChatMode.ANALYSIS else mode
+    }
+}
 
 @Serializable
 data class ChatMessage(
@@ -144,8 +150,13 @@ class ChatRepository(private val context: Context) {
      * @param isAnalysisMode whether the session runs in analysis mode.
      * @return new session id as a `Long`.
      */
-    suspend fun createSession(modelId: String, title: String, isAnalysisMode: Boolean): Long {
-        android.util.Log.d("ChatRepository", "createSession - START - modelId: $modelId, title: $title, isAnalysisMode: $isAnalysisMode")
+    suspend fun createSession(
+        modelId: String,
+        title: String,
+        isAnalysisMode: Boolean,
+        mode: ChatMode = if (isAnalysisMode) ChatMode.ANALYSIS else ChatMode.GENERAL
+    ): Long {
+        android.util.Log.d("ChatRepository", "createSession - START - modelId: $modelId, title: $title, mode: $mode, isAnalysisMode: $isAnalysisMode")
 
         try {
             val currentData = getChatData()
@@ -156,7 +167,8 @@ class ChatRepository(private val context: Context) {
                 modelId = modelId,
                 title = title,
                 timestamp = System.currentTimeMillis(),
-                isAnalysisMode = isAnalysisMode
+                isAnalysisMode = mode == ChatMode.ANALYSIS || isAnalysisMode,
+                mode = mode
             )
 
             android.util.Log.d("ChatRepository", "New session created: $newSession")

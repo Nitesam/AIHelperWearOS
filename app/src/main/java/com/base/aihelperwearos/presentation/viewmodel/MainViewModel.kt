@@ -12,6 +12,9 @@ import androidx.lifecycle.viewModelScope
 import com.base.aihelperwearos.AIHelperApplication
 import com.base.aihelperwearos.R
 import com.base.aihelperwearos.data.Constants
+import com.base.aihelperwearos.data.metodi.MetodiRepository
+import com.base.aihelperwearos.data.models.ChatMode
+import com.base.aihelperwearos.data.models.isMetodi
 import com.base.aihelperwearos.data.rag.MathContextRetriever
 import com.base.aihelperwearos.data.rag.RagRepository
 
@@ -24,9 +27,11 @@ import com.base.aihelperwearos.presentation.utils.AudioPlayer
 import com.base.aihelperwearos.presentation.utils.TextToSpeechHelper
 import com.base.aihelperwearos.presentation.services.AudioRecordingService
 import com.base.aihelperwearos.utils.getCurrentLanguageCode
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 
 enum class Screen {
@@ -51,6 +56,7 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isAnalysisMode: Boolean = false,
+    val chatMode: ChatMode = ChatMode.GENERAL,
     val chatSessions: List<ChatSession> = emptyList(),
     val fontSize: Int = 11,
     val pendingTranscription: String? = null,
@@ -74,6 +80,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val ttsHelper = TextToSpeechHelper(application)
     private val audioPlayer = AudioPlayer(application)
     private val userPreferences = com.base.aihelperwearos.data.preferences.UserPreferences(application)
+    private val metodiRepository = MetodiRepository(application)
 
     private var cachedRagRepository: RagRepository? = null
     private var cachedMathContextRetriever: MathContextRetriever? = null
@@ -92,8 +99,48 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return cachedMathContextRetriever
     }
 
+    private fun resolveRequestedMode(chatMode: ChatMode, isAnalysisMode: Boolean): ChatMode {
+        val requestedMode = if (isAnalysisMode) ChatMode.ANALYSIS else chatMode
+        return if (requestedMode == ChatMode.ANALYSIS && !Constants.ANALYSIS_MODULE_ENABLED) {
+            ChatMode.GENERAL
+        } else {
+            requestedMode
+        }
+    }
+
+    private fun resolveStoredMode(session: ChatSession): ChatMode {
+        val storedMode = session.effectiveMode()
+        return if (storedMode == ChatMode.ANALYSIS && !Constants.ANALYSIS_MODULE_ENABLED) {
+            ChatMode.GENERAL
+        } else {
+            storedMode
+        }
+    }
+
+    private fun screenForMode(chatMode: ChatMode): Screen {
+        return if (chatMode == ChatMode.ANALYSIS) Screen.Analysis else Screen.Chat
+    }
+
+    private fun isDefaultSessionTitle(title: String): Boolean {
+        val app = getApplication<Application>()
+        return title == app.getString(R.string.new_chat) ||
+            title == app.getString(R.string.analysis_mode) ||
+            title == app.getString(R.string.metodi_theory_mode) ||
+            title == app.getString(R.string.metodi_code_mode)
+    }
+
+    private fun buildModelMessages(messages: List<ChatMessage>, chatMode: ChatMode): List<Message> {
+        val modelMessages = messages.map { msg -> Message(role = msg.role, content = msg.content) }
+        return if (chatMode.isMetodi()) {
+            modelMessages.takeLast(10)
+        } else {
+            modelMessages
+        }
+    }
+
     private var recordingService: AudioRecordingService? = null
     private var serviceBound = false
+    private var recordingResultDeferred: CompletableDeferred<Result<File>>? = null
 
     private val serviceConnection = object : ServiceConnection {
         /**
@@ -285,21 +332,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      *
      * @param title title used for the new session.
      * @param isAnalysisMode whether to start in analysis mode.
+     * @param chatMode specialized mode to start.
      * @return `Unit` after launching session creation.
      */
-    fun startNewChat(title: String, isAnalysisMode: Boolean = false) {
+    fun startNewChat(
+        title: String,
+        isAnalysisMode: Boolean = false,
+        chatMode: ChatMode = if (isAnalysisMode) ChatMode.ANALYSIS else ChatMode.GENERAL
+    ) {
         viewModelScope.launch {
             try {
-                val effectiveAnalysisMode = isAnalysisMode && Constants.ANALYSIS_MODULE_ENABLED
-                val effectiveTitle = if (effectiveAnalysisMode) {
-                    title
-                } else if (isAnalysisMode) {
+                val effectiveMode = resolveRequestedMode(chatMode, isAnalysisMode)
+                val effectiveAnalysisMode = effectiveMode == ChatMode.ANALYSIS
+                val effectiveTitle = if (chatMode == ChatMode.ANALYSIS && !effectiveAnalysisMode) {
                     getApplication<Application>().getString(R.string.new_chat)
                 } else {
                     title
                 }
 
-                android.util.Log.d("MainViewModel", "startNewChat - START - isAnalysisMode: $effectiveAnalysisMode")
+                android.util.Log.d("MainViewModel", "startNewChat - START - mode: $effectiveMode")
                 android.util.Log.d("MainViewModel", "Selected model: ${_uiState.value.selectedModel}")
 
                 android.util.Log.d("MainViewModel", "Creating session with title: $effectiveTitle")
@@ -307,12 +358,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val sessionId = chatRepository.createSession(
                     modelId = _uiState.value.selectedModel,
                     title = effectiveTitle,
-                    isAnalysisMode = effectiveAnalysisMode
+                    isAnalysisMode = effectiveAnalysisMode,
+                    mode = effectiveMode
                 )
 
                 android.util.Log.d("MainViewModel", "Session created - ID: $sessionId")
 
-                val newScreen = if (effectiveAnalysisMode) Screen.Analysis else Screen.Chat
+                val newScreen = screenForMode(effectiveMode)
                 android.util.Log.d("MainViewModel", "Navigating to: $newScreen")
 
                 _uiState.update {
@@ -320,6 +372,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         currentSessionId = sessionId,
                         currentScreen = newScreen,
                         isAnalysisMode = effectiveAnalysisMode,
+                        chatMode = effectiveMode,
                         chatMessages = emptyList()
                     )
                 }
@@ -349,13 +402,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val session = chatRepository.getSession(sessionId)
                 if (session != null) {
-                    val effectiveAnalysisMode = session.isAnalysisMode && Constants.ANALYSIS_MODULE_ENABLED
+                    val effectiveMode = resolveStoredMode(session)
+                    val effectiveAnalysisMode = effectiveMode == ChatMode.ANALYSIS
                     _uiState.update {
                         it.copy(
                             currentSessionId = sessionId,
                             selectedModel = session.modelId,
                             isAnalysisMode = effectiveAnalysisMode,
-                            currentScreen = if (effectiveAnalysisMode) Screen.Analysis else Screen.Chat
+                            chatMode = effectiveMode,
+                            currentScreen = screenForMode(effectiveMode)
                         )
                     }
                     observeMessages(sessionId)
@@ -401,7 +456,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        android.util.Log.d("MainViewModel", "sendMessage - sessionId: $sessionId, isAnalysisMode: ${_uiState.value.isAnalysisMode}")
+        val activeMode = resolveRequestedMode(_uiState.value.chatMode, _uiState.value.isAnalysisMode)
+        android.util.Log.d("MainViewModel", "sendMessage - sessionId: $sessionId, mode: $activeMode")
 
         viewModelScope.launch {
             try {
@@ -417,14 +473,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
 
                 val session = chatRepository.getSession(sessionId)
-                if (session != null && (session.title == getApplication<Application>().getString(R.string.new_chat) || session.title == getApplication<Application>().getString(R.string.analysis_mode))) {
+                if (session != null && isDefaultSessionTitle(session.title)) {
                     val newTitle = userMessage.take(30) + if (userMessage.length > 30) "..." else ""
                     chatRepository.updateSessionTitle(sessionId, newTitle)
                 }
 
-                val messages = chatRepository.getMessagesForSession(sessionId).first().map { msg ->
-                    Message(role = msg.role, content = msg.content)
-                }
+                val messages = buildModelMessages(
+                    messages = chatRepository.getMessagesForSession(sessionId).first(),
+                    chatMode = activeMode
+                )
 
                 val currentLanguage = _uiState.value.selectedLanguage.code
                 val extractedKeywords = _uiState.value.extractedKeywords
@@ -435,28 +492,51 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 var ragContext: String? = null
-                if (_uiState.value.isAnalysisMode) {
-                    val ragMetadata = try {
-                        getMathContextRetriever()?.retrieveContextWithMetadata(ragQuery)
-                    } catch (e: Exception) {
-                        android.util.Log.w("MainViewModel", "sendMessage - RAG failed, using base prompt", e)
-                        null
-                    }
-
-                    ragContext = ragMetadata?.context
-
-                    if (ragMetadata?.success == true && ragMetadata.sentExerciseIds.isNotEmpty()) {
-                        val sentSummary = ragMetadata.sentExerciseIds.zip(ragMetadata.sentExerciseLabels)
-                            .joinToString(" | ") { (id, label) -> "$id [$label]" }
-                        android.util.Log.i("MainViewModel", "RAG examples sent to AI: $sentSummary")
-                    } else {
-                        val reason = when {
-                            ragMetadata == null -> "repository unavailable"
-                            !ragMetadata.fallbackReason.isNullOrBlank() -> ragMetadata.fallbackReason
-                            else -> "no match"
+                when (activeMode) {
+                    ChatMode.ANALYSIS -> {
+                        val ragMetadata = try {
+                            getMathContextRetriever()?.retrieveContextWithMetadata(ragQuery)
+                        } catch (e: Exception) {
+                            android.util.Log.w("MainViewModel", "sendMessage - Analysis RAG failed, using base prompt", e)
+                            null
                         }
-                        android.util.Log.i("MainViewModel", "RAG examples sent to AI: none ($reason)")
+
+                        ragContext = ragMetadata?.context
+
+                        if (ragMetadata?.success == true && ragMetadata.sentExerciseIds.isNotEmpty()) {
+                            val sentSummary = ragMetadata.sentExerciseIds.zip(ragMetadata.sentExerciseLabels)
+                                .joinToString(" | ") { (id, label) -> "$id [$label]" }
+                            android.util.Log.i("MainViewModel", "Analysis RAG examples sent to AI: $sentSummary")
+                        } else {
+                            val reason = when {
+                                ragMetadata == null -> "repository unavailable"
+                                !ragMetadata.fallbackReason.isNullOrBlank() -> ragMetadata.fallbackReason
+                                else -> "no match"
+                            }
+                            android.util.Log.i("MainViewModel", "Analysis RAG examples sent to AI: none ($reason)")
+                        }
                     }
+                    ChatMode.METODI_TEORIA -> {
+                        val metodiContext = metodiRepository.retrieveTheoryContext(ragQuery)
+                        ragContext = metodiContext.context
+                        val summary = metodiContext.matchedIds.zip(metodiContext.matchedLabels)
+                            .joinToString(" | ") { (id, label) -> "$id [$label]" }
+                        android.util.Log.i(
+                            "MainViewModel",
+                            "Metodi theory context sent: ${summary.ifBlank { "none (${metodiContext.fallbackReason})" }}"
+                        )
+                    }
+                    ChatMode.METODI_CODICE -> {
+                        val metodiContext = metodiRepository.retrieveCodeContext(ragQuery)
+                        ragContext = metodiContext.context
+                        val summary = metodiContext.matchedIds.zip(metodiContext.matchedLabels)
+                            .joinToString(" | ") { (id, label) -> "$id [$label]" }
+                        android.util.Log.i(
+                            "MainViewModel",
+                            "Metodi code examples sent: ${summary.ifBlank { "none (${metodiContext.fallbackReason})" }}"
+                        )
+                    }
+                    ChatMode.GENERAL -> Unit
                 }
                 
                 android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}, lingua: $currentLanguage")
@@ -464,9 +544,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val result = openRouterService.sendMessage(
                     modelId = _uiState.value.selectedModel,
                     messages = messages,
-                    isAnalysisMode = _uiState.value.isAnalysisMode,
+                    isAnalysisMode = activeMode == ChatMode.ANALYSIS,
                     languageCode = currentLanguage,
-                    ragContext = ragContext
+                    ragContext = ragContext,
+                    chatMode = activeMode
                 )
 
                 android.util.Log.d("MainViewModel", "sendMessage - API risposta ricevuta")
@@ -541,12 +622,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun startRecordingInternal() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRecording = true) }
+            recordingResultDeferred = CompletableDeferred()
             recordingService?.startRecording { result ->
-                result.onSuccess {
-                    android.util.Log.d("MainViewModel", "Recording started successfully")
-                }.onFailure { error ->
-                    android.util.Log.e("MainViewModel", "Recording failed", error)
-                    _uiState.update { it.copy(isRecording = false) }
+                val deferred = recordingResultDeferred
+                if (deferred?.isCompleted == false) {
+                    deferred.complete(result)
                 }
             }
         }
@@ -559,23 +639,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun stopRecording() {
         viewModelScope.launch {
+            val stopResultDeferred = recordingResultDeferred
             recordingService?.stopRecording()
 
-            delay(500)
+            val stopResult = withTimeoutOrNull(3000) {
+                stopResultDeferred?.await()
+            }
 
-            val audioDir = File(getApplication<Application>().filesDir, "audio_messages")
-            val latestFile = audioDir.listFiles()
-                ?.filter { it.name.startsWith("voice_") && it.name.endsWith(".wav") }
-                ?.maxByOrNull { it.lastModified() }
-
-            if (latestFile != null && latestFile.exists()) {
+            val recordedFile = stopResult?.getOrNull()
+            if (recordedFile != null && recordedFile.exists() && recordedFile.length() > 44L) {
+                android.util.Log.d(
+                    "MainViewModel",
+                    "Using recorder callback file: ${recordedFile.absolutePath}, size=${recordedFile.length()}"
+                )
                 _uiState.update { it.copy(isRecording = false) }
-                sendAudioMessage(latestFile)
+                recordingResultDeferred = null
+                sendAudioMessage(recordedFile)
             } else {
-                android.util.Log.e("MainViewModel", "Audio file not found")
+                val errorMessage = stopResult?.exceptionOrNull()?.message ?: "File audio non trovato"
+                android.util.Log.e("MainViewModel", "Audio file not available from recorder callback: $errorMessage")
+                recordingResultDeferred = null
                 _uiState.update { it.copy(
                     isRecording = false,
-                    errorMessage = getApplication<Application>().getString(R.string.error_generic, "File audio non trovato")
+                    errorMessage = getApplication<Application>().getString(R.string.error_generic, errorMessage)
                 )}
             }
         }
@@ -606,13 +692,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 val audioPath = audioFile.absolutePath
                 val currentLanguage = _uiState.value.selectedLanguage.code
+                val activeMode = resolveRequestedMode(_uiState.value.chatMode, _uiState.value.isAnalysisMode)
 
-                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, language: $currentLanguage")
+                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, language: $currentLanguage, mode: $activeMode")
                 android.util.Log.d("MainViewModel", "📡 Starting transcription request...")
                 
                 val transcriptionResult = openRouterService.transcribeAudioWithGemini(
                     audioFile = audioFile,
-                    languageCode = currentLanguage
+                    languageCode = currentLanguage,
+                    chatMode = activeMode
                 )
 
                 transcriptionResult.fold(

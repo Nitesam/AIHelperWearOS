@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
 import com.base.aihelperwearos.R
 import com.base.aihelperwearos.data.Constants
+import com.base.aihelperwearos.data.models.ChatMode
 import com.base.aihelperwearos.presentation.components.MathMarkdownText
 import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
 import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
@@ -102,8 +103,8 @@ fun KeepScreenOn() {
 fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState.currentScreen) {
-        android.util.Log.d("MainActivity", "UI recomposed - currentScreen: ${uiState.currentScreen}, isAnalysisMode: ${uiState.isAnalysisMode}")
+    LaunchedEffect(uiState.currentScreen, uiState.chatMode) {
+        android.util.Log.d("MainActivity", "UI recomposed - currentScreen: ${uiState.currentScreen}, mode: ${uiState.chatMode}")
     }
 
     AIHelperWearOSTheme {
@@ -113,6 +114,13 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
         ) {
             val analysisTitle = stringResource(id = R.string.analysis_mode)
             val newChatTitle = stringResource(id = R.string.new_chat)
+            val metodiTheoryTitle = stringResource(id = R.string.metodi_theory_mode)
+            val metodiCodeTitle = stringResource(id = R.string.metodi_code_mode)
+            val chatModeLabel = when (uiState.chatMode) {
+                ChatMode.METODI_TEORIA -> metodiTheoryTitle
+                ChatMode.METODI_CODICE -> metodiCodeTitle
+                else -> null
+            }
 
             when (uiState.currentScreen) {
                 Screen.Home -> HomeScreen(
@@ -122,6 +130,12 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                     },
                     onAnalysis = {
                         viewModel.startNewChat(title = analysisTitle, isAnalysisMode = true)
+                    },
+                    onMetodiTheory = {
+                        viewModel.startNewChat(title = metodiTheoryTitle, chatMode = ChatMode.METODI_TEORIA)
+                    },
+                    onMetodiCode = {
+                        viewModel.startNewChat(title = metodiCodeTitle, chatMode = ChatMode.METODI_CODICE)
                     },
                     onHistory = {
                         viewModel.navigateTo(Screen.History)
@@ -147,6 +161,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                 )
                 Screen.Chat -> ChatScreen(
                     uiState = uiState,
+                    modeLabel = chatModeLabel,
                     onSendMessage = { viewModel.sendMessage(it) },
                     onStartRecording = { viewModel.startRecording() },
                     onStopRecording = { viewModel.stopRecording() },
@@ -192,6 +207,8 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
  *
  * @param onNewChat callback to start a new chat.
  * @param onAnalysis callback to start analysis mode.
+ * @param onMetodiTheory callback to start Metodi theory mode.
+ * @param onMetodiCode callback to start Metodi code mode.
  * @param onHistory callback to open chat history.
  * @param onSettings callback to open settings.
  * @return `Unit` after composing the screen.
@@ -201,6 +218,8 @@ fun HomeScreen(
     isAnalysisEnabled: Boolean,
     onNewChat: () -> Unit,
     onAnalysis: () -> Unit,
+    onMetodiTheory: () -> Unit,
+    onMetodiCode: () -> Unit,
     onHistory: () -> Unit,
     onSettings: () -> Unit
 ) {
@@ -233,6 +252,34 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(0.85f)
             ) {
                 Text(stringResource(R.string.new_chat))
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        item {
+            Button(
+                onClick = onMetodiTheory,
+                modifier = Modifier.fillMaxWidth(0.85f),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.secondary
+                )
+            ) {
+                Text(stringResource(R.string.metodi_theory_mode), color = MaterialTheme.colors.onSecondary)
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        item {
+            Button(
+                onClick = onMetodiCode,
+                modifier = Modifier.fillMaxWidth(0.85f),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.surface
+                )
+            ) {
+                Text(stringResource(R.string.metodi_code_mode))
             }
         }
 
@@ -446,6 +493,7 @@ fun SettingsScreen(
 @Composable
 fun ChatScreen(
     uiState: com.base.aihelperwearos.presentation.viewmodel.ChatUiState,
+    modeLabel: String? = null,
     onSendMessage: (String) -> Unit,
     onStartRecording: () -> Unit,
     onStopRecording: () -> Unit,
@@ -520,6 +568,34 @@ fun ChatScreen(
             horizontalAlignment = Alignment.Start
     ) {
         item { Spacer(modifier = Modifier.height(40.dp)) }
+
+        modeLabel?.let { label ->
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colors.secondary,
+                                shape = CircleShape
+                            )
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.caption1,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colors.onSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
 
         items(uiState.chatMessages.size) { index ->
             val message = uiState.chatMessages[index]
@@ -1251,8 +1327,11 @@ fun HistoryScreen(
                         },
                         modifier = Modifier.weight(1f),
                         secondaryLabel = {
-                            if (session.isAnalysisMode) {
-                                Text(stringResource(R.string.analysis), style = MaterialTheme.typography.caption3)
+                            when (session.effectiveMode()) {
+                                ChatMode.ANALYSIS -> Text(stringResource(R.string.analysis), style = MaterialTheme.typography.caption3)
+                                ChatMode.METODI_TEORIA -> Text(stringResource(R.string.metodi_theory_short), style = MaterialTheme.typography.caption3)
+                                ChatMode.METODI_CODICE -> Text(stringResource(R.string.metodi_code_short), style = MaterialTheme.typography.caption3)
+                                ChatMode.GENERAL -> Unit
                             }
                         }
                     )

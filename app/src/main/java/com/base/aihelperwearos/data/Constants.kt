@@ -1,5 +1,7 @@
 package com.base.aihelperwearos.data
 
+import com.base.aihelperwearos.data.models.ChatMode
+
 object Constants {
     const val ANALYSIS_MODULE_ENABLED = false
 
@@ -60,7 +62,10 @@ object Constants {
 
     val TRANSCRIPTION_PROMPT_IT = """
         Ascolta attentamente questo file audio e trascrivi ESATTAMENTE ciò che viene detto.
-        L'audio contiene un problema di matematica in italiano.
+        L'audio può contenere un problema di matematica in italiano, una domanda, oppure una semplice prova microfono.
+        NON inventare, NON completare esercizi e NON aggiungere testo non pronunciato.
+        Se senti solo una frase di test come "prova microfono", trascrivi solo quella frase.
+        Se una parte non è chiara, scrivi [incomprensibile].
 
         🔴 FORMATO OBBLIGATORIO DELLA RISPOSTA:
         Devi rispondere in QUESTO formato preciso:
@@ -95,7 +100,10 @@ object Constants {
 
     val TRANSCRIPTION_PROMPT_EN = """
         Listen carefully to this audio file and transcribe EXACTLY what is said.
-        The audio contains a mathematics prompt in English.
+        The audio may contain a mathematics prompt, a question, or a simple microphone test.
+        Do NOT invent, do NOT complete exercises, and do NOT add text that was not spoken.
+        If you only hear a test phrase such as "microphone test", transcribe only that phrase.
+        If a part is unclear, write [inaudible].
 
         🔴 REQUIRED RESPONSE FORMAT:
         [KEYWORDS: word1, word2, word3]
@@ -164,6 +172,72 @@ object Constants {
         return basePrompt + ragSection
     }
 
+    fun getMetodiPrompt(chatMode: ChatMode, languageCode: String, ragContext: String?): String {
+        return when (chatMode) {
+            ChatMode.METODI_TEORIA -> getMetodiTheoryPrompt(languageCode, ragContext)
+            ChatMode.METODI_CODICE -> getMetodiCodePrompt(languageCode, ragContext)
+            else -> ""
+        }
+    }
+
+    private fun getMetodiTheoryPrompt(languageCode: String, ragContext: String?): String {
+        val base = if (languageCode == "en") {
+            """
+                You are a Metodi Matematici e Statistici tutor.
+                Answer theory questions using the provided excerpts from TEORIA_CORSO.pdf when relevant.
+                Keep answers concise and suitable for a Wear OS display.
+                If the provided excerpts do not contain enough information, say so briefly and answer with standard course-level knowledge.
+                Cite page references from the excerpts using "p. N" when you rely on them.
+                Do not produce Python code unless explicitly requested.
+            """.trimIndent()
+        } else {
+            """
+                Sei un tutor di Metodi Matematici e Statistici.
+                Rispondi alle domande di teoria usando gli estratti forniti da TEORIA_CORSO.pdf quando sono pertinenti.
+                Mantieni le risposte concise e leggibili su Wear OS.
+                Se gli estratti forniti non bastano, dichiaralo brevemente e rispondi con conoscenza standard del corso.
+                Cita le pagine dagli estratti con "p. N" quando le usi.
+                Non produrre codice Python salvo richiesta esplicita.
+            """.trimIndent()
+        }
+
+        return if (ragContext.isNullOrBlank()) {
+            base
+        } else {
+            "$base\n\nESTRATTI TEORIA RILEVANTI:\n$ragContext"
+        }
+    }
+
+    private fun getMetodiCodePrompt(languageCode: String, ragContext: String?): String {
+        val base = if (languageCode == "en") {
+            """
+                You are a Metodi Matematici e Statistici Python assistant.
+                Solve dictated exercises by producing Python code in the professor's style.
+                Prefer simple notebook-style code cells, explicit variables, scipy/numpy/matplotlib when appropriate, and display/print of final numerical results.
+                Start with a short plan only when it clarifies the exercise, then provide a single executable Python code block.
+                Keep comments short and useful.
+                If data are missing, create clearly named placeholders and state what the user must replace.
+                Do not use theory PDF excerpts in this mode.
+            """.trimIndent()
+        } else {
+            """
+                Sei un assistente Python per Metodi Matematici e Statistici.
+                Risolvi gli esercizi dettati producendo codice Python nello stile del docente.
+                Preferisci celle stile notebook, variabili esplicite, scipy/numpy/matplotlib quando opportuno, e display/print dei risultati numerici finali.
+                Inserisci un piano breve solo se chiarisce l'esercizio, poi fornisci un unico blocco Python eseguibile.
+                Tieni i commenti brevi e utili.
+                Se mancano dati, crea placeholder con nomi chiari e indica cosa sostituire.
+                Non usare estratti del PDF di teoria in questa modalità.
+            """.trimIndent()
+        }
+
+        return if (ragContext.isNullOrBlank()) {
+            base
+        } else {
+            "$base\n\nESEMPI CODICE RILEVANTI DEL DOCENTE:\n$ragContext"
+        }
+    }
+
     /**
      * Returns the transcription prompt for the requested language.
      *
@@ -174,6 +248,72 @@ object Constants {
         return when (languageCode) {
             "en" -> TRANSCRIPTION_PROMPT_EN
             else -> TRANSCRIPTION_PROMPT_IT
+        }
+    }
+
+    fun getTranscriptionPrompt(languageCode: String, chatMode: ChatMode): String {
+        return when (chatMode) {
+            ChatMode.METODI_TEORIA -> if (languageCode == "en") {
+                """
+                    Listen carefully and transcribe exactly what is said.
+                    The audio may contain a Metodi Matematici e Statistici theory question or a microphone test.
+                    Do not infer or complete a question. Transcribe only words actually spoken.
+                    If you only hear "microphone test" or similar, output only that phrase as transcription.
+
+                    REQUIRED FORMAT:
+                    [KEYWORDS: theory, keyword1, keyword2, keyword3]
+                    [TRANSCRIPTION: full literal transcription]
+
+                    Extract 3-5 useful course keywords such as probability, random variable, distribution, estimator, confidence interval, hypothesis test, Markov chain, regression.
+                    Do not answer the question.
+                """.trimIndent()
+            } else {
+                """
+                    Ascolta attentamente e trascrivi esattamente ciò che viene detto.
+                    L'audio può contenere una domanda di teoria di Metodi Matematici e Statistici oppure una prova microfono.
+                    Non dedurre e non completare la domanda. Trascrivi solo parole realmente pronunciate.
+                    Se senti solo "prova microfono" o simile, inserisci solo quella frase nella trascrizione.
+
+                    FORMATO OBBLIGATORIO:
+                    [KEYWORDS: teoria, parola1, parola2, parola3]
+                    [TRASCRIZIONE: trascrizione letterale completa]
+
+                    Estrai 3-5 parole chiave utili del corso, ad esempio probabilità, variabile aleatoria, distribuzione, stimatore, intervallo di confidenza, test di ipotesi, catena di Markov, regressione.
+                    Non rispondere alla domanda.
+                """.trimIndent()
+            }
+            ChatMode.METODI_CODICE -> if (languageCode == "en") {
+                """
+                    Listen carefully and transcribe exactly what is said.
+                    The audio may contain a Metodi Matematici e Statistici coding exercise or a microphone test.
+                    Do not infer or complete an exercise. Transcribe only words actually spoken.
+                    If you only hear "microphone test" or similar, output only that phrase as transcription.
+
+                    REQUIRED FORMAT:
+                    [KEYWORDS: exercise, python, keyword1, keyword2, keyword3]
+                    [TRANSCRIPTION: full literal transcription]
+
+                    Extract 3-5 useful coding/statistics keywords such as binomial, normal, hypergeometric, histogram, regression, confidence interval, chi-square, simulation, Markov.
+                    Preserve numbers, variable names and data values exactly.
+                    Do not solve the exercise.
+                """.trimIndent()
+            } else {
+                """
+                    Ascolta attentamente e trascrivi esattamente ciò che viene detto.
+                    L'audio può contenere un esercizio di codice per Metodi Matematici e Statistici oppure una prova microfono.
+                    Non dedurre e non completare l'esercizio. Trascrivi solo parole realmente pronunciate.
+                    Se senti solo "prova microfono" o simile, inserisci solo quella frase nella trascrizione.
+
+                    FORMATO OBBLIGATORIO:
+                    [KEYWORDS: esercizio, python, parola1, parola2, parola3]
+                    [TRASCRIZIONE: trascrizione letterale completa]
+
+                    Estrai 3-5 parole chiave utili per codice/statistica, ad esempio binomiale, normale, ipergeometrica, istogramma, regressione, intervallo di confidenza, chi quadro, simulazione, Markov.
+                    Preserva esattamente numeri, nomi di variabili e dati.
+                    Non risolvere l'esercizio.
+                """.trimIndent()
+            }
+            else -> getTranscriptionPrompt(languageCode)
         }
     }
 }
