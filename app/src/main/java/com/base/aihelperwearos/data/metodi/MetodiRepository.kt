@@ -104,8 +104,10 @@ class MetodiRepository(private val context: Context) {
             )
         }
 
-        val context = ranked.joinToString("\n\n") { example ->
+        val context = ranked.mapIndexed { index, example ->
             buildString {
+                val priority = if (index == 0) "ESEMPIO PRIORITARIO" else "ESEMPIO SECONDARIO"
+                appendLine("[$priority]")
                 appendLine("[${example.id}] ${example.category} / ${example.subtype}")
                 appendLine("Origine: ${example.sourcePath}")
                 appendLine("Titolo: ${example.title}")
@@ -113,7 +115,7 @@ class MetodiRepository(private val context: Context) {
                 appendLine(example.code)
                 appendLine("```")
             }
-        }.takeWithMarker(CODE_CONTEXT_MAX_CHARS)
+        }.joinToString("\n\n").takeWithMarker(CODE_CONTEXT_MAX_CHARS)
 
         MetodiContextResult(
             context = context,
@@ -142,7 +144,7 @@ class MetodiRepository(private val context: Context) {
     private fun loadTheoryDatabase(): MetodiTheoryDatabase? {
         return runCatching {
             context.resources.openRawResource(R.raw.metodi_teoria).use { stream ->
-                json.decodeFromString<MetodiTheoryDatabase>(stream.bufferedReader().readText())
+                json.decodeFromString<MetodiTheoryDatabase>(stream.bufferedReader().readText().removeUtf8Bom())
             }
         }.onFailure {
             Log.e(TAG, "Failed to load metodi_teoria", it)
@@ -152,11 +154,15 @@ class MetodiRepository(private val context: Context) {
     private fun loadCodeDatabase(): MetodiCodeDatabase? {
         return runCatching {
             context.resources.openRawResource(R.raw.metodi_codice).use { stream ->
-                json.decodeFromString<MetodiCodeDatabase>(stream.bufferedReader().readText())
+                json.decodeFromString<MetodiCodeDatabase>(stream.bufferedReader().readText().removeUtf8Bom())
             }
         }.onFailure {
             Log.e(TAG, "Failed to load metodi_codice", it)
         }.getOrNull()
+    }
+
+    private fun String.removeUtf8Bom(): String {
+        return removePrefix("\uFEFF")
     }
 
     private fun scoreTheoryChunk(chunk: MetodiTheoryChunk, queryTerms: Set<String>): Int {

@@ -2,12 +2,16 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
+      <SelectionState runConfigName="Paternicola">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DialogSelection />
+      </SelectionState>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-12-06T22:12:01.405333400Z">
+        <DropdownSelection timestamp="2026-04-26T17:07:11.429847400Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Nitesam\.android\avd\Wear_OS_Small_Round_2.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Nitesam\.android\avd\Wear_OS_XL_Round.avd" />
             </handle>
           </Target>
         </DropdownSelection>
