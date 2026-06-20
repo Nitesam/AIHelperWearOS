@@ -1,0 +1,264 @@
+{
+  "version": "1.1",
+  "last_updated": "2026-06-17",
+  "description": "Esercizi svolti di Fisica 1 trascritti e normalizzati da tools/Fisica/Esercizi.pdf e tools/Fisica/esercizi2.pdf",
+  "total_exercises": 32,
+  "exercises": [
+    {
+      "id": "FIS-CIN-001",
+      "categoria": "Cinematica rettilinea",
+      "sottotipo": "Moto uniformemente accelerato",
+      "keywords": ["moto rettilineo", "accelerazione costante", "velocita", "spazio", "velocita media"],
+      "testo": "Un punto materiale si muove su una traiettoria rettilinea con accelerazione costante $a=1.56\\,m/s^2$. Parte da fermo. Calcolare la velocita dopo $t=12\\,s$, lo spazio percorso e la velocita media nell'intervallo $(0,t)$.",
+      "svolgimento": "Dati: $v_0=0$, $a=1.56\\,m/s^2$, $t=12\\,s$.\\n\\nVelocita:\\n$$v=v_0+at$$\\n$$v=0+1.56\\cdot12=18.72\\,m/s$$\\n\\nSpazio:\\n$$s=s_0+v_0t+\\frac{1}{2}at^2$$\\n$$s=0+0+\\frac{1}{2}\\cdot1.56\\cdot(12)^2=112.32\\,m$$\\n\\nVelocita media:\\n$$v_m=\\frac{s}{t}=\\frac{112.32}{12}=9.36\\,m/s$$"
+    },
+    {
+      "id": "FIS-CIN-002",
+      "categoria": "Cinematica verticale",
+      "sottotipo": "Lancio verticale verso l'alto",
+      "keywords": ["lancio verticale", "quota massima", "gravita", "traiettoria", "velocita nulla"],
+      "testo": "Un corpo e' lanciato verso l'alto lungo la verticale con velocita iniziale $v_0=1\\,m/s$. Usando la cinematica, calcolare la massima quota raggiunta assumendo $h_0=0$ e determinare la traiettoria.",
+      "svolgimento": "Moto verticale con verso positivo verso l'alto.\\n$$v(t)=v_0-gt$$\\n$$s(t)=s_0+v_0t-\\frac{1}{2}gt^2$$\\n\\nAlla quota massima $v=0$:\\n$$0=1-9.81t$$\\n$$t=\\frac{1}{9.81}\\simeq0.10\\,s$$\\n\\nSostituiamo nella legge oraria:\\n$$s=0+1\\cdot0.10-\\frac{1}{2}\\cdot9.81\\cdot(0.10)^2$$\\n$$s=0.10-0.05=0.05\\,m$$\\n\\nRisultato:\\n$$h_{max}=0.05\\,m$$"
+    },
+    {
+      "id": "FIS-CIN-003",
+      "categoria": "Moto parabolico",
+      "sottotipo": "Proiettile e bersaglio in caduta",
+      "keywords": ["proiettile", "mela", "caduta libera", "moto parabolico", "componenti"],
+      "testo": "Un tiratore nell'origine punta a una mela appesa a un albero. La mela e' inizialmente a quota $H$ e distanza orizzontale $d$. Nell'istante dello sparo la mela cade. Trascurando l'attrito, il proiettile colpisce la mela?",
+      "svolgimento": "Moto del proiettile:\\n$$x_p(t)=v\\cos\\theta\\,t$$\\n$$y_p(t)=v\\sin\\theta\\,t-\\frac{1}{2}gt^2$$\\n\\nMoto della mela:\\n$$x_m(t)=d$$\\n$$y_m(t)=H-\\frac{1}{2}gt^2$$\\n\\nIstante in cui il proiettile arriva alla distanza $d$:\\n$$v\\cos\\theta\\,t=d$$\\n$$t=\\frac{d}{v\\cos\\theta}$$\\n\\nPoiche' il fucile punta la mela:\\n$$\\tan\\theta=\\frac{H}{d}$$\\nquindi\\n$$d\\tan\\theta=H$$\\n\\nQuota del proiettile a $x=d$:\\n$$y_p=d\\tan\\theta-\\frac{1}{2}g\\left(\\frac{d}{v\\cos\\theta}\\right)^2$$\\n$$y_p=H-\\frac{1}{2}gt^2$$\\n\\nQuesta e' anche la quota della mela. Quindi il proiettile colpisce la mela."
+    },
+    {
+      "id": "FIS-CIR-001",
+      "categoria": "Moto circolare",
+      "sottotipo": "Moto circolare uniforme",
+      "keywords": ["moto circolare uniforme", "velocita angolare", "periodo", "frequenza", "accelerazione centripeta"],
+      "testo": "Un punto materiale si muove di moto circolare uniforme su una circonferenza di raggio $R=1\\,cm$. Percorre un angolo $\\Delta\\phi=30^\\circ$ in $t=0.2\\,s$. Calcolare velocita angolare, periodo, frequenza, accelerazione centripeta e tangenziale.",
+      "svolgimento": "Convertiamo:\\n$$\\Delta\\phi=30^\\circ=\\frac{\\pi}{6}\\,rad$$\\n$$R=1\\,cm=0.01\\,m$$\\n\\nVelocita angolare:\\n$$\\omega=\\frac{\\Delta\\phi}{t}=\\frac{\\pi/6}{0.2}=2.61\\,rad/s$$\\n\\nPeriodo:\\n$$T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{2.61}=2.40\\,s$$\\n\\nFrequenza:\\n$$f=\\frac{1}{T}=0.41\\,Hz$$\\n\\nAccelerazione centripeta:\\n$$a_c=\\omega^2R=(2.61)^2\\cdot0.01=0.068\\,m/s^2$$\\n\\nNel moto circolare uniforme:\\n$$a_t=0$$"
+    },
+    {
+      "id": "FIS-CIN-004",
+      "categoria": "Moto parabolico",
+      "sottotipo": "Lancio obliquo da quota iniziale",
+      "keywords": ["lancio obliquo", "gittata", "tempo di volo", "quota massima", "componenti"],
+      "testo": "Un punto materiale, inizialmente a quota $h_0=1\\,m$, e' lanciato verso l'alto con $v_0=5\\,m/s$ e angolo $\\theta=45^\\circ$. Trascurando l'attrito, determinare legge oraria, gittata, tempo di arrivo al suolo e quota massima.",
+      "svolgimento": "Componenti della velocita:\\n$$v_{0x}=5\\cos45^\\circ=3.53\\,m/s$$\\n$$v_{0y}=5\\sin45^\\circ=3.53\\,m/s$$\\n\\nLeggi orarie:\\n$$x(t)=3.53t$$\\n$$y(t)=1+3.53t-\\frac{1}{2}9.81t^2$$\\n\\nArrivo al suolo: $y(t)=0$\\n$$0=1+3.53t-4.9t^2$$\\n$$4.9t^2-3.53t-1=0$$\\n$$t\\simeq0.94\\,s$$\\n\\nGittata:\\n$$x_c=x(t)=3.53\\cdot0.94=3.31\\,m$$\\n\\nQuota massima: si pone $v_y=0$\\n$$v_y=3.53-9.81t=0$$\\n$$t=\\frac{3.53}{9.81}=0.36\\,s$$\\n$$h_{max}=1+3.53\\cdot0.36-4.9(0.36)^2=1.64\\,m$$"
+    },
+    {
+      "id": "FIS-DIN-001",
+      "categoria": "Dinamica",
+      "sottotipo": "Seconda legge di Newton",
+      "keywords": ["forza", "massa", "accelerazione", "newton", "velocita iniziale"],
+      "testo": "Un punto materiale di massa $m=1\\,kg$ si muove su una traiettoria rettilinea con legge $v=v_0+At$, con $v_0=3\\,km/h$ e $A=9.81\\,m/s^2$. Calcolare il modulo della forza applicata e dire come cambia se $v_0=120\\,km/h$.",
+      "svolgimento": "La forza dipende dall'accelerazione, non dalla velocita iniziale.\\n$$F=ma$$\\n$$F=1\\cdot9.81=9.81\\,N$$\\n\\nSe $v_0$ cambia, $a=A$ resta uguale.\\nQuindi:\\n$$F=9.81\\,N$$"
+    },
+    {
+      "id": "FIS-ENE-001",
+      "categoria": "Energia",
+      "sottotipo": "Conservazione energia meccanica",
+      "keywords": ["energia meccanica", "conservazione", "quota massima", "velocita al suolo", "massa"],
+      "testo": "Un punto materiale di massa $m=0.2\\,kg$ e' inizialmente a quota $h_0=1.5\\,m$ ed e' lanciato verso l'alto con $v_0=1.3\\,m/s$. Trascurando l'attrito, calcolare quota massima e velocita con cui tocca il suolo. Dire come cambierebbe con $m=1\\,kg$.",
+      "svolgimento": "Energia meccanica:\\n$$E_{tot}=K+U$$\\n$$\\frac{1}{2}mv_0^2+mgh_0=\\frac{1}{2}mv_f^2+mgh_f$$\\n\\nAlla quota massima $v=0$:\\n$$mgh_{max}=\\frac{1}{2}mv_0^2+mgh_0$$\\n$$h_{max}=h_0+\\frac{v_0^2}{2g}$$\\n$$h_{max}=1.5+\\frac{(1.3)^2}{2\\cdot9.81}=1.58\\,m$$\\n\\nAl suolo $h_f=0$:\\n$$\\frac{1}{2}mv_f^2=\\frac{1}{2}mv_0^2+mgh_0$$\\n$$v_f=\\sqrt{v_0^2+2gh_0}$$\\n$$v_f=\\sqrt{1.69+29.43}=5.57\\,m/s$$\\n\\nLa massa si semplifica, quindi con $m=1\\,kg$ i risultati non cambiano."
+    },
+    {
+      "id": "FIS-URT-001",
+      "categoria": "Impulso e urti",
+      "sottotipo": "Rimbalzo elastico su parete",
+      "keywords": ["impulso", "quantita di moto", "forza media", "rimbalzo", "urto"],
+      "testo": "Una biglia metallica di massa $m=12.5\\,g$ e' lanciata contro una lastra di acciaio con velocita $v_0=25\\,m/s$, con angolo $\\theta=30^\\circ$ rispetto alla normale. La biglia rimbalza specularmente conservando il modulo della velocita. Il processo dura $\\Delta t=0.005\\,s$. Calcolare la forza media esercitata dalla lastra.",
+      "svolgimento": "Impulso:\\n$$I=\\Delta p=F_m\\Delta t$$\\n$$F_m=\\frac{\\Delta p}{\\Delta t}$$\\n\\nMassa:\\n$$m=12.5\\,g=0.0125\\,kg$$\\n\\nNel rimbalzo cambia solo la componente normale.\\n$$\\Delta p_x=(mv_0\\cos\\theta)-(-mv_0\\cos\\theta)=2mv_0\\cos\\theta$$\\n$$\\Delta p_y=0$$\\n\\nForza media:\\n$$F_x=\\frac{2mv_0\\cos\\theta}{\\Delta t}$$\\n$$F_x=\\frac{2\\cdot0.0125\\cdot25\\cdot\\frac{\\sqrt{3}}{2}}{0.005}=108\\,N$$\\n\\nQuindi:\\n$$F=108\\,N$$"
+    },
+    {
+      "id": "FIS-URT-002",
+      "categoria": "Urti elastici",
+      "sottotipo": "Urto elastico unidimensionale masse uguali",
+      "keywords": ["urto elastico", "conservazione quantita di moto", "conservazione energia", "masse uguali", "velocita finali"],
+      "testo": "In un sistema inerziale una biglia di massa $m_1=15\\,g$ si muove lungo l'asse $x$ con velocita $v_1=30\\,m/s$. Urta elasticamente una seconda biglia con $m_2=m_1$, inizialmente in quiete. Determinare le velocita finali.",
+      "svolgimento": "In un urto elastico si conservano quantita di moto ed energia cinetica.\\n$$m_1v_{1i}+m_2v_{2i}=m_1v_{1f}+m_2v_{2f}$$\\n$$\\frac{1}{2}m_1v_{1i}^2+\\frac{1}{2}m_2v_{2i}^2=\\frac{1}{2}m_1v_{1f}^2+\\frac{1}{2}m_2v_{2f}^2$$\\n\\nPer urto elastico 1D:\\n$$v_{1i}+v_{1f}=v_{2i}+v_{2f}$$\\n\\nCon $m_1=m_2$ e $v_{2i}=0$:\\n$$v_{2f}=v_{1i}=30\\,m/s$$\\n$$v_{1f}=0\\,m/s$$\\n\\nLe biglie si scambiano le velocita."
+    },
+    {
+      "id": "FIS-URT-003",
+      "categoria": "Urti anelastici",
+      "sottotipo": "Urto completamente anelastico",
+      "keywords": ["urto anelastico", "completamente anelastico", "quantita di moto", "velocita comune", "energia dissipata"],
+      "testo": "Due corpi di masse $m_1$ e $m_2$ si muovono lungo la stessa retta con velocita iniziali $v_{1i}$ e $v_{2i}$. Dopo l'urto restano attaccati. Determinare la velocita finale comune e indicare cosa accade all'energia cinetica.",
+      "svolgimento": "In un urto completamente anelastico i due corpi hanno la stessa velocita finale $V$.\\n\\nSi conserva la quantita di moto:\\n$$m_1v_{1i}+m_2v_{2i}=(m_1+m_2)V$$\\n\\nIsoliamo $V$:\\n$$V=\\frac{m_1v_{1i}+m_2v_{2i}}{m_1+m_2}$$\\n\\nL'energia cinetica non si conserva.\\nLa perdita e':\\n$$\\Delta K=K_f-K_i$$\\ncon\\n$$K_i=\\frac{1}{2}m_1v_{1i}^2+\\frac{1}{2}m_2v_{2i}^2$$\\n$$K_f=\\frac{1}{2}(m_1+m_2)V^2$$\\n\\nPoiche' l'urto e' anelastico, una parte dell'energia diventa calore, deformazioni o suono."
+    },
+    {
+      "id": "FIS-OSC-001",
+      "categoria": "Oscillazioni",
+      "sottotipo": "Pendolo semplice a piccoli angoli",
+      "keywords": ["pendolo", "piccole oscillazioni", "periodo", "pulsazione", "velocita massima"],
+      "testo": "Un pendolo semplice di lunghezza $l$ viene spostato di un piccolo angolo iniziale $\\theta_0$ e lasciato andare da fermo. Scrivere la legge oraria angolare, il periodo e la velocita massima della massa.",
+      "svolgimento": "Per piccoli angoli il pendolo si comporta come un oscillatore armonico.\\n\\nPulsazione:\\n$$\\omega=\\sqrt{\\frac{g}{l}}$$\\n\\nPeriodo:\\n$$T=\\frac{2\\pi}{\\omega}=2\\pi\\sqrt{\\frac{l}{g}}$$\\n\\nSe parte da fermo a $\\theta_0$:\\n$$\\theta(t)=\\theta_0\\cos(\\omega t)$$\\n\\nLa velocita tangenziale e' legata alla derivata dell'angolo:\\n$$v(t)=l\\dot\\theta(t)=-l\\theta_0\\omega\\sin(\\omega t)$$\\n\\nIl modulo massimo si ha quando $|\\sin(\\omega t)|=1$:\\n$$v_{max}=l\\theta_0\\omega$$"
+    },
+    {
+      "id": "FIS-LAV-001",
+      "categoria": "Lavoro ed energia",
+      "sottotipo": "Frenata e lavoro delle forze dissipative",
+      "keywords": ["frenata", "lavoro", "energia cinetica", "forze dissipative", "automobile"],
+      "testo": "Un'automobile di massa $m=1.5\\,t$ procede a $v=100\\,km/h$ e viene arrestata dai freni. Calcolare il lavoro totale compiuto dalle forze frenanti.",
+      "svolgimento": "Convertiamo i dati:\\n$$m=1.5\\,t=1500\\,kg$$\\n$$v=100\\,km/h=\\frac{100}{3.6}=27.78\\,m/s$$\\n\\nIl teorema dell'energia cinetica dice:\\n$$L_{tot}=\\Delta K=K_f-K_i$$\\n\\nAlla fine l'auto e' ferma, quindi $K_f=0$.\\n$$L_{freni}=0-\\frac{1}{2}mv^2$$\\n\\nIn modulo:\\n$$|L_{freni}|=\\frac{1}{2}\\cdot1500\\cdot(27.78)^2$$\\n$$|L_{freni}|\\simeq5.79\\cdot10^5\\,J$$\\n\\nIl segno fisico del lavoro dei freni e' negativo, perche' sottrae energia al moto."
+    },
+    {
+      "id": "FIS-GRV-001",
+      "categoria": "Gravitazione",
+      "sottotipo": "Orbita circolare e terza legge di Keplero",
+      "keywords": ["gravitazione", "orbita circolare", "periodo", "forza centripeta", "keplero"],
+      "testo": "Un corpo di massa $m$ orbita circolarmente attorno a un corpo centrale di massa $M$ con periodo $T$. Ricavare il raggio dell'orbita.",
+      "svolgimento": "In orbita circolare la forza gravitazionale fornisce la forza centripeta.\\n$$F_g=F_c$$\\n$$G\\frac{Mm}{R^2}=m\\omega^2R$$\\n\\nLa massa $m$ del satellite si semplifica:\\n$$G\\frac{M}{R^2}=\\omega^2R$$\\n$$GM=\\omega^2R^3$$\\n\\nUsiamo $\\omega=\\frac{2\\pi}{T}$:\\n$$GM=\\frac{4\\pi^2}{T^2}R^3$$\\n\\nQuindi:\\n$$R^3=\\frac{GMT^2}{4\\pi^2}$$\\n$$R=\\sqrt[3]{\\frac{GMT^2}{4\\pi^2}}$$"
+    },
+    {
+      "id": "FIS-GRV-002",
+      "categoria": "Gravitazione",
+      "sottotipo": "Velocita orbitale",
+      "keywords": ["velocita orbitale", "orbita", "satellite", "forza gravitazionale", "forza centripeta"],
+      "testo": "Un satellite percorre un'orbita circolare di raggio $r$ attorno a un pianeta di massa $M$. Determinare la velocita orbitale.",
+      "svolgimento": "Anche qui uguagliamo gravitazione e forza centripeta.\\n$$G\\frac{Mm}{r^2}=m\\frac{v^2}{r}$$\\n\\nSemplifichiamo $m$ e un fattore $r$:\\n$$G\\frac{M}{r}=v^2$$\\n\\nQuindi:\\n$$v=\\sqrt{\\frac{GM}{r}}$$\\n\\nLa velocita non dipende dalla massa del satellite, ma solo da $M$ e dal raggio orbitale $r$."
+    },
+    {
+      "id": "FIS-OSC-002",
+      "categoria": "Oscillazioni",
+      "sottotipo": "Molla verticale in equilibrio",
+      "keywords": ["molla verticale", "equilibrio", "legge di hooke", "allungamento", "peso"],
+      "testo": "Una massa $m$ e' appesa a una molla verticale di costante elastica $k$. Calcolare l'allungamento statico della molla all'equilibrio.",
+      "svolgimento": "All'equilibrio la risultante delle forze e' nulla.\\n\\nIl peso vale:\\n$$P=mg$$\\n\\nLa forza elastica vale:\\n$$F_e=k\\Delta x$$\\n\\nCondizione di equilibrio:\\n$$k\\Delta x=mg$$\\n\\nQuindi:\\n$$\\Delta x=\\frac{mg}{k}$$\\n\\nPrima si scrive sempre il bilancio delle forze, poi si isola l'incognita."
+    },
+    {
+      "id": "FIS-OSC-003",
+      "categoria": "Oscillazioni",
+      "sottotipo": "Oscillatore massa-molla",
+      "keywords": ["oscillatore armonico", "molla", "pulsazione", "ampiezza", "velocita massima"],
+      "testo": "Un corpo di massa $m$ e' collegato a una molla di costante $k$ e viene lasciato oscillare con ampiezza $A$. Calcolare pulsazione, legge oraria e velocita massima.",
+      "svolgimento": "Per il sistema massa-molla:\\n$$\\omega=\\sqrt{\\frac{k}{m}}$$\\n\\nSe il corpo parte dall'estremo con velocita nulla:\\n$$x(t)=A\\cos(\\omega t)$$\\n\\nLa velocita e':\\n$$v(t)=\\dot x(t)=-A\\omega\\sin(\\omega t)$$\\n\\nIl valore massimo del modulo della velocita e':\\n$$v_{max}=A\\omega$$\\n$$v_{max}=A\\sqrt{\\frac{k}{m}}$$"
+    },
+    {
+      "id": "FIS-DIN-002",
+      "categoria": "Piano inclinato",
+      "sottotipo": "Discesa con attrito",
+      "keywords": ["piano inclinato", "attrito", "accelerazione", "normale", "velocita finale"],
+      "testo": "Un blocco di massa $m$ scende lungo un piano inclinato di angolo $\\theta$ e coefficiente di attrito dinamico $\\mu$. Se parte da fermo e percorre una distanza $d$, calcolare accelerazione e velocita finale.",
+      "svolgimento": "Scomponiamo il peso.\\n\\nComponente lungo il piano:\\n$$P_{\\parallel}=mg\\sin\\theta$$\\n\\nReazione normale:\\n$$N=mg\\cos\\theta$$\\n\\nAttrito dinamico:\\n$$F_a=\\mu N=\\mu mg\\cos\\theta$$\\n\\nRisultante lungo il piano:\\n$$F_{tot}=mg\\sin\\theta-\\mu mg\\cos\\theta$$\\n\\nSeconda legge di Newton:\\n$$ma=mg\\sin\\theta-\\mu mg\\cos\\theta$$\\n$$a=g(\\sin\\theta-\\mu\\cos\\theta)$$\\n\\nSe parte da fermo:\\n$$v_f^2=2ad$$\\n$$v_f=\\sqrt{2ad}$$"
+    },
+    {
+      "id": "FIS-LAV-002",
+      "categoria": "Lavoro ed energia",
+      "sottotipo": "Lavoro dell'attrito su piano inclinato",
+      "keywords": ["lavoro attrito", "piano inclinato", "energia potenziale", "distanza", "dissipazione"],
+      "testo": "Un corpo scende da un'altezza $h$ lungo un piano inclinato di angolo $\\theta$ con coefficiente di attrito $\\mu$. Calcolare il lavoro dell'attrito e confrontarlo con la variazione di energia potenziale.",
+      "svolgimento": "La lunghezza percorsa sul piano e':\\n$$d=\\frac{h}{\\sin\\theta}$$\\n\\nLa reazione normale vale:\\n$$N=mg\\cos\\theta$$\\n\\nLa forza di attrito vale:\\n$$F_a=\\mu mg\\cos\\theta$$\\n\\nIl lavoro dell'attrito e' negativo perche' si oppone al moto:\\n$$L_a=-F_ad$$\\n$$L_a=-\\mu mg\\cos\\theta\\frac{h}{\\sin\\theta}$$\\n\\nLa variazione di energia potenziale e':\\n$$\\Delta U=-mgh$$\\n\\nSenza attrito tutta questa energia diventerebbe cinetica. Con attrito una parte viene dissipata."
+    },
+    {
+      "id": "FIS-OSC-004",
+      "categoria": "Oscillazioni",
+      "sottotipo": "Compressione di una molla per energia",
+      "keywords": ["molla", "energia elastica", "compressione", "energia cinetica", "conservazione energia"],
+      "testo": "Un corpo di massa $m$ arriva con velocita $v_i$ contro una molla ideale di costante elastica $k$. Trascurando attriti, calcolare la massima compressione della molla.",
+      "svolgimento": "Alla massima compressione il corpo si ferma istantaneamente.\\n\\nEnergia iniziale:\\n$$E_i=\\frac{1}{2}mv_i^2$$\\n\\nEnergia finale elastica:\\n$$E_f=\\frac{1}{2}kx_{max}^2$$\\n\\nConservazione dell'energia:\\n$$\\frac{1}{2}mv_i^2=\\frac{1}{2}kx_{max}^2$$\\n\\nSemplifichiamo $\\frac{1}{2}$:\\n$$mv_i^2=kx_{max}^2$$\\n\\nQuindi:\\n$$x_{max}=v_i\\sqrt{\\frac{m}{k}}$$"
+    },
+    {
+      "id": "FIS-OSC-005",
+      "categoria": "Oscillazioni",
+      "sottotipo": "Equilibrio da energia potenziale elastica",
+      "keywords": ["energia potenziale", "forza elastica", "equilibrio", "derivata", "molla"],
+      "testo": "L'energia potenziale di un sistema elastico e' $U(x)=\\frac{1}{2}k(x^2+(l-x)^2)$. Trovare la posizione di equilibrio.",
+      "svolgimento": "La forza si ricava dall'energia potenziale:\\n$$F(x)=-\\frac{dU}{dx}$$\\n\\nCalcoliamo la derivata:\\n$$U(x)=\\frac{1}{2}k(x^2+(l-x)^2)$$\\n$$\\frac{dU}{dx}=\\frac{1}{2}k(2x-2(l-x))$$\\n$$\\frac{dU}{dx}=k(2x-l)$$\\n\\nQuindi:\\n$$F(x)=-k(2x-l)$$\\n\\nIn equilibrio $F=0$:\\n$$-k(2x-l)=0$$\\n$$2x-l=0$$\\n$$x=\\frac{l}{2}$$"
+    },
+    {
+      "id": "FIS-TER-001",
+      "categoria": "Termodinamica",
+      "sottotipo": "Gas perfetto ed equazione di stato",
+      "keywords": ["gas perfetto", "equazione di stato", "pressione", "temperatura", "moli"],
+      "testo": "Un gas ideale si trova alla pressione $P$, temperatura $T$ e volume $V$. Usare l'equazione di stato per determinare il numero di moli o la densita molare $n/V$.",
+      "svolgimento": "Per un gas ideale:\\n$$PV=nRT$$\\n\\nSe l'incognita e' il numero di moli:\\n$$n=\\frac{PV}{RT}$$\\n\\nSe invece si chiede la densita molare:\\n$$\\frac{n}{V}=\\frac{P}{RT}$$\\n\\nAttenzione alle unita:\\n$$T(K)=T(^\\circ C)+273.15$$\\n$$P\\;\\text{in Pa},\\quad V\\;\\text{in }m^3$$"
+    },
+    {
+      "id": "FIS-TER-002",
+      "categoria": "Termodinamica",
+      "sottotipo": "Trasformazione isocora",
+      "keywords": ["trasformazione isocora", "gas perfetto", "pressione", "temperatura", "volume costante"],
+      "testo": "Un gas ideale viene riscaldato a volume costante. Se la temperatura assoluta triplica, determinare come cambia la pressione.",
+      "svolgimento": "A volume costante e con numero di moli costante:\\n$$PV=nRT$$\\n\\nPoiche' $V$, $n$ e $R$ sono costanti:\\n$$\\frac{P}{T}=costante$$\\n\\nQuindi:\\n$$\\frac{P_f}{T_f}=\\frac{P_i}{T_i}$$\\n\\nSe $T_f=3T_i$:\\n$$P_f=P_i\\frac{T_f}{T_i}=3P_i$$\\n\\nLa pressione triplica, ma solo se le temperature sono espresse in kelvin."
+    },
+    {
+      "id": "FIS-TER-003",
+      "categoria": "Termodinamica",
+      "sottotipo": "Legge generale dei gas",
+      "keywords": ["gas perfetto", "pressione volume temperatura", "trasformazione", "legge generale", "kelvin"],
+      "testo": "Un gas ideale passa dallo stato iniziale $(P_i,V_i,T_i)$ allo stato finale $(P_f,V_f,T_f)$. Determinare una grandezza finale nota le altre.",
+      "svolgimento": "Per lo stesso gas, con numero di moli costante:\\n$$\\frac{PV}{T}=nR=costante$$\\n\\nDunque:\\n$$\\frac{P_iV_i}{T_i}=\\frac{P_fV_f}{T_f}$$\\n\\nAd esempio, se si cerca il volume finale:\\n$$V_f=V_i\\frac{P_i}{P_f}\\frac{T_f}{T_i}$$\\n\\nLa temperatura va sempre convertita in kelvin prima di usare la formula."
+    },
+    {
+      "id": "FIS-CAL-001",
+      "categoria": "Calorimetria",
+      "sottotipo": "Riscaldamento di una massa d'acqua",
+      "keywords": ["calorimetria", "calore specifico", "riscaldamento", "acqua", "potenza"],
+      "testo": "Una massa d'acqua $m$ viene riscaldata dalla temperatura iniziale $T_i$ alla temperatura finale $T_f$. Calcolare il calore assorbito e, se nota la potenza $P$, il tempo necessario.",
+      "svolgimento": "Il calore scambiato senza cambiamento di stato e':\\n$$Q=mc\\Delta T$$\\ncon\\n$$\\Delta T=T_f-T_i$$\\n\\nPer l'acqua si usa spesso:\\n$$c=4186\\,J/(kg\\,K)$$\\n\\nQuindi:\\n$$Q=mc(T_f-T_i)$$\\n\\nSe il riscaldatore ha potenza $P$:\\n$$P=\\frac{Q}{\\Delta t}$$\\n$$\\Delta t=\\frac{Q}{P}$$"
+    },
+    {
+      "id": "FIS-CAL-002",
+      "categoria": "Calorimetria",
+      "sottotipo": "Temperatura di equilibrio",
+      "keywords": ["temperatura equilibrio", "miscela", "calorimetria", "calore ceduto", "calore assorbito"],
+      "testo": "Due masse d'acqua $m_1$ e $m_2$ a temperature iniziali $T_1$ e $T_2$ vengono mescolate in un recipiente isolato. Determinare la temperatura di equilibrio.",
+      "svolgimento": "In un sistema isolato il calore ceduto da una parte e' assorbito dall'altra.\\n\\nScriviamo il bilancio energetico:\\n$$m_1c(T_{eq}-T_1)+m_2c(T_{eq}-T_2)=0$$\\n\\nIl calore specifico $c$ si semplifica:\\n$$m_1(T_{eq}-T_1)+m_2(T_{eq}-T_2)=0$$\\n\\nRaccogliamo $T_{eq}$:\\n$$T_{eq}(m_1+m_2)=m_1T_1+m_2T_2$$\\n\\nQuindi:\\n$$T_{eq}=\\frac{m_1T_1+m_2T_2}{m_1+m_2}$$"
+    },
+    {
+      "id": "FIS-CAL-003",
+      "categoria": "Calorimetria",
+      "sottotipo": "Calore latente",
+      "keywords": ["calore latente", "fusione", "vaporizzazione", "cambiamento di stato", "ghiaccio"],
+      "testo": "Una massa $m$ cambia stato alla temperatura di transizione. Calcolare il calore necessario conoscendo il calore latente $L$.",
+      "svolgimento": "Durante un cambiamento di stato la temperatura resta costante.\\n\\nIl calore non si calcola con $mc\\Delta T$, ma con:\\n$$Q=mL$$\\n\\nPer fusione del ghiaccio si usa il calore latente di fusione.\\nPer ebollizione dell'acqua si usa il calore latente di vaporizzazione.\\n\\nSe il problema ha piu' fasi, si sommano i contributi:\\n$$Q_{tot}=Q_{riscaldamento}+Q_{latente}+Q_{riscaldamento}$$"
+    },
+    {
+      "id": "FIS-TER-004",
+      "categoria": "Termodinamica",
+      "sottotipo": "Trasformazione isoterma di gas ideale",
+      "keywords": ["isoterma", "gas ideale", "lavoro", "calore", "logaritmo"],
+      "testo": "Un gas ideale si espande isotermicamente da $V_i$ a $V_f$ alla temperatura $T$. Calcolare il lavoro e il calore scambiato.",
+      "svolgimento": "In una trasformazione isoterma di gas ideale la temperatura resta costante.\\n\\nL'energia interna dipende solo da $T$, quindi:\\n$$\\Delta U=0$$\\n\\nIl lavoro del gas e':\\n$$L=nRT\\ln\\left(\\frac{V_f}{V_i}\\right)$$\\n\\nPrimo principio:\\n$$\\Delta U=Q-L$$\\n\\nPoiche' $\\Delta U=0$:\\n$$Q=L$$\\n\\nSe $V_f>V_i$, il gas si espande, il lavoro e' positivo e assorbe calore."
+    },
+    {
+      "id": "FIS-TER-005",
+      "categoria": "Termodinamica",
+      "sottotipo": "Trasformazione isobara",
+      "keywords": ["isobara", "lavoro", "gas ideale", "calore", "volume"],
+      "testo": "Un gas ideale subisce una trasformazione a pressione costante da $V_i$ a $V_f$. Determinare lavoro, variazione di temperatura e calore scambiato.",
+      "svolgimento": "A pressione costante il lavoro e':\\n$$L=P(V_f-V_i)$$\\n\\nLe temperature si ricavano dall'equazione di stato:\\n$$T_i=\\frac{PV_i}{nR}$$\\n$$T_f=\\frac{PV_f}{nR}$$\\n\\nQuindi:\\n$$\\Delta T=T_f-T_i$$\\n\\nPer il calore in una isobara si usa:\\n$$Q=nc_p\\Delta T$$\\n\\nOppure, se si lavora con la massa:\\n$$Q=mc_p\\Delta T$$"
+    },
+    {
+      "id": "FIS-TER-006",
+      "categoria": "Termodinamica",
+      "sottotipo": "Rendimento di una macchina termica di Carnot",
+      "keywords": ["macchina termica", "carnot", "rendimento", "temperatura calda", "temperatura fredda"],
+      "testo": "Una macchina termica reversibile lavora tra una sorgente calda a temperatura $T_c$ e una sorgente fredda a temperatura $T_f$. Calcolare il rendimento massimo.",
+      "svolgimento": "Per una macchina di Carnot il rendimento dipende solo dalle temperature assolute.\\n\\nLa formula e':\\n$$\\eta=1-\\frac{T_f}{T_c}$$\\n\\nLe temperature devono essere in kelvin.\\n\\nIl rapporto tra calore ceduto e calore assorbito e':\\n$$\\frac{|Q_f|}{|Q_c|}=\\frac{T_f}{T_c}$$\\n\\nQuindi:\\n$$\\eta=1-\\frac{|Q_f|}{|Q_c|}$$\\n\\nSe la sorgente calda aumenta o quella fredda diminuisce, il rendimento cresce."
+    },
+    {
+      "id": "FIS-ENT-001",
+      "categoria": "Entropia",
+      "sottotipo": "Variazione di entropia con calore specifico",
+      "keywords": ["entropia", "calore specifico", "temperatura", "logaritmo", "riscaldamento"],
+      "testo": "Una massa $m$ con calore specifico $c$ passa reversibilmente dalla temperatura $T_i$ alla temperatura $T_f$. Calcolare la variazione di entropia.",
+      "svolgimento": "La variazione di entropia si calcola integrando:\\n$$\\Delta S=\\int_i^f\\frac{\\delta Q_{rev}}{T}$$\\n\\nSe il calore specifico e' costante:\\n$$\\delta Q_{rev}=mc\\,dT$$\\n\\nQuindi:\\n$$\\Delta S=\\int_{T_i}^{T_f}\\frac{mc\\,dT}{T}$$\\n$$\\Delta S=mc\\ln\\left(\\frac{T_f}{T_i}\\right)$$\\n\\nLe temperature devono essere in kelvin."
+    },
+    {
+      "id": "FIS-ENT-002",
+      "categoria": "Entropia",
+      "sottotipo": "Entropia di un gas ideale",
+      "keywords": ["entropia gas ideale", "volume", "temperatura", "calore molare", "gas perfetto"],
+      "testo": "Un gas ideale passa dallo stato $(T_i,V_i)$ allo stato $(T_f,V_f)$. Determinare la variazione di entropia conoscendo $n$ e $c_v$.",
+      "svolgimento": "Per un gas ideale la variazione di entropia tra due stati e':\\n$$\\Delta S=nc_v\\ln\\left(\\frac{T_f}{T_i}\\right)+nR\\ln\\left(\\frac{V_f}{V_i}\\right)$$\\n\\nIl primo termine misura l'effetto della variazione di temperatura.\\nIl secondo termine misura l'effetto della variazione di volume.\\n\\nSe il gas viene compresso, $V_f<V_i$ e il secondo logaritmo e' negativo.\\nSe viene riscaldato, $T_f>T_i$ e il primo logaritmo e' positivo."
+    },
+    {
+      "id": "FIS-ENT-003",
+      "categoria": "Entropia",
+      "sottotipo": "Sorgente termica e processo reversibile",
+      "keywords": ["entropia sorgente", "processo reversibile", "adiabatica", "calore", "temperatura sorgente"],
+      "testo": "Un sistema scambia una quantita di calore $Q$ con una sorgente alla temperatura costante $T_s$. Determinare la variazione di entropia della sorgente e discutere il caso adiabatico reversibile.",
+      "svolgimento": "Per una sorgente termica a temperatura costante:\\n$$\\Delta S_s=\\frac{Q_s}{T_s}$$\\n\\nAttenzione al segno: se la sorgente cede calore al sistema, allora $Q_s<0$.\\n\\nPer il sistema:\\n$$\\Delta S_{sistema}=\\int\\frac{\\delta Q_{rev}}{T}$$\\n\\nIn una trasformazione adiabatica reversibile:\\n$$\\delta Q_{rev}=0$$\\nquindi\\n$$\\Delta S_{sistema}=0$$\\n\\nInvece una sorgente che scambia calore ha variazione di entropia diversa da zero, data dal calore scambiato diviso la sua temperatura."
+    }
+  ]
+}
