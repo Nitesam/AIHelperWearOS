@@ -6,17 +6,25 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.base.aihelperwearos.AIHelperApplication
 import com.base.aihelperwearos.R
-import com.base.aihelperwearos.data.Constants
 import com.base.aihelperwearos.data.metodi.MetodiRepository
-import com.base.aihelperwearos.data.models.ChatMode
-import com.base.aihelperwearos.data.models.isMetodi
+import com.base.aihelperwearos.data.models.ChatModeIds
+import com.base.aihelperwearos.data.models.ChatModeSpec
+import com.base.aihelperwearos.data.models.ContextToolType
+import com.base.aihelperwearos.data.models.SpecializedChatRegistry
 import com.base.aihelperwearos.data.rag.MathContextRetriever
 import com.base.aihelperwearos.data.rag.RagRepository
+import com.base.aihelperwearos.data.specialized.ChatContextTool
+import com.base.aihelperwearos.data.specialized.ExerciseRagTool
+import com.base.aihelperwearos.data.specialized.MetodiCodeTool
+import com.base.aihelperwearos.data.specialized.MetodiTheoryTool
+import com.base.aihelperwearos.data.specialized.logContextResult
 
 import com.base.aihelperwearos.data.repository.ChatRepository
 import com.base.aihelperwearos.data.repository.ChatSession
@@ -33,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.util.Locale
 
 enum class Screen {
     Home,
@@ -47,6 +56,22 @@ enum class Language(val code: String, val displayName: String) {
     ENGLISH("en", "English")
 }
 
+private enum class NetworkUse {
+    Chat,
+    AudioUpload
+}
+
+private data class NetworkSnapshot(
+    val isAvailable: Boolean,
+    val isWeak: Boolean,
+    val uploadKbps: Int,
+    val downloadKbps: Int
+)
+
+private sealed class PendingRetryAction {
+    data class ChatResponse(val sessionId: Long) : PendingRetryAction()
+    data class AudioTranscription(val audioPath: String) : PendingRetryAction()
+}
 
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
@@ -56,7 +81,8 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isAnalysisMode: Boolean = false,
-    val chatMode: ChatMode = ChatMode.GENERAL,
+    val chatModeId: String = ChatModeIds.GENERAL,
+    val isCurrentModeEnabled: Boolean = true,
     val chatSessions: List<ChatSession> = emptyList(),
     val fontSize: Int = 11,
     val pendingTranscription: String? = null,
@@ -65,7 +91,10 @@ data class ChatUiState(
     val recordedAudioFile: File? = null,
     val isRecording: Boolean = false,
     val extractedKeywords: List<String>? = null,
-    val isTheoryQuery: Boolean? = null
+    val isTheoryQuery: Boolean? = null,
+    val networkWarningMessage: String? = null,
+    val canRetryLastAction: Boolean = false,
+    val retryMessage: String? = null
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -82,60 +111,164 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val userPreferences = com.base.aihelperwearos.data.preferences.UserPreferences(application)
     private val metodiRepository = MetodiRepository(application)
 
-    private var cachedRagRepository: RagRepository? = null
-    private var cachedMathContextRetriever: MathContextRetriever? = null
+    private val cachedRagRepositories = mutableMapOf<String, RagRepository>()
+    private val cachedContextTools = mutableMapOf<String, ChatContextTool>()
+    private var pendingRetryAction: PendingRetryAction? = null
 
-    /**
-     * Returns a live MathContextRetriever bound to the current application RAG repository.
-     *
-     * Avoids sticky-null behavior caused by lazy initialization when app startup is still in progress.
-     */
-    private fun getMathContextRetriever(): MathContextRetriever? {
-        val currentRepository = AIHelperApplication.getRagRepository() ?: return null
-        if (currentRepository !== cachedRagRepository || cachedMathContextRetriever == null) {
-            cachedRagRepository = currentRepository
-            cachedMathContextRetriever = MathContextRetriever(currentRepository)
-        }
-        return cachedMathContextRetriever
+    private fun appString(resId: Int, vararg args: Any): String {
+        return getApplication<Application>().getString(resId, *args)
     }
 
-    private fun resolveRequestedMode(chatMode: ChatMode, isAnalysisMode: Boolean): ChatMode {
-        val requestedMode = if (isAnalysisMode) ChatMode.ANALYSIS else chatMode
-        return if (requestedMode == ChatMode.ANALYSIS && !Constants.ANALYSIS_MODULE_ENABLED) {
-            ChatMode.GENERAL
+    private fun getNetworkSnapshot(use: NetworkUse): NetworkSnapshot {
+        val connectivityManager = getApplication<Application>()
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return NetworkSnapshot(isAvailable = true, isWeak = false, uploadKbps = 0, downloadKbps = 0)
+
+        val activeNetwork = connectivityManager.activeNetwork
+            ?: return NetworkSnapshot(isAvailable = false, isWeak = false, uploadKbps = 0, downloadKbps = 0)
+
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+            ?: return NetworkSnapshot(isAvailable = false, isWeak = false, uploadKbps = 0, downloadKbps = 0)
+
+        val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        if (!hasInternet) {
+            return NetworkSnapshot(isAvailable = false, isWeak = false, uploadKbps = 0, downloadKbps = 0)
+        }
+
+        val uploadKbps = capabilities.linkUpstreamBandwidthKbps
+        val downloadKbps = capabilities.linkDownstreamBandwidthKbps
+        val minUploadKbps = if (use == NetworkUse.AudioUpload) 512 else 128
+        val minDownloadKbps = if (use == NetworkUse.AudioUpload) 512 else 384
+
+        val weakUpload = uploadKbps in 1 until minUploadKbps
+        val weakDownload = downloadKbps in 1 until minDownloadKbps
+        val notValidated = !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
+        return NetworkSnapshot(
+            isAvailable = true,
+            isWeak = weakUpload || weakDownload || notValidated,
+            uploadKbps = uploadKbps,
+            downloadKbps = downloadKbps
+        )
+    }
+
+    private fun bandwidthLabel(kbps: Int): String {
+        return if (kbps > 0) "$kbps kbps" else "--"
+    }
+
+    private fun networkWarning(snapshot: NetworkSnapshot): String? {
+        if (!snapshot.isAvailable) return appString(R.string.network_unavailable)
+        if (!snapshot.isWeak) return null
+        return appString(
+            R.string.network_weak,
+            bandwidthLabel(snapshot.uploadKbps),
+            bandwidthLabel(snapshot.downloadKbps)
+        )
+    }
+
+    private fun setRetryableFailure(message: String, action: PendingRetryAction) {
+        pendingRetryAction = action
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = message,
+                canRetryLastAction = true,
+                retryMessage = appString(R.string.retry_question)
+            )
+        }
+    }
+
+    private fun deleteFileQuietly(path: String?) {
+        if (path.isNullOrBlank()) return
+        runCatching { File(path).delete() }
+    }
+
+    private fun Throwable.isTimeoutLike(): Boolean {
+        return generateSequence(this) { it.cause }.any { throwable ->
+            val typeName = throwable::class.java.simpleName.lowercase(Locale.ROOT)
+            val text = throwable.message.orEmpty().lowercase(Locale.ROOT)
+            "timeout" in typeName || "timed out" in text || "timeout" in text
+        }
+    }
+
+    private fun apiFailureMessage(error: Throwable): String {
+        return if (error.isTimeoutLike()) {
+            appString(R.string.error_timeout)
         } else {
-            requestedMode
+            appString(R.string.error_api, error.message ?: "errore sconosciuto")
         }
     }
 
-    private fun resolveStoredMode(session: ChatSession): ChatMode {
-        val storedMode = session.effectiveMode()
-        return if (storedMode == ChatMode.ANALYSIS && !Constants.ANALYSIS_MODULE_ENABLED) {
-            ChatMode.GENERAL
+    private fun transcriptionFailureMessage(error: Throwable): String {
+        return if (error.isTimeoutLike()) {
+            appString(R.string.error_timeout)
         } else {
-            storedMode
+            appString(R.string.error_transcription, error.message ?: "errore sconosciuto")
         }
     }
 
-    private fun screenForMode(chatMode: ChatMode): Screen {
-        return if (chatMode == ChatMode.ANALYSIS) Screen.Analysis else Screen.Chat
+    private fun resolveNewSessionMode(modeId: String): ChatModeSpec {
+        val normalized = SpecializedChatRegistry.normalizeModeId(modeId)
+        val spec = SpecializedChatRegistry.get(normalized)
+        return if (spec.enabled) spec else SpecializedChatRegistry.general
     }
+
+    private fun screenForMode(@Suppress("UNUSED_PARAMETER") modeId: String): Screen = Screen.Chat
 
     private fun isDefaultSessionTitle(title: String): Boolean {
         val app = getApplication<Application>()
-        return title == app.getString(R.string.new_chat) ||
-            title == app.getString(R.string.analysis_mode) ||
-            title == app.getString(R.string.metodi_theory_mode) ||
-            title == app.getString(R.string.metodi_code_mode)
+        return SpecializedChatRegistry.all().any { title == app.getString(it.titleRes) } ||
+            title == app.getString(R.string.analysis_mode)
     }
 
-    private fun buildModelMessages(messages: List<ChatMessage>, chatMode: ChatMode): List<Message> {
+    private fun buildModelMessages(messages: List<ChatMessage>, modeSpec: ChatModeSpec): List<Message> {
         val modelMessages = messages.map { msg -> Message(role = msg.role, content = msg.content) }
-        return if (chatMode.isMetodi()) {
-            modelMessages.takeLast(10)
-        } else {
-            modelMessages
+        return modeSpec.historyLimit?.let { modelMessages.takeLast(it) } ?: modelMessages
+    }
+
+    private fun getContextTools(modeSpec: ChatModeSpec): List<ChatContextTool> {
+        return modeSpec.contextTools.mapNotNull { toolType ->
+            when (toolType) {
+                ContextToolType.EXERCISE_ANALYSIS2,
+                ContextToolType.EXERCISE_PHYSICS -> getExerciseRagTool(modeSpec)
+                ContextToolType.METODI_THEORY -> cachedContextTools.getOrPut(toolType.name) {
+                    MetodiTheoryTool(metodiRepository)
+                }
+                ContextToolType.METODI_CODE -> cachedContextTools.getOrPut(toolType.name) {
+                    MetodiCodeTool(metodiRepository)
+                }
+            }
         }
+    }
+
+    private fun getExerciseRagTool(modeSpec: ChatModeSpec): ChatContextTool? {
+        val repository = AIHelperApplication.getRagRepository(modeSpec.id) ?: return null
+        val cachedRepository = cachedRagRepositories[modeSpec.id]
+        val cachedTool = cachedContextTools[modeSpec.id]
+        if (cachedRepository === repository && cachedTool != null) {
+            return cachedTool
+        }
+
+        val isPhysics = modeSpec.id == ChatModeIds.PHYSICS
+        val retriever = MathContextRetriever(
+            ragRepository = repository,
+            maxExercises = if (isPhysics) 3 else 2,
+            maxPromptLength = if (isPhysics) 5200 else 4096,
+            contextHeader = if (isPhysics) {
+                "ESEMPI DI FISICA RILEVANTI:"
+            } else {
+                "ESEMPI RILEVANTI DALLA PROFESSORESSA:"
+            },
+            solutionLabel = if (isPhysics) {
+                "Svolgimento di riferimento"
+            } else {
+                "Svolgimento della professoressa"
+            }
+        )
+        val tool = ExerciseRagTool(retriever, getApplication<Application>().getString(modeSpec.titleRes))
+        cachedRagRepositories[modeSpec.id] = repository
+        cachedContextTools[modeSpec.id] = tool
+        return tool
     }
 
     private var recordingService: AudioRecordingService? = null
@@ -281,20 +414,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun navigateTo(screen: Screen) {
         val currentScreen = _uiState.value.currentScreen
-        val destination = if (screen == Screen.Analysis && !Constants.ANALYSIS_MODULE_ENABLED) {
-            Screen.Home
-        } else {
-            screen
-        }
+        val destination = if (screen == Screen.Analysis) Screen.Chat else screen
         if ((currentScreen == Screen.Chat || currentScreen == Screen.Analysis) && 
             destination == Screen.Home) {
             cleanupEmptySession()
+            val action = pendingRetryAction
+            if (action is PendingRetryAction.AudioTranscription) {
+                deleteFileQuietly(action.audioPath)
+            }
+            pendingRetryAction = null
         }
-        _uiState.update { it.copy(currentScreen = destination, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                currentScreen = destination,
+                errorMessage = null,
+                networkWarningMessage = null,
+                canRetryLastAction = false,
+                retryMessage = null
+            )
+        }
     }
 
     /**
-     * Removes the current session if it contains no AI responses.
+     * Removes the current session if it contains no saved reply.
      *
      * @return `Unit` after scheduling cleanup work.
      */
@@ -302,10 +444,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val sessionId = _uiState.value.currentSessionId ?: return
         val messages = _uiState.value.chatMessages
         
-        val hasAiResponse = messages.any { it.role == "assistant" }
+        val hasAssistantResponse = messages.any { it.role == "assistant" }
         
-        if (!hasAiResponse) {
-            android.util.Log.d("MainViewModel", "Cleaning up empty session $sessionId - no AI responses")
+        if (!hasAssistantResponse) {
+            android.util.Log.d("MainViewModel", "Cleaning up empty session $sessionId - no saved replies")
             viewModelScope.launch {
                 try {
                     chatRepository.deleteSession(sessionId)
@@ -331,26 +473,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Creates a new chat session and navigates to the chat screen.
      *
      * @param title title used for the new session.
-     * @param isAnalysisMode whether to start in analysis mode.
-     * @param chatMode specialized mode to start.
+     * @param modeId specialized mode id to start.
      * @return `Unit` after launching session creation.
      */
     fun startNewChat(
         title: String,
-        isAnalysisMode: Boolean = false,
-        chatMode: ChatMode = if (isAnalysisMode) ChatMode.ANALYSIS else ChatMode.GENERAL
+        modeId: String = ChatModeIds.GENERAL
     ) {
         viewModelScope.launch {
             try {
-                val effectiveMode = resolveRequestedMode(chatMode, isAnalysisMode)
-                val effectiveAnalysisMode = effectiveMode == ChatMode.ANALYSIS
-                val effectiveTitle = if (chatMode == ChatMode.ANALYSIS && !effectiveAnalysisMode) {
-                    getApplication<Application>().getString(R.string.new_chat)
-                } else {
-                    title
-                }
+                val modeSpec = resolveNewSessionMode(modeId)
+                val effectiveTitle = if (modeSpec.id == modeId) title else getApplication<Application>().getString(modeSpec.titleRes)
 
-                android.util.Log.d("MainViewModel", "startNewChat - START - mode: $effectiveMode")
+                android.util.Log.d("MainViewModel", "startNewChat - START - modeId: ${modeSpec.id}")
                 android.util.Log.d("MainViewModel", "Selected model: ${_uiState.value.selectedModel}")
 
                 android.util.Log.d("MainViewModel", "Creating session with title: $effectiveTitle")
@@ -358,21 +493,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val sessionId = chatRepository.createSession(
                     modelId = _uiState.value.selectedModel,
                     title = effectiveTitle,
-                    isAnalysisMode = effectiveAnalysisMode,
-                    mode = effectiveMode
+                    isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
+                    modeId = modeSpec.id
                 )
 
                 android.util.Log.d("MainViewModel", "Session created - ID: $sessionId")
 
-                val newScreen = screenForMode(effectiveMode)
+                val newScreen = screenForMode(modeSpec.id)
                 android.util.Log.d("MainViewModel", "Navigating to: $newScreen")
 
                 _uiState.update {
                     it.copy(
                         currentSessionId = sessionId,
                         currentScreen = newScreen,
-                        isAnalysisMode = effectiveAnalysisMode,
-                        chatMode = effectiveMode,
+                        isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
+                        chatModeId = modeSpec.id,
+                        isCurrentModeEnabled = modeSpec.enabled,
                         chatMessages = emptyList()
                     )
                 }
@@ -402,15 +538,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val session = chatRepository.getSession(sessionId)
                 if (session != null) {
-                    val effectiveMode = resolveStoredMode(session)
-                    val effectiveAnalysisMode = effectiveMode == ChatMode.ANALYSIS
+                    val modeId = session.effectiveModeId()
+                    val modeSpec = SpecializedChatRegistry.get(modeId)
                     _uiState.update {
                         it.copy(
                             currentSessionId = sessionId,
                             selectedModel = session.modelId,
-                            isAnalysisMode = effectiveAnalysisMode,
-                            chatMode = effectiveMode,
-                            currentScreen = screenForMode(effectiveMode)
+                            isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
+                            chatModeId = modeSpec.id,
+                            isCurrentModeEnabled = modeSpec.enabled,
+                            currentScreen = screenForMode(modeSpec.id)
                         )
                     }
                     observeMessages(sessionId)
@@ -438,7 +575,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Sends a user message and handles AI response flow.
+     * Sends a user message and handles the response flow.
      *
      * @param userMessage text message content.
      * @param audioPath optional audio path tied to the message.
@@ -456,13 +593,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        val activeMode = resolveRequestedMode(_uiState.value.chatMode, _uiState.value.isAnalysisMode)
-        android.util.Log.d("MainViewModel", "sendMessage - sessionId: $sessionId, mode: $activeMode")
+        val modeSpec = SpecializedChatRegistry.get(_uiState.value.chatModeId)
+        android.util.Log.d("MainViewModel", "sendMessage - sessionId: $sessionId, modeId: ${modeSpec.id}")
+
+        if (!modeSpec.enabled) {
+            _uiState.update {
+                it.copy(errorMessage = getApplication<Application>().getString(R.string.mode_disabled_read_only))
+            }
+            return
+        }
 
         viewModelScope.launch {
+            var messageSaved = false
             try {
                 android.util.Log.d("MainViewModel", "sendMessage - Inizio elaborazione")
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                pendingRetryAction = null
+                _uiState.update {
+                    it.copy(
+                        isLoading = true,
+                        errorMessage = null,
+                        canRetryLastAction = false,
+                        retryMessage = null
+                    )
+                }
 
                 android.util.Log.d("MainViewModel", "sendMessage - Salvataggio messaggio utente")
                 chatRepository.addMessage(
@@ -471,6 +624,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     content = userMessage,
                     audioPath = audioPath
                 )
+                messageSaved = true
 
                 val session = chatRepository.getSession(sessionId)
                 if (session != null && isDefaultSessionTitle(session.title)) {
@@ -478,76 +632,86 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     chatRepository.updateSessionTitle(sessionId, newTitle)
                 }
 
+                requestAssistantResponse(sessionId, modeSpec)
+
+            } catch (e: Exception) {
+                android.util.Log.e("MainViewModel", "sendMessage - EXCEPTION: ${e.message}", e)
+                if (messageSaved) {
+                    setRetryableFailure(
+                        message = appString(R.string.error_generic, e.message ?: "errore sconosciuto"),
+                        action = PendingRetryAction.ChatResponse(sessionId)
+                    )
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = appString(R.string.error_generic, e.message ?: "errore sconosciuto")
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun requestAssistantResponse(sessionId: Long, modeSpec: ChatModeSpec) {
+        val retryAction = PendingRetryAction.ChatResponse(sessionId)
+        val networkSnapshot = getNetworkSnapshot(NetworkUse.Chat)
+        val warning = networkWarning(networkSnapshot)
+        if (!networkSnapshot.isAvailable) {
+            setRetryableFailure(
+                message = warning ?: appString(R.string.network_unavailable),
+                action = retryAction
+            )
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null,
+                canRetryLastAction = false,
+                retryMessage = null,
+                networkWarningMessage = warning
+            )
+        }
+
+        try {
+                val storedMessages = chatRepository.getMessagesForSession(sessionId).first()
                 val messages = buildModelMessages(
-                    messages = chatRepository.getMessagesForSession(sessionId).first(),
-                    chatMode = activeMode
+                    messages = storedMessages,
+                    modeSpec = modeSpec
                 )
+                val lastUserMessage = storedMessages.lastOrNull { it.role == "user" }?.content.orEmpty()
 
                 val currentLanguage = _uiState.value.selectedLanguage.code
                 val extractedKeywords = _uiState.value.extractedKeywords
                 val ragQuery = if (!extractedKeywords.isNullOrEmpty()) {
-                    "$userMessage ${extractedKeywords.joinToString(" ")}"
+                    "$lastUserMessage ${extractedKeywords.joinToString(" ")}"
                 } else {
-                    userMessage
+                    lastUserMessage
                 }
 
-                var ragContext: String? = null
-                when (activeMode) {
-                    ChatMode.ANALYSIS -> {
-                        val ragMetadata = try {
-                            getMathContextRetriever()?.retrieveContextWithMetadata(ragQuery)
-                        } catch (e: Exception) {
-                            android.util.Log.w("MainViewModel", "sendMessage - Analysis RAG failed, using base prompt", e)
-                            null
-                        }
-
-                        ragContext = ragMetadata?.context
-
-                        if (ragMetadata?.success == true && ragMetadata.sentExerciseIds.isNotEmpty()) {
-                            val sentSummary = ragMetadata.sentExerciseIds.zip(ragMetadata.sentExerciseLabels)
-                                .joinToString(" | ") { (id, label) -> "$id [$label]" }
-                            android.util.Log.i("MainViewModel", "Analysis RAG examples sent to AI: $sentSummary")
-                        } else {
-                            val reason = when {
-                                ragMetadata == null -> "repository unavailable"
-                                !ragMetadata.fallbackReason.isNullOrBlank() -> ragMetadata.fallbackReason
-                                else -> "no match"
-                            }
-                            android.util.Log.i("MainViewModel", "Analysis RAG examples sent to AI: none ($reason)")
-                        }
+                val ragContext = getContextTools(modeSpec).mapNotNull { tool ->
+                    val result = try {
+                        tool.retrieve(ragQuery)
+                    } catch (e: Exception) {
+                        android.util.Log.w("MainViewModel", "sendMessage - ${tool.logLabel} context failed", e)
+                        null
                     }
-                    ChatMode.METODI_TEORIA -> {
-                        val metodiContext = metodiRepository.retrieveTheoryContext(ragQuery)
-                        ragContext = metodiContext.context
-                        val summary = metodiContext.matchedIds.zip(metodiContext.matchedLabels)
-                            .joinToString(" | ") { (id, label) -> "$id [$label]" }
-                        android.util.Log.i(
-                            "MainViewModel",
-                            "Metodi theory context sent: ${summary.ifBlank { "none (${metodiContext.fallbackReason})" }}"
-                        )
+                    if (result != null) {
+                        logContextResult("MainViewModel", tool, result)
                     }
-                    ChatMode.METODI_CODICE -> {
-                        val metodiContext = metodiRepository.retrieveCodeContext(ragQuery)
-                        ragContext = metodiContext.context
-                        val summary = metodiContext.matchedIds.zip(metodiContext.matchedLabels)
-                            .joinToString(" | ") { (id, label) -> "$id [$label]" }
-                        android.util.Log.i(
-                            "MainViewModel",
-                            "Metodi code examples sent: ${summary.ifBlank { "none (${metodiContext.fallbackReason})" }}"
-                        )
-                    }
-                    ChatMode.GENERAL -> Unit
-                }
+                    result?.context
+                }.joinToString("\n\n").ifBlank { null }
                 
                 android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}, lingua: $currentLanguage")
 
                 val result = openRouterService.sendMessage(
                     modelId = _uiState.value.selectedModel,
                     messages = messages,
-                    isAnalysisMode = activeMode == ChatMode.ANALYSIS,
                     languageCode = currentLanguage,
                     ragContext = ragContext,
-                    chatMode = activeMode
+                    modeId = modeSpec.id
                 )
 
                 android.util.Log.d("MainViewModel", "sendMessage - API risposta ricevuta")
@@ -564,36 +728,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             it.copy(
                                 isLoading = false,
                                 extractedKeywords = null,
-                                isTheoryQuery = null
+                                isTheoryQuery = null,
+                                networkWarningMessage = null,
+                                canRetryLastAction = false,
+                                retryMessage = null
                             ) 
                         }
-                        android.util.Log.d("MainViewModel", "sendMessage - Messaggio AI salvato, keywords cleared")
+                        pendingRetryAction = null
+                        android.util.Log.d("MainViewModel", "sendMessage - risposta salvata, keywords cleared")
                     },
                     onFailure = { error ->
                         android.util.Log.e("MainViewModel", "sendMessage - ERRORE API: ${error.message}", error)
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                extractedKeywords = null,
-                                isTheoryQuery = null,
-                                errorMessage = getApplication<Application>().getString(R.string.error_api, error.message)
-                            )
-                        }
+                        setRetryableFailure(apiFailureMessage(error), retryAction)
                     }
                 )
 
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "sendMessage - EXCEPTION: ${e.message}", e)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        extractedKeywords = null,
-                        isTheoryQuery = null,
-                        errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message)
-                    )
-                }
+                setRetryableFailure(apiFailureMessage(e), retryAction)
             }
-        }
     }
 
     /**
@@ -688,30 +841,63 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 android.util.Log.d("MainViewModel", "sendAudioMessage - Inizio elaborazione")
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                pendingRetryAction = null
+                _uiState.update {
+                    it.copy(
+                        isLoading = true,
+                        errorMessage = null,
+                        canRetryLastAction = false,
+                        retryMessage = null
+                    )
+                }
 
                 val audioPath = audioFile.absolutePath
                 val currentLanguage = _uiState.value.selectedLanguage.code
-                val activeMode = resolveRequestedMode(_uiState.value.chatMode, _uiState.value.isAnalysisMode)
+                val modeSpec = SpecializedChatRegistry.get(_uiState.value.chatModeId)
+                val retryAction = PendingRetryAction.AudioTranscription(audioPath)
 
-                android.util.Log.d("MainViewModel", "sendAudioMessage - Using AI, language: $currentLanguage, mode: $activeMode")
-                android.util.Log.d("MainViewModel", "📡 Starting transcription request...")
+                if (!modeSpec.enabled) {
+                    try { audioFile.delete() } catch (_: Exception) {}
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = getApplication<Application>().getString(R.string.mode_disabled_read_only)
+                        )
+                    }
+                    return@launch
+                }
+
+                val networkSnapshot = getNetworkSnapshot(NetworkUse.AudioUpload)
+                val warning = networkWarning(networkSnapshot)
+                if (!networkSnapshot.isAvailable) {
+                    setRetryableFailure(
+                        message = warning ?: appString(R.string.network_unavailable),
+                        action = retryAction
+                    )
+                    return@launch
+                }
+
+                _uiState.update { it.copy(networkWarningMessage = warning) }
+
+                android.util.Log.d("MainViewModel", "sendAudioMessage - cloud transcription, language: $currentLanguage, modeId: ${modeSpec.id}")
+                android.util.Log.d("MainViewModel", "Starting transcription request")
                 
                 val transcriptionResult = openRouterService.transcribeAudioWithGemini(
                     audioFile = audioFile,
                     languageCode = currentLanguage,
-                    chatMode = activeMode
+                    modeId = modeSpec.id,
+                    deleteOnCompletion = false
                 )
 
                 transcriptionResult.fold(
                     onSuccess = { result ->
-                        android.util.Log.d("MainViewModel", "✅ Transcription received successfully")
-                        android.util.Log.d("MainViewModel", "📝 Raw transcription: '${result.transcription}'")
-                        android.util.Log.d("MainViewModel", "📌 Extracted keywords (${result.keywords.size}): ${result.keywords.joinToString(", ")}")
-                        android.util.Log.d("MainViewModel", "🔍 Is theory query: ${result.isTheoryQuery}")
-                        android.util.Log.d("MainViewModel", "👁️ Display text: '${result.displayText}'")
+                        android.util.Log.d("MainViewModel", "Transcription received successfully")
+                        android.util.Log.d("MainViewModel", "Raw transcription: '${result.transcription}'")
+                        android.util.Log.d("MainViewModel", "Extracted keywords (${result.keywords.size}): ${result.keywords.joinToString(", ")}")
+                        android.util.Log.d("MainViewModel", "Is theory query: ${result.isTheoryQuery}")
+                        android.util.Log.d("MainViewModel", "Display text: '${result.displayText}'")
                         
-                        android.util.Log.d("MainViewModel", "💾 Storing transcription result in UI state")
+                        android.util.Log.d("MainViewModel", "Storing transcription result in UI state")
 
                         _uiState.update {
                             it.copy(
@@ -720,33 +906,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 pendingAudioPath = audioPath,
                                 extractedKeywords = result.keywords,
                                 isTheoryQuery = result.isTheoryQuery,
-                                errorMessage = null
+                                errorMessage = null,
+                                networkWarningMessage = null,
+                                canRetryLastAction = false,
+                                retryMessage = null
                             )
                         }
+                        pendingRetryAction = null
                         
-                        android.util.Log.d("MainViewModel", "✅ UI state updated with transcription and keywords")
+                        android.util.Log.d("MainViewModel", "UI state updated with transcription and keywords")
                     },
                     onFailure = { error ->
                         android.util.Log.e("MainViewModel", "sendAudioMessage - ERROR API: ${error.message}", error)
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                errorMessage = getApplication<Application>().getString(R.string.error_transcription, error.message)
-                            )
-                        }
+                        setRetryableFailure(transcriptionFailureMessage(error), retryAction)
                     }
                 )
 
 
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "sendAudioMessage - EXCEPTION: ${e.message}", e)
-                try { audioFile.delete() } catch (_: Exception) {}
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message)
-                    )
-                }
+                setRetryableFailure(
+                    message = transcriptionFailureMessage(e),
+                    action = PendingRetryAction.AudioTranscription(audioFile.absolutePath)
+                )
             }
         }
     }
@@ -835,6 +1017,87 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun retryLastAction() {
+        val action = pendingRetryAction ?: return
+        when (action) {
+            is PendingRetryAction.ChatResponse -> {
+                viewModelScope.launch {
+                    val session = chatRepository.getSession(action.sessionId)
+                    if (session == null) {
+                        pendingRetryAction = null
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                canRetryLastAction = false,
+                                retryMessage = null,
+                                errorMessage = appString(R.string.error_session_not_found)
+                            )
+                        }
+                        return@launch
+                    }
+
+                    val modeSpec = SpecializedChatRegistry.get(session.effectiveModeId())
+                    if (!modeSpec.enabled) {
+                        pendingRetryAction = null
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                canRetryLastAction = false,
+                                retryMessage = null,
+                                errorMessage = appString(R.string.mode_disabled_read_only)
+                            )
+                        }
+                        return@launch
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            currentSessionId = action.sessionId,
+                            chatModeId = modeSpec.id,
+                            isCurrentModeEnabled = modeSpec.enabled
+                        )
+                    }
+                    requestAssistantResponse(action.sessionId, modeSpec)
+                }
+            }
+            is PendingRetryAction.AudioTranscription -> {
+                val audioFile = File(action.audioPath)
+                if (audioFile.exists() && audioFile.length() > 0L) {
+                    sendAudioMessage(audioFile)
+                } else {
+                    pendingRetryAction = null
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            canRetryLastAction = false,
+                            retryMessage = null,
+                            errorMessage = appString(R.string.audio_retry_file_missing)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun dismissRetry() {
+        val action = pendingRetryAction
+        if (action is PendingRetryAction.AudioTranscription) {
+            deleteFileQuietly(action.audioPath)
+        }
+        pendingRetryAction = null
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = null,
+                canRetryLastAction = false,
+                retryMessage = null,
+                networkWarningMessage = null,
+                extractedKeywords = null,
+                isTheoryQuery = null
+            )
+        }
+    }
+
     /**
      * Plays an audio file at the given path.
      *
@@ -875,9 +1138,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val transcription = _uiState.value.pendingTranscription ?: return
         val audioPath = _uiState.value.pendingAudioPath
 
-        android.util.Log.d("MainViewModel", "✅ User confirmed transcription")
-        android.util.Log.d("MainViewModel", "📝 Transcription: '$transcription'")
-        android.util.Log.d("MainViewModel", "📌 Keywords preserved: ${_uiState.value.extractedKeywords?.joinToString(", ") ?: "none"}")
+        android.util.Log.d("MainViewModel", "User confirmed transcription")
+        android.util.Log.d("MainViewModel", "Transcription: '$transcription'")
+        android.util.Log.d("MainViewModel", "Keywords preserved: ${_uiState.value.extractedKeywords?.joinToString(", ") ?: "none"}")
         
         _uiState.update { it.copy(pendingTranscription = null, pendingAudioPath = null) }
 
@@ -890,7 +1153,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * @return `Unit` after clearing state.
      */
     fun cancelTranscription() {
-        android.util.Log.d("MainViewModel", "❌ User cancelled transcription - clearing keywords")
+        android.util.Log.d("MainViewModel", "User cancelled transcription - clearing keywords")
+        deleteFileQuietly(_uiState.value.pendingAudioPath)
         _uiState.update {
             it.copy(
                 pendingTranscription = null,

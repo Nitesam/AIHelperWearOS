@@ -77,8 +77,12 @@ object ExerciseParser {
      * @return `Result<ExerciseDatabase>` with parsed exercises or failure.
      */
     fun loadExercisesFromResources(context: Context): Result<ExerciseDatabase> {
+        return loadExercisesFromResource(context, R.raw.esercizi_analisi2)
+    }
+
+    fun loadExercisesFromResource(context: Context, rawResId: Int): Result<ExerciseDatabase> {
         return try {
-            context.resources.openRawResource(R.raw.esercizi_analisi2).use { stream ->
+            context.resources.openRawResource(rawResId).use { stream ->
                 parseExercises(stream)
             }
         } catch (e: Exception) {
@@ -93,10 +97,14 @@ object ExerciseParser {
      * Source of truth is `esercizi_analisi2.json`.
      *
      * @param context context used to access raw resources.
-     * @return `Result<Taxonomy>` with generated taxonomy or failure.
+     * @return `Result<Taxonomy>` with the built taxonomy or failure.
      */
     fun loadSynchronizedTaxonomyFromResources(context: Context): Result<Taxonomy> {
-        val exercisesDb = loadExercisesFromResources(context).getOrNull()
+        return loadSynchronizedTaxonomyFromResource(context, R.raw.esercizi_analisi2)
+    }
+
+    fun loadSynchronizedTaxonomyFromResource(context: Context, rawResId: Int): Result<Taxonomy> {
+        val exercisesDb = loadExercisesFromResource(context, rawResId).getOrNull()
 
         if (exercisesDb == null) {
             return Result.failure(IllegalStateException("Exercises could not be loaded"))
@@ -143,8 +151,12 @@ object ExerciseParser {
      * @return `Result<TheoremDatabase>` with parsed theorems or failure.
      */
     fun loadTheoremsFromResources(context: Context): Result<TheoremDatabase> {
+        return loadTheoremsFromResource(context, R.raw.teoremi_analisi2)
+    }
+
+    fun loadTheoremsFromResource(context: Context, rawResId: Int): Result<TheoremDatabase> {
         return try {
-            context.resources.openRawResource(R.raw.teoremi_analisi2).use { stream ->
+            context.resources.openRawResource(rawResId).use { stream ->
                 parseTheorems(stream)
             }
         } catch (e: Exception) {
@@ -314,7 +326,7 @@ object ExerciseParser {
             .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
             .split(Regex("\\s+"))
             .map { it.trim() }
-            .filter { it.length > 2 }
+            .filter { it.length > 2 || it.matches(Regex("[ivxlcdm]+")) }
             .distinct()
     }
 }

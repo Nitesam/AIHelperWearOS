@@ -4,6 +4,8 @@
 Ciao, %1$s!</string>
     <string name="new_chat">Nuova Chat</string>
     <string name="analysis_mode">Modalità Analisi</string>
+    <string name="analysis2_mode">📊 Analisi 2</string>
+    <string name="physics_mode">⚙ Fisica</string>
     <string name="metodi_theory_mode">📘 Teoria</string>
     <string name="metodi_code_mode">🐍 Codice</string>
     <string name="history">Cronologia</string>
@@ -18,19 +20,21 @@ Ciao, %1$s!</string>
     <string name="keyboard">⌨️</string>
     <string name="recording_stop">⏹</string>
     <string name="recording_start">🎤</string>
-    <string name="recording_in_progress">🔴 Registrazione in corso...</string>
-    <string name="transcription">📝 Trascrizione:</string>
+    <string name="recording_in_progress">Registrazione in corso...</string>
+    <string name="transcription">Trascrizione:</string>
     <string name="cancel">✗</string>
     <string name="edit_transcription">Modifica trascrizione</string>
     <string name="edit">✏️</string>
     <string name="confirm">✓</string>
     <string name="you">Tu</string>
-    <string name="ai">AI</string>
+    <string name="ai">Assistente</string>
     <string name="play">▶</string>
     <string name="increase_font_size">↑</string>
     <string name="decrease_font_size">↓</string>
     <string name="no_saved_chats">Nessuna chat salvata</string>
     <string name="analysis">📊 Analisi</string>
+    <string name="analysis2_short">📊 Analisi 2</string>
+    <string name="physics_short">⚙ Fisica</string>
     <string name="metodi_theory_short">📘 Teoria</string>
     <string name="metodi_code_short">🐍 Codice</string>
     <string name="delete">🗑</string>
@@ -49,13 +53,13 @@ Ciao, %1$s!</string>
     <string name="model_claude_sonnet">Claude 4.5 Sonnet</string>
     <string name="model_gpt5">GPT 5.5</string>
     <string name="choose_input_method">Scegli il metodo di input:</string>
-    <string name="send_text_only">📝 Invia solo testo</string>
+    <string name="send_text_only">Invia solo testo</string>
     <string name="synthesize_locally">🔊 Sintetizza localmente</string>
     <string name="start_conversation">Inizia una conversazione!</string>
     <string name="chat">Chat</string>
 
     <string name="choose_transcription_method">Scegli il metodo di trascrizione:</string>
-    <string name="ai_transcription">🤖 Trascrizione AI (Gemini)</string>
+    <string name="ai_transcription">Trascrizione online (Gemini)</string>
     <string name="local_speech_recognition">🎤 Riconoscimento vocale del dispositivo</string>
     <string name="transcribing">Trascrizione in corso...</string>
 
@@ -78,4 +82,12 @@ Ciao, %1$s!</string>
     <string name="error_empty_text">Testo vuoto</string>
     <string name="error_tts">Errore TTS: %s</string>
     <string name="error_delete">Errore eliminazione: %s</string>
+    <string name="mode_disabled_read_only">Questa modalità specializzata non è disponibile in questa build. La cronologia è in sola lettura.</string>
+    <string name="network_unavailable">Connessione assente. Controlla la rete e riprova.</string>
+    <string name="network_weak">Connessione debole: upload %1$s, download %2$s. Potrebbe richiedere piu tempo.</string>
+    <string name="error_timeout">Tempo scaduto. La connessione potrebbe essere lenta o il server occupato.</string>
+    <string name="retry_question">Vuoi riprovare la richiesta precedente?</string>
+    <string name="retry">Riprova</string>
+    <string name="dismiss_retry">Annulla</string>
+    <string name="audio_retry_file_missing">File audio non piu disponibile. Registra di nuovo.</string>
 </resources>

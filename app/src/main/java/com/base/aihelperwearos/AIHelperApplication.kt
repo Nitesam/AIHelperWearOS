@@ -2,6 +2,8 @@ package com.base.aihelperwearos
 
 import android.app.Application
 import android.util.Log
+import com.base.aihelperwearos.data.models.ChatModeIds
+import com.base.aihelperwearos.data.models.SpecializedChatRegistry
 import com.base.aihelperwearos.data.rag.RagRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,14 +20,18 @@ class AIHelperApplication : Application() {
         private const val TAG = "AIHelperApplication"
         
         @Volatile
-        private var ragRepository: RagRepository? = null
+        private var ragRepositories: Map<String, RagRepository> = emptyMap()
         
         /**
          * Provides the shared RAG repository instance when available.
          *
          * @return nullable `RagRepository` if initialized, otherwise `null`.
          */
-        fun getRagRepository(): RagRepository? = ragRepository
+        fun getRagRepository(): RagRepository? = ragRepositories[ChatModeIds.ANALYSIS2]
+
+        fun getRagRepository(modeId: String): RagRepository? {
+            return ragRepositories[SpecializedChatRegistry.normalizeModeId(modeId)]
+        }
     }
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -77,15 +83,28 @@ class AIHelperApplication : Application() {
                 Log.d(TAG, "Initializing RAG system...")
                 val startTime = System.currentTimeMillis()
                 
-                ragRepository = RagRepository(this@AIHelperApplication).also { repo ->
-                    repo.initialize()
-                }
+                val repositories = mutableMapOf<String, RagRepository>()
+                SpecializedChatRegistry.all()
+                    .filter { it.enabled && it.exerciseRawResId != null }
+                    .forEach { spec ->
+                        val exerciseRawResId = spec.exerciseRawResId ?: return@forEach
+                        val repository = RagRepository(
+                            context = this@AIHelperApplication,
+                            exerciseRawResId = exerciseRawResId,
+                            theoremRawResId = if (spec.id == ChatModeIds.ANALYSIS2) R.raw.teoremi_analisi2 else null,
+                            sourceLabel = getString(spec.titleRes)
+                        )
+                        repository.initialize()
+                        repositories[spec.id] = repository
+                    }
+
+                ragRepositories = repositories
                 
                 val elapsed = System.currentTimeMillis() - startTime
-                Log.d(TAG, "RAG system initialized in ${elapsed}ms")
+                Log.d(TAG, "RAG system initialized in ${elapsed}ms for modes: ${repositories.keys.joinToString()}")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize RAG system", e)
-                ragRepository = null
+                ragRepositories = emptyMap()
             }
         }
     }
@@ -98,7 +117,7 @@ class AIHelperApplication : Application() {
     override fun onLowMemory() {
         super.onLowMemory()
         Log.w(TAG, "Low memory warning - clearing RAG cache")
-        ragRepository?.clearCache()
+        ragRepositories.values.forEach { it.clearCache() }
     }
 
     /**
@@ -111,7 +130,7 @@ class AIHelperApplication : Application() {
         super.onTrimMemory(level)
         if (level >= TRIM_MEMORY_MODERATE) {
             Log.w(TAG, "Trim memory level $level - clearing RAG cache")
-            ragRepository?.clearCache()
+            ragRepositories.values.forEach { it.clearCache() }
         }
     }
 }

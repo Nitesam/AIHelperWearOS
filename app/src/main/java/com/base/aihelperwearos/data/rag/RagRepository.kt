@@ -23,7 +23,12 @@ sealed class TheoremResult {
     data class NotFound(val reason: String) : TheoremResult()
 }
 
-class RagRepository(private val context: Context) {
+class RagRepository(
+    private val context: Context,
+    private val exerciseRawResId: Int = com.base.aihelperwearos.R.raw.esercizi_analisi2,
+    private val theoremRawResId: Int? = com.base.aihelperwearos.R.raw.teoremi_analisi2,
+    private val sourceLabel: String = "Analisi 2"
+) {
     
     companion object {
         private const val TAG = "RagRepository"
@@ -80,10 +85,10 @@ class RagRepository(private val context: Context) {
             }
             
             try {
-                Log.d(TAG, "Starting RAG initialization...")
+                Log.d(TAG, "Starting RAG initialization for $sourceLabel...")
                 val startTime = System.currentTimeMillis()
                 
-                val taxonomyResult = ExerciseParser.loadSynchronizedTaxonomyFromResources(context)
+                val taxonomyResult = ExerciseParser.loadSynchronizedTaxonomyFromResource(context, exerciseRawResId)
                 if (taxonomyResult.isSuccess) {
                     taxonomy = taxonomyResult.getOrNull()
                     Log.d(TAG, "Taxonomy loaded: ${taxonomy?.categorie?.size ?: 0} categories")
@@ -91,7 +96,7 @@ class RagRepository(private val context: Context) {
                     Log.w(TAG, "Failed to load taxonomy, RAG classification will be limited")
                 }
                 
-                val exercisesResult = ExerciseParser.loadExercisesFromResources(context)
+                val exercisesResult = ExerciseParser.loadExercisesFromResource(context, exerciseRawResId)
                 if (exercisesResult.isSuccess) {
                     exerciseDatabase = exercisesResult.getOrNull()
                     Log.d(TAG, "Exercises loaded: ${exerciseDatabase?.exercises?.size ?: 0} exercises")
@@ -100,13 +105,15 @@ class RagRepository(private val context: Context) {
                     Log.w(TAG, "Failed to load exercises")
                 }
                 
-                val theoremsResult = ExerciseParser.loadTheoremsFromResources(context)
-                if (theoremsResult.isSuccess) {
-                    theoremDatabase = theoremsResult.getOrNull()
-                    Log.d(TAG, "Theorems loaded: ${theoremDatabase?.theorems?.size ?: 0} theorems")
-                    buildTheoremKeywordIndex()
-                } else {
-                    Log.w(TAG, "Failed to load theorems")
+                if (theoremRawResId != null) {
+                    val theoremsResult = ExerciseParser.loadTheoremsFromResource(context, theoremRawResId)
+                    if (theoremsResult.isSuccess) {
+                        theoremDatabase = theoremsResult.getOrNull()
+                        Log.d(TAG, "Theorems loaded: ${theoremDatabase?.theorems?.size ?: 0} theorems")
+                        buildTheoremKeywordIndex()
+                    } else {
+                        Log.w(TAG, "Failed to load theorems")
+                    }
                 }
                 
                 if (exerciseDatabase == null && theoremDatabase == null) {

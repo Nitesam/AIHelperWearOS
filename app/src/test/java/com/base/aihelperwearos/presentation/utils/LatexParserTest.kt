@@ -26,7 +26,7 @@ class LatexParserTest {
 
     @Test
     fun `parseLatexContent still supports dollar delimiters`() {
-        val content = "Inline $x^2$ e blocco $$\\int_0^1 x\\,dx$$."
+        val content = "Inline ${'$'}x^2${'$'} e blocco ${'$'}${'$'}\\int_0^1 x\\,dx${'$'}${'$'}."
 
         val parsed = LatexParser.parseLatexContent(content)
         val formulas = parsed.parts.filterIsInstance<MathContentPart.LatexFormula>()

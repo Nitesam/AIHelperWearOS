@@ -18,6 +18,20 @@ fun getApiKey(key: String): String {
     return "\"\""
 }
 
+fun getChatModeFlag(key: String, defaultValue: Boolean): String {
+    val properties = Properties()
+    listOf("chat-modes.properties", "chat-modes.local.properties").forEach { fileName ->
+        val file = project.file(fileName)
+        if (file.exists()) {
+            FileInputStream(file).use { properties.load(it) }
+        }
+    }
+
+    val rawValue = properties.getProperty(key) ?: defaultValue.toString()
+    val parsedValue = rawValue.trim().lowercase().toBooleanStrictOrNull() ?: defaultValue
+    return parsedValue.toString()
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -37,6 +51,11 @@ android {
         versionCode = 1
         versionName = "1.0"
         buildConfigField("String", "OPENROUTER_API_KEY", getApiKey("OPENROUTER_API_KEY"))
+        buildConfigField("boolean", "CHAT_GENERAL_ENABLED", getChatModeFlag("chat.general.enabled", true))
+        buildConfigField("boolean", "CHAT_ANALYSIS2_ENABLED", getChatModeFlag("chat.analysis2.enabled", false))
+        buildConfigField("boolean", "CHAT_PHYSICS_ENABLED", getChatModeFlag("chat.physics.enabled", true))
+        buildConfigField("boolean", "CHAT_METODI_THEORY_ENABLED", getChatModeFlag("chat.metodi.theory.enabled", true))
+        buildConfigField("boolean", "CHAT_METODI_CODE_ENABLED", getChatModeFlag("chat.metodi.code.enabled", true))
 
     }
 
@@ -61,6 +80,9 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 }
 

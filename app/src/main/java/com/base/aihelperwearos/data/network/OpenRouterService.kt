@@ -3,10 +3,11 @@ package com.base.aihelperwearos.data.network
 import android.content.Context
 import android.util.Log
 import com.base.aihelperwearos.data.rag.ExerciseParser
-import com.base.aihelperwearos.data.models.ChatMode
+import com.base.aihelperwearos.data.models.ChatModeIds
 import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.models.OpenRouterRequest
 import com.base.aihelperwearos.data.models.OpenRouterResponse
+import com.base.aihelperwearos.data.models.SpecializedChatRegistry
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
@@ -34,9 +35,6 @@ class OpenRouterService(
 ) {
     companion object {
         private const val TRANSCRIPTION_MODEL = "google/gemini-3-flash-preview"
-        private const val ANALYSIS_MAX_TOKENS = 8000
-        private const val METODI_MAX_TOKENS = 3500
-        private const val CHAT_MAX_TOKENS = 1000
         private const val CONTINUATION_MAX_TOKENS = 6000
     }
 
@@ -111,36 +109,30 @@ class OpenRouterService(
      *
      * @param modelId model identifier to use.
      * @param messages conversation messages to send.
-     * @param isAnalysisMode whether analysis-mode prompting is enabled.
      * @param languageCode language code for prompts.
      * @param ragContext optional RAG context to enrich prompts.
-     * @param chatMode specialized chat mode for prompt selection.
-     * @return `Result<String>` with the assistant response or error.
+     * @param modeId specialized chat mode id for prompt selection.
+     * @return `Result<String>` with the model response or error.
      */
     suspend fun sendMessage(
         modelId: String,
         messages: List<Message>,
-        isAnalysisMode: Boolean = false,
         languageCode: String,
         ragContext: String? = null,
-        chatMode: ChatMode = if (isAnalysisMode) ChatMode.ANALYSIS else ChatMode.GENERAL
+        modeId: String = ChatModeIds.GENERAL
     ): Result<String> {
         return try {
+            val modeSpec = SpecializedChatRegistry.get(modeId)
             Log.d("OpenRouter", "=== SEND MESSAGE START ===")
             Log.d("OpenRouter", "Language parameter received: '$languageCode'")
-            Log.d("OpenRouter", "sendMessage - Using language: $languageCode, mode: $chatMode")
+            Log.d("OpenRouter", "sendMessage - Using language: $languageCode, modeId: ${modeSpec.id}")
             Log.d("OpenRouter", "sendMessage - RAG context provided: ${ragContext != null}")
 
-            val systemPrompt = when (chatMode) {
-                ChatMode.ANALYSIS -> {
-                    com.base.aihelperwearos.data.Constants.getEnrichedMathPrompt(languageCode, ragContext)
-                }
-                ChatMode.METODI_TEORIA,
-                ChatMode.METODI_CODICE -> {
-                    com.base.aihelperwearos.data.Constants.getMetodiPrompt(chatMode, languageCode, ragContext)
-                }
-                ChatMode.GENERAL -> null
-            }
+            val systemPrompt = com.base.aihelperwearos.data.Constants.getPrompt(
+                profile = modeSpec.promptProfile,
+                languageCode = languageCode,
+                ragContext = ragContext
+            )
 
             val allMessages = systemPrompt?.let { prompt ->
                 Log.d(
@@ -153,21 +145,13 @@ class OpenRouterService(
             val request = OpenRouterRequest(
                 model = modelId,
                 messages = allMessages,
-                maxTokens = when (chatMode) {
-                    ChatMode.ANALYSIS -> ANALYSIS_MAX_TOKENS
-                    ChatMode.METODI_TEORIA, ChatMode.METODI_CODICE -> METODI_MAX_TOKENS
-                    ChatMode.GENERAL -> CHAT_MAX_TOKENS
-                },
-                temperature = when (chatMode) {
-                    ChatMode.GENERAL -> 0.7
-                    ChatMode.METODI_CODICE -> 0.15
-                    else -> 0.2
-                }
+                maxTokens = modeSpec.maxTokens,
+                temperature = modeSpec.temperature
             )
 
             val response: OpenRouterResponse = requestChatCompletion(request)
             val firstChoice = response.choices.firstOrNull()
-                ?: return Result.failure(Exception("Nessuna risposta dall'AI"))
+                ?: return Result.failure(Exception("Nessuna risposta disponibile"))
             var content = firstChoice.message.content
             val initialFinishReason = firstChoice.finishReason
             Log.d(
@@ -176,7 +160,7 @@ class OpenRouterService(
             )
 
             // If response is cut by token limit, request one continuation and append it.
-            if (chatMode != ChatMode.GENERAL && initialFinishReason == "length") {
+            if (modeSpec.isSpecialized && initialFinishReason == "length") {
                 Log.w("OpenRouter", "sendMessage - Response truncated (finish_reason=length), requesting continuation")
                 val continuationInstruction = if (languageCode == "en") {
                     "Continue EXACTLY from where you stopped. Do not repeat previous text. Complete any open LaTeX blocks."
@@ -282,7 +266,8 @@ class OpenRouterService(
     suspend fun transcribeAudioWithGemini(
         audioFile: File,
         languageCode: String,
-        chatMode: ChatMode = ChatMode.GENERAL
+        modeId: String = ChatModeIds.GENERAL,
+        deleteOnCompletion: Boolean = true
     ): Result<com.base.aihelperwearos.data.models.TranscriptionResult> {
         return try {
             Log.d("OpenRouter", "=== TRANSCRIPTION START ===")
@@ -299,9 +284,9 @@ class OpenRouterService(
 
             Log.d("OpenRouter", "Audio size: ${audioBytes.size} bytes → Base64: ${audioBase64.length} chars")
 
-            val transcriptionPrompt = getTranscriptionPromptWithTaxonomy(languageCode, chatMode)
-            Log.d("OpenRouter", "📋 Transcription prompt length: ${transcriptionPrompt.length} chars")
-            Log.d("OpenRouter", "📋 Prompt includes keyword extraction: ${transcriptionPrompt.contains("KEYWORDS")}")
+            val transcriptionPrompt = getTranscriptionPromptWithTaxonomy(languageCode, modeId)
+            Log.d("OpenRouter", "Transcription prompt length: ${transcriptionPrompt.length} chars")
+            Log.d("OpenRouter", "Keyword extraction enabled: ${transcriptionPrompt.contains("KEYWORDS")}")
 
             val requestBody = buildJsonObject {
                 put("model", TRANSCRIPTION_MODEL)
@@ -327,14 +312,14 @@ class OpenRouterService(
                 })
             }
 
-            Log.d("OpenRouter", "🚀 Sending to $TRANSCRIPTION_MODEL for transcription...")
+            Log.d("OpenRouter", "Sending to $TRANSCRIPTION_MODEL for transcription")
 
             val response: String = client.post("chat/completions") {
                 setBody(requestBody)
             }.body()
 
-            Log.d("OpenRouter", "📥 Transcription raw response received (${response.length} chars)")
-            Log.d("OpenRouter", "📥 Response preview: ${response.take(300)}")
+            Log.d("OpenRouter", "Transcription raw response received (${response.length} chars)")
+            Log.d("OpenRouter", "Response preview: ${response.take(300)}")
 
             val jsonResponse = Json.parseToJsonElement(response) as kotlinx.serialization.json.JsonObject
 
@@ -342,7 +327,7 @@ class OpenRouterService(
             if (error != null) {
                 val errorMsg = (error["message"] as? kotlinx.serialization.json.JsonPrimitive)?.content
                     ?: "Errore sconosciuto"
-                Log.e("OpenRouter", "❌ API Error: $errorMsg")
+                Log.e("OpenRouter", "API error: $errorMsg")
                 return Result.failure(Exception("Errore API: $errorMsg"))
             }
 
@@ -352,19 +337,19 @@ class OpenRouterService(
             val rawText = (message?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content
 
             if (rawText.isNullOrBlank()) {
-                Log.e("OpenRouter", "❌ Empty transcription from Gemini")
+                Log.e("OpenRouter", "Empty transcription from Gemini")
                 return Result.failure(Exception("Trascrizione vuota - riprova parlando più chiaramente"))
             }
 
-            Log.d("OpenRouter", "📝 Raw transcription text received: $rawText")
-            Log.d("OpenRouter", "🔍 Starting keyword extraction...")
+            Log.d("OpenRouter", "Raw transcription text received: $rawText")
+            Log.d("OpenRouter", "Starting keyword extraction")
             
             val result = parseTranscriptionWithKeywords(rawText, languageCode)
             
-            Log.d("OpenRouter", "✅ Transcription SUCCESS")
-            Log.d("OpenRouter", "📌 Keywords extracted: ${result.keywords.joinToString(", ")}")
-            Log.d("OpenRouter", "📌 Theory query: ${result.isTheoryQuery}")
-            Log.d("OpenRouter", "📌 Display text: ${result.displayText}")
+            Log.d("OpenRouter", "Transcription success")
+            Log.d("OpenRouter", "Keywords extracted: ${result.keywords.joinToString(", ")}")
+            Log.d("OpenRouter", "Theory query: ${result.isTheoryQuery}")
+            Log.d("OpenRouter", "Display text: ${result.displayText}")
             Log.d("OpenRouter", "=== TRANSCRIPTION END ===")
             
             Result.success(result)
@@ -374,8 +359,10 @@ class OpenRouterService(
             Result.failure(Exception("Errore trascrizione: ${e.message}"))
         } finally {
             try {
-                audioFile.delete()
-                Log.d("OpenRouter", "Audio file deleted")
+                if (deleteOnCompletion) {
+                    audioFile.delete()
+                    Log.d("OpenRouter", "Audio file deleted")
+                }
             } catch (e: Exception) {
                 Log.w("OpenRouter", "Failed to delete audio file", e)
             }
@@ -423,7 +410,7 @@ class OpenRouterService(
             }.body()
 
             val solution = response.choices.firstOrNull()?.message?.content
-                ?: return Result.failure(Exception("Nessuna soluzione dall'AI"))
+                ?: return Result.failure(Exception("Nessuna soluzione disponibile"))
 
             Result.success(solution)
 
@@ -471,9 +458,9 @@ class OpenRouterService(
      * @return `TranscriptionResult` with transcription and keywords.
      */
     private fun parseTranscriptionWithKeywords(rawText: String, languageCode: String): com.base.aihelperwearos.data.models.TranscriptionResult {
-        Log.d("OpenRouter", "🔍 parseTranscriptionWithKeywords - START")
-        Log.d("OpenRouter", "🔍 Input text length: ${rawText.length} chars")
-        Log.d("OpenRouter", "🔍 Input text: $rawText")
+        Log.d("OpenRouter", "parseTranscriptionWithKeywords - START")
+        Log.d("OpenRouter", "Input text length: ${rawText.length} chars")
+        Log.d("OpenRouter", "Input text: $rawText")
         
         val keywordPattern = Regex("""\[KEYWORDS?:\s*([^\]]+)\]""", RegexOption.IGNORE_CASE)
         val transcriptionPattern = Regex("""\[(TRASCRIZIONE|TRANSCRIPTION):\s*([^\]]+)\]""", RegexOption.IGNORE_CASE)
@@ -481,33 +468,33 @@ class OpenRouterService(
         val keywordMatch = keywordPattern.find(rawText)
         val transcriptionMatch = transcriptionPattern.find(rawText)
         
-        Log.d("OpenRouter", "🔍 Keyword match found: ${keywordMatch != null}")
-        Log.d("OpenRouter", "🔍 Transcription match found: ${transcriptionMatch != null}")
+        Log.d("OpenRouter", "Keyword match found: ${keywordMatch != null}")
+        Log.d("OpenRouter", "Transcription match found: ${transcriptionMatch != null}")
         
         val keywords = if (keywordMatch != null) {
             val keywordString = keywordMatch.groupValues[1].trim()
-            Log.d("OpenRouter", "🔍 Raw keyword string: '$keywordString'")
+            Log.d("OpenRouter", "Raw keyword string: '$keywordString'")
             val parsedKeywords = keywordString.split(",")
                 .map { it.trim().lowercase() }
                 .filter { it.isNotEmpty() }
-            Log.d("OpenRouter", "🔍 Parsed ${parsedKeywords.size} keywords: ${parsedKeywords.joinToString(", ")}")
+            Log.d("OpenRouter", "Parsed ${parsedKeywords.size} keywords: ${parsedKeywords.joinToString(", ")}")
             parsedKeywords
         } else {
-            Log.w("OpenRouter", "⚠️ No keywords found in response - using fallback")
+            Log.w("OpenRouter", "No keywords found in response - using fallback")
             extractFallbackKeywords(rawText, languageCode)
         }
         
         val transcription = if (transcriptionMatch != null) {
             val extracted = transcriptionMatch.groupValues[2].trim()
-            Log.d("OpenRouter", "🔍 Extracted transcription: '$extracted'")
+            Log.d("OpenRouter", "Extracted transcription: '$extracted'")
             extracted
         } else {
-            Log.w("OpenRouter", "⚠️ No transcription marker found - using cleaned raw text")
+            Log.w("OpenRouter", "No transcription marker found - using cleaned raw text")
             rawText.replace(keywordPattern, "").trim()
         }
         
         val isTheory = keywords.firstOrNull() in listOf("teoria", "theory", "teorema", "theorem", "definizione", "definition")
-        Log.d("OpenRouter", "🔍 Is theory query: $isTheory (first keyword: ${keywords.firstOrNull()})")
+        Log.d("OpenRouter", "Is theory query: $isTheory (first keyword: ${keywords.firstOrNull()})")
         
         val result = com.base.aihelperwearos.data.models.TranscriptionResult(
             transcription = transcription,
@@ -516,7 +503,7 @@ class OpenRouterService(
             isTheoryQuery = isTheory
         )
         
-        Log.d("OpenRouter", "🔍 parseTranscriptionWithKeywords - END")
+        Log.d("OpenRouter", "parseTranscriptionWithKeywords - END")
         return result
     }
     
@@ -528,7 +515,7 @@ class OpenRouterService(
      * @return `List<String>` of extracted keywords.
      */
     private fun extractFallbackKeywords(text: String, languageCode: String): List<String> {
-        Log.d("OpenRouter", "🔍 extractFallbackKeywords - attempting pattern detection")
+        Log.d("OpenRouter", "extractFallbackKeywords - attempting pattern detection")
         val lowerText = text.lowercase()
         val keywords = mutableListOf<String>()
         
@@ -555,7 +542,15 @@ class OpenRouterService(
             "stokes" to "stokes",
             "green" to "green",
             "equazione" to "equazione",
-            "equation" to "equation"
+            "equation" to "equation",
+            "moto" to "moto",
+            "accelerazione" to "accelerazione",
+            "forza" to "forza",
+            "energia" to "energia",
+            "urto" to "urto",
+            "collision" to "collision",
+            "momentum" to "momentum",
+            "projectile" to "projectile"
         )
         
         topics.forEach { (pattern, keyword) ->
@@ -564,7 +559,7 @@ class OpenRouterService(
             }
         }
         
-        Log.d("OpenRouter", "🔍 Fallback extracted ${keywords.size} keywords: ${keywords.joinToString(", ")}")
+        Log.d("OpenRouter", "Fallback extracted ${keywords.size} keywords: ${keywords.joinToString(", ")}")
         return keywords.take(5)
     }
 
@@ -573,25 +568,25 @@ class OpenRouterService(
      *
      * This constrains the transcription model to classify within real app categories/subtypes.
      */
-    private fun getTranscriptionPromptWithTaxonomy(languageCode: String, chatMode: ChatMode): String {
-        val basePrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode, chatMode)
-        if (chatMode == ChatMode.METODI_TEORIA || chatMode == ChatMode.METODI_CODICE) {
-            return basePrompt
-        }
-
-        val taxonomyGuide = getTaxonomyGuide(languageCode)
+    private fun getTranscriptionPromptWithTaxonomy(languageCode: String, modeId: String): String {
+        val modeSpec = SpecializedChatRegistry.get(modeId)
+        val basePrompt = com.base.aihelperwearos.data.Constants.getTranscriptionPrompt(languageCode, modeSpec.id)
+        val taxonomyGuide = getTaxonomyGuide(languageCode, modeSpec.id, modeSpec.exerciseRawResId)
         return if (taxonomyGuide.isBlank()) basePrompt else "$basePrompt\n\n$taxonomyGuide"
     }
 
     /**
      * Builds a language-specific taxonomy guide from exercise-derived taxonomy.
      */
-    private fun getTaxonomyGuide(languageCode: String): String {
+    private fun getTaxonomyGuide(languageCode: String, modeId: String, exerciseRawResId: Int?): String {
+        if (exerciseRawResId == null) return ""
+
+        val cacheKey = "$modeId:$languageCode"
         synchronized(taxonomyGuideCache) {
-            taxonomyGuideCache[languageCode]?.let { return it }
+            taxonomyGuideCache[cacheKey]?.let { return it }
         }
 
-        val taxonomy = ExerciseParser.loadSynchronizedTaxonomyFromResources(appContext).getOrNull()
+        val taxonomy = ExerciseParser.loadSynchronizedTaxonomyFromResource(appContext, exerciseRawResId).getOrNull()
             ?: return ""
 
         val categoriesBlock = taxonomy.categorie.joinToString("\n") { category ->
@@ -602,10 +597,10 @@ class OpenRouterService(
 
         val guide = if (languageCode == "en") {
             """
-                AVAILABLE CATEGORIES CENSUS (CHOOSE ONLY FROM THIS LIST):
+                Available categories:
                 $categoriesBlock
 
-                CLASSIFICATION CONSTRAINT:
+                Classification:
                 In [KEYWORDS: ...], include in this exact order:
                 1) theory or exercise
                 2) one exact category name from the list above
@@ -614,10 +609,10 @@ class OpenRouterService(
             """.trimIndent()
         } else {
             """
-                CENSIMENTO CATEGORIE DISPONIBILI (SCEGLI SOLO DA QUESTA LISTA):
+                Categorie disponibili:
                 $categoriesBlock
 
-                VINCOLO DI CLASSIFICAZIONE:
+                Classificazione:
                 Nella riga [KEYWORDS: ...], inserisci in questo ordine:
                 1) teoria oppure esercizio
                 2) un nome categoria esatto dalla lista sopra
@@ -627,7 +622,7 @@ class OpenRouterService(
         }
 
         synchronized(taxonomyGuideCache) {
-            taxonomyGuideCache[languageCode] = guide
+            taxonomyGuideCache[cacheKey] = guide
         }
         return guide
     }

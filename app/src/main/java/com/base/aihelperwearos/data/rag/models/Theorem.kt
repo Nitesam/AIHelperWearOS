@@ -63,16 +63,16 @@ data class Theorem(
     }
     
     /**
-     * Formats the theorem for inclusion in RAG prompt context.
+     * Formats the theorem for retrieval context.
      *
-     * @return prompt-ready text as a `String`.
+     * @return formatted theorem text.
      */
     fun formatForPrompt(): String {
         return buildString {
-            appendLine("📖 $tipo: $nome")
+            appendLine("$tipo: $nome")
             appendLine(enunciato)
             if (!note.isNullOrBlank()) {
-                appendLine("💡 $note")
+                appendLine(note)
             }
         }
     }

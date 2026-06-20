@@ -329,8 +329,8 @@ class ExerciseParserTest {
         assertTrue(formatted.contains("Sottotipo Test"))
         assertTrue(formatted.contains("Il testo dell'esercizio"))
         assertTrue(formatted.contains("Lo svolgimento"))
-        assertTrue(formatted.contains("📝"))
-        assertTrue(formatted.contains("✅"))
+        assertTrue(formatted.contains("Esercizio"))
+        assertTrue(formatted.contains("Svolgimento"))
     }
 
     /**

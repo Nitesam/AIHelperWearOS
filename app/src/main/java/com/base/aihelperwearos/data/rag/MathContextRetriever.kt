@@ -4,19 +4,25 @@ import android.util.Log
 import com.base.aihelperwearos.data.rag.models.Exercise
 import com.base.aihelperwearos.data.rag.models.RagResult
 
-class MathContextRetriever(private val ragRepository: RagRepository) {
+class MathContextRetriever(
+    private val ragRepository: RagRepository,
+    private val maxExercises: Int = DEFAULT_MAX_EXERCISES,
+    private val maxPromptLength: Int = DEFAULT_MAX_PROMPT_LENGTH,
+    private val contextHeader: String = "ESEMPI RILEVANTI DALLA PROFESSORESSA:",
+    private val solutionLabel: String = "Svolgimento della professoressa"
+) {
     
     companion object {
         private const val TAG = "MathContextRetriever"
-        private const val MAX_EXERCISES = 2
-        private const val MAX_PROMPT_LENGTH = 4096
+        private const val DEFAULT_MAX_EXERCISES = 2
+        private const val DEFAULT_MAX_PROMPT_LENGTH = 4096
     }
     
     /**
      * Retrieves formatted RAG context for a query.
      *
      * @param query user query text.
-     * @return prompt-ready context `String?`, or `null` if unavailable.
+     * @return formatted context, or `null` if unavailable.
      */
     suspend fun retrieveContext(query: String): String? {
         if (query.isBlank()) {
@@ -24,7 +30,7 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
             return null
         }
 
-        val result = runCatching { ragRepository.findRelevantExercises(query, MAX_EXERCISES) }
+        val result = runCatching { ragRepository.findRelevantExercises(query, maxExercises) }
             .onFailure { Log.w(TAG, "Failed to retrieve RAG context", it) }
             .getOrNull() ?: return null
 
@@ -66,7 +72,7 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
             )
         }
 
-        val result = runCatching { ragRepository.findRelevantExercises(query, MAX_EXERCISES) }
+        val result = runCatching { ragRepository.findRelevantExercises(query, maxExercises) }
             .onFailure { Log.w(TAG, "Failed to retrieve RAG context metadata", it) }
             .getOrNull() ?: return ContextWithMetadata(
             context = null,
@@ -124,7 +130,7 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
     }
     
     /**
-     * Formats a success result into prompt-ready context.
+     * Formats a success result into context text.
      *
      * @param result successful RAG result to format.
      * @return prompt context `String?`, or `null` if empty.
@@ -132,12 +138,15 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
     private fun formatContextForPrompt(result: RagResult.Success): PromptContext {
         if (result.exercises.isEmpty()) return PromptContext(null, emptyList())
         
-        val formatted = result.formatForPrompt()
+        val formatted = result.formatForPrompt(
+            header = contextHeader,
+            solutionLabel = solutionLabel
+        )
         
-        return if (formatted.length > MAX_PROMPT_LENGTH) {
-            Log.w(TAG, "Context too long (${formatted.length}), truncating to $MAX_PROMPT_LENGTH")
+        return if (formatted.length > maxPromptLength) {
+            Log.w(TAG, "Context too long (${formatted.length}), truncating to $maxPromptLength")
             PromptContext(
-                text = truncateContext(result.exercises, MAX_PROMPT_LENGTH),
+                text = truncateContext(result.exercises, maxPromptLength),
                 includedExercises = result.exercises.take(1)
             )
         } else {
@@ -159,9 +168,9 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
         val first = exercises.firstOrNull() ?: return ""
         val singleFormat = buildString {
             appendLine()
-            appendLine("📚 ESEMPIO RILEVANTE DALLA PROFESSORESSA:")
+            appendLine(contextHeader.removeSuffix(":") + ":")
             appendLine("─".repeat(40))
-            append(first.formatForPrompt())
+            append(first.formatForPrompt(solutionLabel))
             appendLine("─".repeat(40))
         }
         
@@ -170,9 +179,9 @@ class MathContextRetriever(private val ragRepository: RagRepository) {
         } else {
             buildString {
                 appendLine()
-                appendLine("📚 ESEMPIO RILEVANTE:")
-                appendLine("📝 [${first.categoria}] ${first.testo.take(200)}...")
-                appendLine("✅ Svolgimento: ${first.svolgimento.take(500)}...")
+                appendLine("ESEMPIO RILEVANTE:")
+                appendLine("[${first.categoria}] ${first.testo.take(200)}...")
+                appendLine("Svolgimento: ${first.svolgimento.take(500)}...")
             }
         }
     }

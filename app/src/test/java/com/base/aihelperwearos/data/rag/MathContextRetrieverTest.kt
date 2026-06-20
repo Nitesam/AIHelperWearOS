@@ -19,8 +19,8 @@ class MathContextRetrieverTest {
         categoria = "Equazioni Differenziali",
         sottotipo = "Lineari I Ordine",
         keywords = listOf("lineare", "primo ordine"),
-        testo = "Risolvere l'equazione: $$\\frac{dy}{dx} = x$$",
-        svolgimento = "1. Integro: $$y = \\frac{x^2}{2} + C$$"
+        testo = "Risolvere l'equazione: ${'$'}${'$'}\\frac{dy}{dx} = x${'$'}${'$'}",
+        svolgimento = "1. Integro: ${'$'}${'$'}y = \\frac{x^2}{2} + C${'$'}${'$'}"
     )
 
     /**
@@ -208,7 +208,6 @@ class MathContextRetrieverTest {
         
         val formatted = result.formatForPrompt()
         
-        assertTrue(formatted.contains("📚"))
         assertTrue(formatted.contains("ESEMPI"))
         assertTrue(formatted.contains("Lineari I Ordine") || formatted.contains("EDO-001"))
     }

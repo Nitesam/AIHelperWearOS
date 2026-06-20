@@ -8,20 +8,21 @@ sealed class RagResult {
         val confidence: Float
     ) : RagResult() {
         /**
-         * Formats all exercises for prompt injection.
-         *
-         * @return prompt text as a `String`.
+         * Formats all matched exercises as context text.
          */
-        fun formatForPrompt(): String {
+        fun formatForPrompt(
+            header: String = "ESEMPI RILEVANTI DALLA PROFESSORESSA:",
+            solutionLabel: String = "Svolgimento della professoressa"
+        ): String {
             if (exercises.isEmpty()) return ""
             
             return buildString {
                 appendLine()
-                appendLine("📚 ESEMPI RILEVANTI DALLA PROFESSORESSA:")
+                appendLine(header)
                 appendLine("─".repeat(40))
                 exercises.forEachIndexed { index, exercise ->
                     if (index > 0) appendLine()
-                    append(exercise.formatForPrompt())
+                    append(exercise.formatForPrompt(solutionLabel))
                 }
                 appendLine("─".repeat(40))
             }

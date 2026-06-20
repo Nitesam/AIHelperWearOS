@@ -35,7 +35,7 @@ data class Sottotipo(
             .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
             .split(Regex("\\s+"))
             .map { it.trim() }
-            .filter { it.length > 2 }
+            .filter { it.length > 2 || it.isRomanNumeralToken() }
             .distinct()
     }
 }
@@ -76,7 +76,7 @@ data class Categoria(
             .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
             .split(Regex("\\s+"))
             .map { it.trim() }
-            .filter { it.length > 2 }
+            .filter { it.length > 2 || it.isRomanNumeralToken() }
             .distinct()
     }
 }
@@ -156,4 +156,8 @@ data class Taxonomy(
         
         return bestSubtype
     }
+}
+
+private fun String.isRomanNumeralToken(): Boolean {
+    return matches(Regex("[ivxlcdm]+"))
 }

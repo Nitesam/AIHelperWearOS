@@ -1,18 +1,24 @@
-<<<<<<< HEAD
 # Gradle files
 .gradle/
 build/
+/build
 
-# Local configuration file (sdk path, etc)
+# Local configuration files
 local.properties
+/local.properties
+app/chat-modes.local.properties
 
-# Log/OS Files
+# Log/OS files
 *.log
+.DS_Store
 
 # Android Studio generated files and folders
 captures/
+/captures
 .externalNativeBuild/
+.externalNativeBuild
 .cxx/
+.cxx
 *.aab
 *.apk
 output-metadata.json
@@ -20,6 +26,12 @@ output-metadata.json
 # IntelliJ
 *.iml
 .idea/
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
 misc.xml
 deploymentTargetDropDown.xml
 render.experimental.xml
@@ -28,34 +40,21 @@ render.experimental.xml
 *.jks
 *.keystore
 
+# Course/tooling local inputs
 Metodi Matematici e Statistici
 metodi_resource_builder
-
-# Google Services (e.g. APIs or Firebase)
-google-services.json
-
-# Android Profiling
-*.hprof
-=======
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-
-google_services.json
 tools/esami_analisi2
 tools/pdf_analisi2
 tools/exercise_viewer_app/esercizi_analisi2.json
 tools/exercise_viewer_app/ExerciseViewer.spec
+tools/Fisica/Esercizi.pdf
+
+# Google Services
+google-services.json
+google_services.json
+
+# Android Profiling
+*.hprof
+
+# Local exports
 chat_export.json

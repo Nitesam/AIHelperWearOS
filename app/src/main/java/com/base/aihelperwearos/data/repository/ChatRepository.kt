@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.base.aihelperwearos.data.models.ChatMode
+import com.base.aihelperwearos.data.models.ChatModeIds
+import com.base.aihelperwearos.data.models.SpecializedChatRegistry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -25,10 +27,16 @@ data class ChatSession(
     val title: String,
     val timestamp: Long,
     val isAnalysisMode: Boolean = false,
-    val mode: ChatMode = ChatMode.GENERAL
+    val mode: ChatMode = ChatMode.GENERAL,
+    val modeId: String? = null
 ) {
+    fun effectiveModeId(): String {
+        return modeId?.let { SpecializedChatRegistry.normalizeModeId(it) }
+            ?: SpecializedChatRegistry.modeIdFromLegacy(mode, isAnalysisMode)
+    }
+
     fun effectiveMode(): ChatMode {
-        return if (mode == ChatMode.GENERAL && isAnalysisMode) ChatMode.ANALYSIS else mode
+        return SpecializedChatRegistry.legacyModeFor(effectiveModeId())
     }
 }
 
@@ -154,9 +162,11 @@ class ChatRepository(private val context: Context) {
         modelId: String,
         title: String,
         isAnalysisMode: Boolean,
-        mode: ChatMode = if (isAnalysisMode) ChatMode.ANALYSIS else ChatMode.GENERAL
+        mode: ChatMode = if (isAnalysisMode) ChatMode.ANALYSIS else ChatMode.GENERAL,
+        modeId: String = SpecializedChatRegistry.modeIdFromLegacy(mode, isAnalysisMode)
     ): Long {
-        android.util.Log.d("ChatRepository", "createSession - START - modelId: $modelId, title: $title, mode: $mode, isAnalysisMode: $isAnalysisMode")
+        val normalizedModeId = SpecializedChatRegistry.normalizeModeId(modeId)
+        android.util.Log.d("ChatRepository", "createSession - START - modelId: $modelId, title: $title, modeId: $normalizedModeId, legacyMode: $mode, isAnalysisMode: $isAnalysisMode")
 
         try {
             val currentData = getChatData()
@@ -167,8 +177,9 @@ class ChatRepository(private val context: Context) {
                 modelId = modelId,
                 title = title,
                 timestamp = System.currentTimeMillis(),
-                isAnalysisMode = mode == ChatMode.ANALYSIS || isAnalysisMode,
-                mode = mode
+                isAnalysisMode = normalizedModeId == ChatModeIds.ANALYSIS2 || isAnalysisMode,
+                mode = SpecializedChatRegistry.legacyModeFor(normalizedModeId),
+                modeId = normalizedModeId
             )
 
             android.util.Log.d("ChatRepository", "New session created: $newSession")

@@ -24,16 +24,16 @@ data class Exercise(
     val svolgimento: String
 ) {
     /**
-     * Formats the exercise into a prompt-ready string.
+     * Formats the exercise for context retrieval.
      *
-     * @return formatted prompt text as a `String`.
+     * @return formatted exercise text.
      */
-    fun formatForPrompt(): String {
+    fun formatForPrompt(solutionLabel: String = "Svolgimento della professoressa"): String {
         return buildString {
-            appendLine("📝 Esercizio [ID: $id | $categoria - $sottotipo]:")
+            appendLine("Esercizio [ID: $id | $categoria - $sottotipo]:")
             appendLine(testo)
             appendLine()
-            appendLine("✅ Svolgimento della professoressa:")
+            appendLine("$solutionLabel:")
             appendLine(svolgimento)
         }
     }
@@ -64,7 +64,7 @@ data class Exercise(
             .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
             .split(Regex("\\s+"))
             .map { it.trim() }
-            .filter { it.length > 2 }
+            .filter { it.length > 2 || it.matches(Regex("[ivxlcdm]+")) }
             .distinct()
     }
 }

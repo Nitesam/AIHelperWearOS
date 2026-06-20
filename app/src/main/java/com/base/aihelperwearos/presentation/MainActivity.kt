@@ -24,8 +24,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
 import com.base.aihelperwearos.R
-import com.base.aihelperwearos.data.Constants
-import com.base.aihelperwearos.data.models.ChatMode
+import com.base.aihelperwearos.data.models.ChatModeIds
+import com.base.aihelperwearos.data.models.ChatModeSpec
+import com.base.aihelperwearos.data.models.SpecializedChatRegistry
 import com.base.aihelperwearos.presentation.components.MathMarkdownText
 import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
 import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
@@ -103,8 +104,8 @@ fun KeepScreenOn() {
 fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState.currentScreen, uiState.chatMode) {
-        android.util.Log.d("MainActivity", "UI recomposed - currentScreen: ${uiState.currentScreen}, mode: ${uiState.chatMode}")
+    LaunchedEffect(uiState.currentScreen, uiState.chatModeId) {
+        android.util.Log.d("MainActivity", "UI recomposed - currentScreen: ${uiState.currentScreen}, modeId: ${uiState.chatModeId}")
     }
 
     AIHelperWearOSTheme {
@@ -112,30 +113,18 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
             timeText = { TimeText() },
             vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) }
         ) {
-            val analysisTitle = stringResource(id = R.string.analysis_mode)
-            val newChatTitle = stringResource(id = R.string.new_chat)
-            val metodiTheoryTitle = stringResource(id = R.string.metodi_theory_mode)
-            val metodiCodeTitle = stringResource(id = R.string.metodi_code_mode)
-            val chatModeLabel = when (uiState.chatMode) {
-                ChatMode.METODI_TEORIA -> metodiTheoryTitle
-                ChatMode.METODI_CODICE -> metodiCodeTitle
-                else -> null
+            val currentModeSpec = SpecializedChatRegistry.get(uiState.chatModeId)
+            val chatModeLabel = if (currentModeSpec.isSpecialized) {
+                stringResource(id = currentModeSpec.titleRes)
+            } else {
+                null
             }
 
             when (uiState.currentScreen) {
                 Screen.Home -> HomeScreen(
-                    isAnalysisEnabled = Constants.ANALYSIS_MODULE_ENABLED,
-                    onNewChat = {
-                        viewModel.startNewChat(title = newChatTitle, isAnalysisMode = false)
-                    },
-                    onAnalysis = {
-                        viewModel.startNewChat(title = analysisTitle, isAnalysisMode = true)
-                    },
-                    onMetodiTheory = {
-                        viewModel.startNewChat(title = metodiTheoryTitle, chatMode = ChatMode.METODI_TEORIA)
-                    },
-                    onMetodiCode = {
-                        viewModel.startNewChat(title = metodiCodeTitle, chatMode = ChatMode.METODI_CODICE)
+                    availableModes = SpecializedChatRegistry.homeModes(),
+                    onStartMode = { spec, title ->
+                        viewModel.startNewChat(title = title, modeId = spec.id)
                     },
                     onHistory = {
                         viewModel.navigateTo(Screen.History)
@@ -159,7 +148,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                     },
                     onBack = { viewModel.navigateTo(Screen.Home) }
                 )
-                Screen.Chat -> ChatScreen(
+                Screen.Chat, Screen.Analysis -> ChatScreen(
                     uiState = uiState,
                     modeLabel = chatModeLabel,
                     onSendMessage = { viewModel.sendMessage(it) },
@@ -172,20 +161,9 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                     onBack = { viewModel.navigateTo(Screen.Home) },
                     onConfirmTranscription = { viewModel.confirmTranscription() },
                     onCancelTranscription = { viewModel.cancelTranscription() },
-                    onUpdateTranscription = { viewModel.updateTranscription(it) }
-                )
-                Screen.Analysis -> AnalysisScreen(
-                    uiState = uiState,
-                    onSendMessage = { viewModel.sendMessage(it) },
-                    onStartRecording = { viewModel.startRecording() },
-                    onStopRecording = { viewModel.stopRecording() },
-                    onPlayAudio = { path -> viewModel.playAudio(path) },
-                    onIncreaseFontSize = { viewModel.increaseFontSize() },
-                    onDecreaseFontSize = { viewModel.decreaseFontSize() },
-                    onBack = { viewModel.navigateTo(Screen.Home) },
-                    onConfirmTranscription = { viewModel.confirmTranscription() },
-                    onCancelTranscription = { viewModel.cancelTranscription() },
-                    onUpdateTranscription = { viewModel.updateTranscription(it) }
+                    onUpdateTranscription = { viewModel.updateTranscription(it) },
+                    onRetryLastAction = { viewModel.retryLastAction() },
+                    onDismissRetry = { viewModel.dismissRetry() }
                 )
                 Screen.History -> HistoryScreen(
                     sessions = uiState.chatSessions,
@@ -215,11 +193,8 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
  */
 @Composable
 fun HomeScreen(
-    isAnalysisEnabled: Boolean,
-    onNewChat: () -> Unit,
-    onAnalysis: () -> Unit,
-    onMetodiTheory: () -> Unit,
-    onMetodiCode: () -> Unit,
+    availableModes: List<ChatModeSpec>,
+    onStartMode: (ChatModeSpec, String) -> Unit,
     onHistory: () -> Unit,
     onSettings: () -> Unit
 ) {
@@ -246,59 +221,28 @@ fun HomeScreen(
 
         item { Spacer(modifier = Modifier.height(12.dp)) }
 
-        item {
+        items(availableModes.size) { index ->
+            val modeSpec = availableModes[index]
+            val title = stringResource(modeSpec.titleRes)
             Button(
-                onClick = onNewChat,
-                modifier = Modifier.fillMaxWidth(0.85f)
-            ) {
-                Text(stringResource(R.string.new_chat))
-            }
-        }
-
-        item { Spacer(modifier = Modifier.height(8.dp)) }
-
-        item {
-            Button(
-                onClick = onMetodiTheory,
+                onClick = { onStartMode(modeSpec, title) },
                 modifier = Modifier.fillMaxWidth(0.85f),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.secondary
-                )
-            ) {
-                Text(stringResource(R.string.metodi_theory_mode), color = MaterialTheme.colors.onSecondary)
-            }
-        }
-
-        item { Spacer(modifier = Modifier.height(8.dp)) }
-
-        item {
-            Button(
-                onClick = onMetodiCode,
-                modifier = Modifier.fillMaxWidth(0.85f),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.surface
-                )
-            ) {
-                Text(stringResource(R.string.metodi_code_mode))
-            }
-        }
-
-        item { Spacer(modifier = Modifier.height(8.dp)) }
-
-        if (isAnalysisEnabled) {
-            item {
-                Button(
-                    onClick = onAnalysis,
-                    modifier = Modifier.fillMaxWidth(0.85f),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = MaterialTheme.colors.secondary
-                    )
-                ) {
-                    Text(stringResource(R.string.analysis_mode), color = MaterialTheme.colors.onSecondary)
+                colors = when {
+                    modeSpec.id == ChatModeIds.GENERAL -> ButtonDefaults.primaryButtonColors()
+                    index % 2 == 0 -> ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                    else -> ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.surface)
                 }
+            ) {
+                Text(
+                    text = title,
+                    color = if (index % 2 == 0 && modeSpec.id != ChatModeIds.GENERAL) {
+                        MaterialTheme.colors.onSecondary
+                    } else {
+                        MaterialTheme.colors.onSurface
+                    }
+                )
             }
-
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         item {
@@ -504,7 +448,9 @@ fun ChatScreen(
     onBack: () -> Unit,
     onConfirmTranscription: () -> Unit,
     onCancelTranscription: () -> Unit,
-    onUpdateTranscription: (String) -> Unit
+    onUpdateTranscription: (String) -> Unit,
+    onRetryLastAction: () -> Unit,
+    onDismissRetry: () -> Unit
 ) {
     val context = LocalContext.current
     var showTtsDialog by remember { mutableStateOf(false) }
@@ -619,20 +565,84 @@ fun ChatScreen(
             }
         }
 
+        uiState.networkWarningMessage?.let { warning ->
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = warning,
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.secondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+            }
+        }
+
         uiState.errorMessage?.let { error ->
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = error,
                     style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.error
+                    color = MaterialTheme.colors.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+            }
+        }
+
+        if (uiState.canRetryLastAction) {
+            item {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = uiState.retryMessage ?: stringResource(R.string.retry_question),
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+            }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.9f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onRetryLastAction,
+                        modifier = Modifier.weight(1f),
+                        enabled = !uiState.isLoading,
+                        colors = ButtonDefaults.primaryButtonColors()
+                    ) {
+                        Text(stringResource(R.string.retry), style = MaterialTheme.typography.caption1)
+                    }
+                    Button(
+                        onClick = onDismissRetry,
+                        modifier = Modifier.weight(1f),
+                        enabled = !uiState.isLoading,
+                        colors = ButtonDefaults.secondaryButtonColors()
+                    ) {
+                        Text(stringResource(R.string.dismiss_retry), style = MaterialTheme.typography.caption1)
+                    }
+                }
+            }
+        }
+
+        if (!uiState.isCurrentModeEnabled) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.mode_disabled_read_only),
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
             }
         }
 
         item {
             Spacer(modifier = Modifier.height(8.dp))
-            val writeMessage = stringResource(R.string.write_message)
+            val writeMessage = stringResource(SpecializedChatRegistry.get(uiState.chatModeId).inputHintRes)
             Row(
                 modifier = Modifier.fillMaxWidth(0.9f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -643,7 +653,7 @@ fun ChatScreen(
                         launcher.launch(intent)
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = !uiState.isLoading && !uiState.isRecording,
+                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading && !uiState.isRecording,
                     colors = ButtonDefaults.primaryButtonColors()
                 ) {
                     Text(stringResource(R.string.keyboard), style = MaterialTheme.typography.title2)
@@ -658,7 +668,7 @@ fun ChatScreen(
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = !uiState.isLoading,
+                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading,
                     colors = if (uiState.isRecording)
                         ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
                     else
@@ -1300,6 +1310,7 @@ fun HistoryScreen(
         } else {
             items(sessions.size) { index ->
                 val session = sessions[index]
+                val modeSpec = SpecializedChatRegistry.get(session.effectiveModeId())
                 val dateFormat = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
                 val dateStr = dateFormat.format(Date(session.timestamp))
 
@@ -1327,11 +1338,11 @@ fun HistoryScreen(
                         },
                         modifier = Modifier.weight(1f),
                         secondaryLabel = {
-                            when (session.effectiveMode()) {
-                                ChatMode.ANALYSIS -> Text(stringResource(R.string.analysis), style = MaterialTheme.typography.caption3)
-                                ChatMode.METODI_TEORIA -> Text(stringResource(R.string.metodi_theory_short), style = MaterialTheme.typography.caption3)
-                                ChatMode.METODI_CODICE -> Text(stringResource(R.string.metodi_code_short), style = MaterialTheme.typography.caption3)
-                                ChatMode.GENERAL -> Unit
+                            if (modeSpec.isSpecialized) {
+                                Text(
+                                    stringResource(modeSpec.historyLabelRes),
+                                    style = MaterialTheme.typography.caption3
+                                )
                             }
                         }
                     )
