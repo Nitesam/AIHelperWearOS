@@ -167,6 +167,16 @@ class AudioRecordingService : Service() {
     }
 
     /**
+     * Creates a recent-audio snapshot for smart stop-word detection.
+     *
+     * @param maxDurationMillis maximum snapshot duration.
+     * @return temporary WAV snapshot or `null`.
+     */
+    fun createRecentRecordingSnapshot(maxDurationMillis: Long): File? {
+        return audioRecorder?.createRecentSnapshot(maxDurationMillis)
+    }
+
+    /**
      * Builds the foreground notification for audio recording.
      *
      * @return `Notification` used for foreground service.

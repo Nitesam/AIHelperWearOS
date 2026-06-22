@@ -20,6 +20,7 @@ class AudioRecorder(private val context: Context) {
     private var audioFile: File? = null
     private var isRecording = false
     private var recordingThread: Thread? = null
+    @Volatile private var totalBytesWritten = 0L
 
     private val sampleRate = 96000
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
@@ -55,6 +56,7 @@ class AudioRecorder(private val context: Context) {
 
             audioRecord?.startRecording()
             isRecording = true
+            totalBytesWritten = 0L
 
             recordingThread = Thread {
                 writeAudioDataToFile()
@@ -129,6 +131,7 @@ class AudioRecorder(private val context: Context) {
                 if (bytesRead > 0) {
                     outputStream.write(data, 0, bytesRead)
                     totalBytesWritten += bytesRead
+                    this.totalBytesWritten = totalBytesWritten
                 }
             }
 
@@ -252,6 +255,52 @@ class AudioRecorder(private val context: Context) {
     }
 
     /**
+     * Creates a temporary WAV containing the latest recording audio window.
+     *
+     * @param maxDurationMillis maximum duration to copy from the tail of the active recording.
+     * @return snapshot WAV file, or `null` when there is not enough audio yet.
+     */
+    fun createRecentSnapshot(maxDurationMillis: Long): File? {
+        val sourceFile = audioFile ?: return null
+        val pcmBytesAvailable = totalBytesWritten
+        val bytesPerSecond = sampleRate * 1 * 16 / 8
+        val minBytes = bytesPerSecond
+        if (!isRecording || !sourceFile.exists() || pcmBytesAvailable < minBytes) {
+            return null
+        }
+
+        return try {
+            val maxBytes = (bytesPerSecond * maxDurationMillis / 1000L)
+                .coerceAtLeast(minBytes.toLong())
+            val bytesToCopy = pcmBytesAvailable.coerceAtMost(maxBytes)
+            val startOffset = 44L + (pcmBytesAvailable - bytesToCopy)
+            val pcmData = ByteArray(bytesToCopy.toInt())
+
+            java.io.RandomAccessFile(sourceFile, "r").use { raf ->
+                if (raf.length() < startOffset + bytesToCopy) {
+                    return null
+                }
+                raf.seek(startOffset)
+                raf.readFully(pcmData)
+            }
+
+            val snapshotDir = File(context.cacheDir, "audio_stop_detection")
+            if (!snapshotDir.exists()) {
+                snapshotDir.mkdirs()
+            }
+            val snapshot = File(snapshotDir, "stop_${System.currentTimeMillis()}.wav")
+            FileOutputStream(snapshot).use { output ->
+                writeWavHeader(output, pcmData.size.toLong(), sampleRate, 1, 16)
+                output.write(pcmData)
+            }
+            snapshot
+        } catch (e: Exception) {
+            Log.w("AudioRecorder", "Unable to create recent recording snapshot", e)
+            null
+        }
+    }
+
+    /**
      * Removes the temporary audio file and resets internal state.
      *
      * @return `Unit` after cleanup.
@@ -259,6 +308,7 @@ class AudioRecorder(private val context: Context) {
     private fun cleanup() {
         audioFile?.delete()
         audioFile = null
+        totalBytesWritten = 0L
     }
 
     /**

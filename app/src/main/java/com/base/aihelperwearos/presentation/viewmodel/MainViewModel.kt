@@ -36,9 +36,11 @@ import com.base.aihelperwearos.presentation.utils.TextToSpeechHelper
 import com.base.aihelperwearos.presentation.services.AudioRecordingService
 import com.base.aihelperwearos.utils.getCurrentLanguageCode
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.Locale
@@ -73,6 +75,9 @@ private sealed class PendingRetryAction {
     data class AudioTranscription(val audioPath: String) : PendingRetryAction()
 }
 
+private const val SMART_STOP_INTERVAL_MS = 6000L
+private const val SMART_STOP_SNAPSHOT_MS = 6500L
+
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
     val selectedModel: String = "openai/gpt-5.5",
@@ -90,6 +95,7 @@ data class ChatUiState(
     val selectedLanguage: Language = Language.ITALIAN,
     val recordedAudioFile: File? = null,
     val isRecording: Boolean = false,
+    val isSmartRecording: Boolean = false,
     val extractedKeywords: List<String>? = null,
     val isTheoryQuery: Boolean? = null,
     val networkWarningMessage: String? = null,
@@ -274,6 +280,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var recordingService: AudioRecordingService? = null
     private var serviceBound = false
     private var recordingResultDeferred: CompletableDeferred<Result<File>>? = null
+    private var messageObservationJob: Job? = null
+    private var smartStopDetectionJob: Job? = null
+    private var isStoppingRecording = false
 
     private val serviceConnection = object : ServiceConnection {
         /**
@@ -315,6 +324,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         loadUserPreferences()
         loadModelPreference()
+        restoreResumeSession()
     }
 
     private fun loadModelPreference() {
@@ -418,15 +428,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if ((currentScreen == Screen.Chat || currentScreen == Screen.Analysis) && 
             destination == Screen.Home) {
             cleanupEmptySession()
+            stopObservingMessages()
+            cancelSmartStopDetection()
             val action = pendingRetryAction
             if (action is PendingRetryAction.AudioTranscription) {
                 deleteFileQuietly(action.audioPath)
             }
             pendingRetryAction = null
+            clearResumeSession()
         }
         _uiState.update {
             it.copy(
                 currentScreen = destination,
+                currentSessionId = if (destination == Screen.Home) null else it.currentSessionId,
+                chatMessages = if (destination == Screen.Home) emptyList() else it.chatMessages,
+                isSmartRecording = if (destination == Screen.Home) false else it.isSmartRecording,
                 errorMessage = null,
                 networkWarningMessage = null,
                 canRetryLastAction = false,
@@ -502,6 +518,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val newScreen = screenForMode(modeSpec.id)
                 android.util.Log.d("MainViewModel", "Navigating to: $newScreen")
 
+                stopObservingMessages()
                 _uiState.update {
                     it.copy(
                         currentSessionId = sessionId,
@@ -515,6 +532,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 android.util.Log.d("MainViewModel", "State updated - currentScreen: ${_uiState.value.currentScreen}")
 
+                saveResumeSession(sessionId)
                 observeMessages(sessionId)
 
             } catch (e: Exception) {
@@ -535,28 +553,70 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun loadSession(sessionId: Long) {
         viewModelScope.launch {
-            try {
-                val session = chatRepository.getSession(sessionId)
-                if (session != null) {
-                    val modeId = session.effectiveModeId()
-                    val modeSpec = SpecializedChatRegistry.get(modeId)
-                    _uiState.update {
-                        it.copy(
-                            currentSessionId = sessionId,
-                            selectedModel = session.modelId,
-                            isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
-                            chatModeId = modeSpec.id,
-                            isCurrentModeEnabled = modeSpec.enabled,
-                            currentScreen = screenForMode(modeSpec.id)
-                        )
-                    }
-                    observeMessages(sessionId)
-                }
-            } catch (e: Exception) {
+            loadSessionInternal(sessionId, keepForResume = true)
+        }
+    }
+
+    private suspend fun loadSessionInternal(sessionId: Long, keepForResume: Boolean): Boolean {
+        return try {
+            val session = chatRepository.getSession(sessionId)
+            if (session != null) {
+                val modeId = session.effectiveModeId()
+                val modeSpec = SpecializedChatRegistry.get(modeId)
+                stopObservingMessages()
                 _uiState.update {
-                    it.copy(errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message))
+                    it.copy(
+                        currentSessionId = sessionId,
+                        selectedModel = session.modelId,
+                        isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
+                        chatModeId = modeSpec.id,
+                        isCurrentModeEnabled = modeSpec.enabled,
+                        currentScreen = screenForMode(modeSpec.id)
+                    )
                 }
+                if (keepForResume) {
+                    saveResumeSession(sessionId)
+                }
+                observeMessages(sessionId)
+                true
+            } else {
+                stopObservingMessages()
+                clearResumeSession()
+                false
             }
+        } catch (e: Exception) {
+            _uiState.update {
+                it.copy(errorMessage = getApplication<Application>().getString(R.string.error_generic, e.message))
+            }
+            false
+        }
+    }
+
+    private fun restoreResumeSession() {
+        viewModelScope.launch {
+            val sessionId = userPreferences.getResumeSessionId() ?: return@launch
+            val restored = loadSessionInternal(sessionId, keepForResume = false)
+            if (!restored) {
+                clearResumeSession()
+            }
+        }
+    }
+
+    private fun saveResumeSession(sessionId: Long) {
+        viewModelScope.launch {
+            userPreferences.setResumeSession(sessionId)
+        }
+    }
+
+    private fun clearResumeSession() {
+        viewModelScope.launch {
+            userPreferences.clearResumeSession()
+        }
+    }
+
+    fun clearResumeSessionBlocking() {
+        runBlocking {
+            userPreferences.clearResumeSession()
         }
     }
 
@@ -567,10 +627,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * @return `Unit` after launching collection.
      */
     private fun observeMessages(sessionId: Long) {
-        viewModelScope.launch {
+        messageObservationJob?.cancel()
+        messageObservationJob = viewModelScope.launch {
             chatRepository.getMessagesForSession(sessionId).collect { messages ->
-                _uiState.update { it.copy(chatMessages = messages) }
+                _uiState.update { state ->
+                    if (state.currentSessionId == sessionId) {
+                        state.copy(chatMessages = messages)
+                    } else {
+                        state
+                    }
+                }
             }
+        }
+    }
+
+    private fun stopObservingMessages() {
+        messageObservationJob?.cancel()
+        messageObservationJob = null
+    }
+
+    private fun isActiveSession(sessionId: Long): Boolean {
+        return _uiState.value.currentSessionId == sessionId
+    }
+
+    private fun updateActiveSession(
+        sessionId: Long,
+        transform: (ChatUiState) -> ChatUiState
+    ) {
+        _uiState.update { state ->
+            if (state.currentSessionId == sessionId) transform(state) else state
         }
     }
 
@@ -606,9 +691,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             var messageSaved = false
             try {
+                if (!isActiveSession(sessionId)) return@launch
                 android.util.Log.d("MainViewModel", "sendMessage - Inizio elaborazione")
                 pendingRetryAction = null
-                _uiState.update {
+                updateActiveSession(sessionId) {
                     it.copy(
                         isLoading = true,
                         errorMessage = null,
@@ -637,12 +723,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "sendMessage - EXCEPTION: ${e.message}", e)
                 if (messageSaved) {
-                    setRetryableFailure(
-                        message = appString(R.string.error_generic, e.message ?: "errore sconosciuto"),
-                        action = PendingRetryAction.ChatResponse(sessionId)
-                    )
+                    if (isActiveSession(sessionId)) {
+                        setRetryableFailure(
+                            message = appString(R.string.error_generic, e.message ?: "errore sconosciuto"),
+                            action = PendingRetryAction.ChatResponse(sessionId)
+                        )
+                    }
                 } else {
-                    _uiState.update {
+                    updateActiveSession(sessionId) {
                         it.copy(
                             isLoading = false,
                             errorMessage = appString(R.string.error_generic, e.message ?: "errore sconosciuto")
@@ -658,14 +746,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val networkSnapshot = getNetworkSnapshot(NetworkUse.Chat)
         val warning = networkWarning(networkSnapshot)
         if (!networkSnapshot.isAvailable) {
-            setRetryableFailure(
-                message = warning ?: appString(R.string.network_unavailable),
-                action = retryAction
-            )
+            if (isActiveSession(sessionId)) {
+                setRetryableFailure(
+                    message = warning ?: appString(R.string.network_unavailable),
+                    action = retryAction
+                )
+            }
             return
         }
 
-        _uiState.update {
+        updateActiveSession(sessionId) {
             it.copy(
                 isLoading = true,
                 errorMessage = null,
@@ -703,7 +793,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     result?.context
                 }.joinToString("\n\n").ifBlank { null }
-                
+
                 android.util.Log.d("MainViewModel", "sendMessage - Chiamata API in corso, modello: ${_uiState.value.selectedModel}, lingua: $currentLanguage")
 
                 val result = openRouterService.sendMessage(
@@ -724,7 +814,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             role = "assistant",
                             content = response
                         )
-                        _uiState.update { 
+                        updateActiveSession(sessionId) {
                             it.copy(
                                 isLoading = false,
                                 extractedKeywords = null,
@@ -734,18 +824,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 retryMessage = null
                             ) 
                         }
-                        pendingRetryAction = null
+                        if (isActiveSession(sessionId)) {
+                            pendingRetryAction = null
+                        }
                         android.util.Log.d("MainViewModel", "sendMessage - risposta salvata, keywords cleared")
                     },
                     onFailure = { error ->
                         android.util.Log.e("MainViewModel", "sendMessage - ERRORE API: ${error.message}", error)
-                        setRetryableFailure(apiFailureMessage(error), retryAction)
+                        if (isActiveSession(sessionId)) {
+                            setRetryableFailure(apiFailureMessage(error), retryAction)
+                        }
                     }
                 )
 
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "sendMessage - EXCEPTION: ${e.message}", e)
-                setRetryableFailure(apiFailureMessage(e), retryAction)
+                if (isActiveSession(sessionId)) {
+                    setRetryableFailure(apiFailureMessage(e), retryAction)
+                }
             }
     }
 
@@ -760,21 +856,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             viewModelScope.launch {
                 delay(300)
-                startRecordingInternal()
+                startRecordingInternal(smartStopEnabled = false)
             }
         } else {
-            startRecordingInternal()
+            startRecordingInternal(smartStopEnabled = false)
+        }
+    }
+
+    /**
+     * Starts audio recording with automatic stop-word detection.
+     *
+     * @return `Unit` after initiating smart recording.
+     */
+    fun startSmartRecording() {
+        if (!serviceBound) {
+            bindService()
+
+            viewModelScope.launch {
+                delay(300)
+                startRecordingInternal(smartStopEnabled = true)
+            }
+        } else {
+            startRecordingInternal(smartStopEnabled = true)
         }
     }
 
     /**
      * Performs the actual recording start once the service is bound.
      *
+     * @param smartStopEnabled whether to detect "FINE" while recording.
      * @return `Unit` after requesting recording start.
      */
-    private fun startRecordingInternal() {
+    private fun startRecordingInternal(smartStopEnabled: Boolean) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isRecording = true) }
+            if (_uiState.value.isRecording) return@launch
+            cancelSmartStopDetection()
+            isStoppingRecording = false
+            _uiState.update { it.copy(isRecording = true, isSmartRecording = smartStopEnabled) }
             recordingResultDeferred = CompletableDeferred()
             recordingService?.startRecording { result ->
                 val deferred = recordingResultDeferred
@@ -782,7 +900,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     deferred.complete(result)
                 }
             }
+            if (smartStopEnabled) {
+                startSmartStopDetection()
+            }
         }
+    }
+
+    private fun startSmartStopDetection() {
+        smartStopDetectionJob?.cancel()
+        smartStopDetectionJob = viewModelScope.launch {
+            delay(SMART_STOP_INTERVAL_MS)
+            while (_uiState.value.isRecording && _uiState.value.isSmartRecording) {
+                val snapshot = recordingService?.createRecentRecordingSnapshot(SMART_STOP_SNAPSHOT_MS)
+                if (snapshot != null) {
+                    try {
+                        val detected = openRouterService.detectStopCommandInAudio(
+                            audioFile = snapshot,
+                            languageCode = _uiState.value.selectedLanguage.code
+                        ).getOrDefault(false)
+                        if (detected && _uiState.value.isRecording && _uiState.value.isSmartRecording) {
+                            android.util.Log.d("MainViewModel", "Smart stop command detected")
+                            stopRecording(autoSendAfterTranscription = true)
+                            return@launch
+                        }
+                    } finally {
+                        deleteFileQuietly(snapshot.absolutePath)
+                    }
+                }
+                delay(SMART_STOP_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun cancelSmartStopDetection() {
+        smartStopDetectionJob?.cancel()
+        smartStopDetectionJob = null
     }
 
     /**
@@ -790,7 +942,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      *
      * @return `Unit` after initiating stop workflow.
      */
-    fun stopRecording() {
+    fun stopRecording(autoSendAfterTranscription: Boolean = false) {
+        if (isStoppingRecording) return
+        isStoppingRecording = true
+        cancelSmartStopDetection()
         viewModelScope.launch {
             val stopResultDeferred = recordingResultDeferred
             recordingService?.stopRecording()
@@ -805,17 +960,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     "MainViewModel",
                     "Using recorder callback file: ${recordedFile.absolutePath}, size=${recordedFile.length()}"
                 )
-                _uiState.update { it.copy(isRecording = false) }
+                _uiState.update { it.copy(isRecording = false, isSmartRecording = false) }
                 recordingResultDeferred = null
-                sendAudioMessage(recordedFile)
+                isStoppingRecording = false
+                sendAudioMessage(recordedFile, autoSendAfterTranscription = autoSendAfterTranscription)
             } else {
                 val errorMessage = stopResult?.exceptionOrNull()?.message ?: "File audio non trovato"
                 android.util.Log.e("MainViewModel", "Audio file not available from recorder callback: $errorMessage")
                 recordingResultDeferred = null
                 _uiState.update { it.copy(
                     isRecording = false,
+                    isSmartRecording = false,
                     errorMessage = getApplication<Application>().getString(R.string.error_generic, errorMessage)
                 )}
+                isStoppingRecording = false
             }
         }
     }
@@ -824,9 +982,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Sends an audio file for transcription and updates UI state.
      *
      * @param audioFile audio file to process.
+     * @param autoSendAfterTranscription whether to send transcription directly to the chat model.
      * @return `Unit` after launching transcription flow.
      */
-    fun sendAudioMessage(audioFile: File) {
+    fun sendAudioMessage(
+        audioFile: File,
+        autoSendAfterTranscription: Boolean = false
+    ) {
         android.util.Log.d("MainViewModel", "sendAudioMessage - CHIAMATO: ${audioFile.absolutePath}")
 
         val sessionId = _uiState.value.currentSessionId
@@ -840,9 +1002,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             try {
+                if (!isActiveSession(sessionId)) return@launch
                 android.util.Log.d("MainViewModel", "sendAudioMessage - Inizio elaborazione")
                 pendingRetryAction = null
-                _uiState.update {
+                updateActiveSession(sessionId) {
                     it.copy(
                         isLoading = true,
                         errorMessage = null,
@@ -870,14 +1033,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val networkSnapshot = getNetworkSnapshot(NetworkUse.AudioUpload)
                 val warning = networkWarning(networkSnapshot)
                 if (!networkSnapshot.isAvailable) {
-                    setRetryableFailure(
-                        message = warning ?: appString(R.string.network_unavailable),
-                        action = retryAction
-                    )
+                    if (isActiveSession(sessionId)) {
+                        setRetryableFailure(
+                            message = warning ?: appString(R.string.network_unavailable),
+                            action = retryAction
+                        )
+                    }
                     return@launch
                 }
 
-                _uiState.update { it.copy(networkWarningMessage = warning) }
+                updateActiveSession(sessionId) { it.copy(networkWarningMessage = warning) }
 
                 android.util.Log.d("MainViewModel", "sendAudioMessage - cloud transcription, language: $currentLanguage, modeId: ${modeSpec.id}")
                 android.util.Log.d("MainViewModel", "Starting transcription request")
@@ -899,38 +1064,78 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         
                         android.util.Log.d("MainViewModel", "Storing transcription result in UI state")
 
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                pendingTranscription = result.displayText,
-                                pendingAudioPath = audioPath,
-                                extractedKeywords = result.keywords,
-                                isTheoryQuery = result.isTheoryQuery,
-                                errorMessage = null,
-                                networkWarningMessage = null,
-                                canRetryLastAction = false,
-                                retryMessage = null
-                            )
+                        if (autoSendAfterTranscription) {
+                            val messageText = stripSmartStopCommand(result.displayText)
+                            if (messageText.isBlank()) {
+                                updateActiveSession(sessionId) {
+                                    it.copy(
+                                        isLoading = false,
+                                        errorMessage = getApplication<Application>().getString(R.string.error_empty_text),
+                                        networkWarningMessage = null
+                                    )
+                                }
+                            } else {
+                                updateActiveSession(sessionId) {
+                                    it.copy(
+                                        isLoading = false,
+                                        pendingTranscription = null,
+                                        pendingAudioPath = null,
+                                        extractedKeywords = result.keywords,
+                                        isTheoryQuery = result.isTheoryQuery,
+                                        errorMessage = null,
+                                        networkWarningMessage = null,
+                                        canRetryLastAction = false,
+                                        retryMessage = null
+                                    )
+                                }
+                                sendMessage(messageText, audioPath)
+                            }
+                        } else {
+                            updateActiveSession(sessionId) {
+                                it.copy(
+                                    isLoading = false,
+                                    pendingTranscription = result.displayText,
+                                    pendingAudioPath = audioPath,
+                                    extractedKeywords = result.keywords,
+                                    isTheoryQuery = result.isTheoryQuery,
+                                    errorMessage = null,
+                                    networkWarningMessage = null,
+                                    canRetryLastAction = false,
+                                    retryMessage = null
+                                )
+                            }
                         }
-                        pendingRetryAction = null
+                        if (isActiveSession(sessionId)) {
+                            pendingRetryAction = null
+                        }
                         
                         android.util.Log.d("MainViewModel", "UI state updated with transcription and keywords")
                     },
                     onFailure = { error ->
                         android.util.Log.e("MainViewModel", "sendAudioMessage - ERROR API: ${error.message}", error)
-                        setRetryableFailure(transcriptionFailureMessage(error), retryAction)
+                        if (isActiveSession(sessionId)) {
+                            setRetryableFailure(transcriptionFailureMessage(error), retryAction)
+                        }
                     }
                 )
 
 
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "sendAudioMessage - EXCEPTION: ${e.message}", e)
-                setRetryableFailure(
-                    message = transcriptionFailureMessage(e),
-                    action = PendingRetryAction.AudioTranscription(audioFile.absolutePath)
-                )
+                if (isActiveSession(sessionId)) {
+                    setRetryableFailure(
+                        message = transcriptionFailureMessage(e),
+                        action = PendingRetryAction.AudioTranscription(audioFile.absolutePath)
+                    )
+                }
             }
         }
+    }
+
+    private fun stripSmartStopCommand(text: String): String {
+        return text
+            .replace(Regex("(?i)(^|[\\s,.;:!?]+)\\bfine\\b[\\s,.;:!?]*$"), "")
+            .trim()
     }
 
     /**
@@ -1242,6 +1447,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     override fun onCleared() {
         super.onCleared()
+        stopObservingMessages()
+        cancelSmartStopDetection()
         ttsHelper.release()
         audioPlayer.release()
         openRouterService.close()

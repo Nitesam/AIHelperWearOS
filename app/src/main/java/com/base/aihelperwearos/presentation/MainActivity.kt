@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -21,7 +22,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
 import com.base.aihelperwearos.R
 import com.base.aihelperwearos.data.models.ChatModeIds
@@ -38,6 +38,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : ComponentActivity() {
+    private val mainViewModel: MainViewModel by viewModels()
 
     /**
      * Initializes the activity and sets the Compose content tree.
@@ -49,14 +50,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val viewModel: MainViewModel = viewModel()
-
             LaunchedEffect(Unit) {
-                viewModel.bindService()
+                mainViewModel.bindService()
             }
 
-            WearApp(viewModel, this)
+            WearApp(mainViewModel, this)
         }
+    }
+
+    override fun onDestroy() {
+        if (isFinishing && !isChangingConfigurations) {
+            mainViewModel.clearResumeSessionBlocking()
+        }
+        super.onDestroy()
     }
 }
 
@@ -153,6 +159,7 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                     modeLabel = chatModeLabel,
                     onSendMessage = { viewModel.sendMessage(it) },
                     onStartRecording = { viewModel.startRecording() },
+                    onStartSmartRecording = { viewModel.startSmartRecording() },
                     onStopRecording = { viewModel.stopRecording() },
                     onSynthesizeLocally = { text -> viewModel.synthesizeTextLocally(text) },
                     onPlayAudio = { path -> viewModel.playAudio(path) },
@@ -316,8 +323,8 @@ fun SettingsScreen(
     var exportMessage by remember { mutableStateOf<String?>(null) }
 
     val models = listOf(
-        "google/gemini-3-pro-preview" to stringResource(R.string.model_gemini_pro),
-        "anthropic/claude-sonnet-4.5" to stringResource(R.string.model_claude_sonnet),
+        "google/gemini-3.1-pro-preview" to stringResource(R.string.model_gemini_pro),
+        "anthropic/claude-sonnet-4.6" to stringResource(R.string.model_claude_sonnet),
         "openai/gpt-5.5" to stringResource(R.string.model_gpt5)
     )
 
@@ -447,6 +454,7 @@ fun SettingsScreen(
  * @param uiState current chat UI state.
  * @param onSendMessage callback to send text messages.
  * @param onStartRecording callback to begin audio recording.
+ * @param onStartSmartRecording callback to begin audio recording with stop-word detection.
  * @param onStopRecording callback to stop audio recording.
  * @param onSynthesizeLocally callback to synthesize speech locally.
  * @param onPlayAudio callback to play an audio message.
@@ -464,6 +472,7 @@ fun ChatScreen(
     modeLabel: String? = null,
     onSendMessage: (String) -> Unit,
     onStartRecording: () -> Unit,
+    onStartSmartRecording: () -> Unit,
     onStopRecording: () -> Unit,
     onSynthesizeLocally: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
@@ -479,6 +488,7 @@ fun ChatScreen(
     val context = LocalContext.current
     var showTtsDialog by remember { mutableStateOf(false) }
     var pendingText by remember { mutableStateOf("") }
+    var startSmartAfterPermission by remember { mutableStateOf(false) }
     
     val listState = rememberScalingLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -506,7 +516,11 @@ fun ChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            onStartRecording()
+            if (startSmartAfterPermission) {
+                onStartSmartRecording()
+            } else {
+                onStartRecording()
+            }
         } else {
             android.util.Log.e("ChatScreen", microphonePermissionDenied)
         }
@@ -673,33 +687,51 @@ fun ChatScreen(
             ) {
                 Button(
                     onClick = {
-                        val intent = RemoteInputHelper.createRemoteInputIntent(writeMessage)
-                        launcher.launch(intent)
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading && !uiState.isRecording,
-                    colors = ButtonDefaults.primaryButtonColors()
-                ) {
-                    Text(stringResource(R.string.keyboard), style = MaterialTheme.typography.title2)
-                }
-
-                Button(
-                    onClick = {
-                        if (uiState.isRecording) {
+                        if (uiState.isRecording && uiState.isSmartRecording) {
                             onStopRecording()
                         } else {
+                            startSmartAfterPermission = true
                             audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading,
-                    colors = if (uiState.isRecording)
+                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading &&
+                        (!uiState.isRecording || uiState.isSmartRecording),
+                    colors = ButtonDefaults.primaryButtonColors()
+                ) {
+                    Text(
+                        if (uiState.isRecording && uiState.isSmartRecording) {
+                            stringResource(R.string.recording_stop)
+                        } else {
+                            "🎙"
+                        },
+                        style = MaterialTheme.typography.title2
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (uiState.isRecording && !uiState.isSmartRecording) {
+                            onStopRecording()
+                        } else {
+                            startSmartAfterPermission = false
+                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading &&
+                        (!uiState.isRecording || !uiState.isSmartRecording),
+                    colors = if (uiState.isRecording && !uiState.isSmartRecording)
                         ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
                     else
                         ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
                 ) {
                     Text(
-                        if (uiState.isRecording) stringResource(R.string.recording_stop) else stringResource(R.string.recording_start),
+                        if (uiState.isRecording && !uiState.isSmartRecording) {
+                            stringResource(R.string.recording_stop)
+                        } else {
+                            stringResource(R.string.recording_start)
+                        },
                         style = MaterialTheme.typography.title2
                     )
                 }
@@ -821,7 +853,9 @@ fun ChatScreen(
             Button(
                 onClick = onBack,
                 colors = ButtonDefaults.secondaryButtonColors(),
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier
+                    .offset(x = 5.dp)
+                    .size(36.dp)
             ) {
                 Text(stringResource(R.string.back_arrow), style = MaterialTheme.typography.caption1)
             }
@@ -1111,7 +1145,9 @@ fun AnalysisScreen(
             Button(
                 onClick = onBack,
                 colors = ButtonDefaults.secondaryButtonColors(),
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier
+                    .offset(x = 5.dp)
+                    .size(36.dp)
             ) {
                 Text(stringResource(R.string.back_arrow), style = MaterialTheme.typography.caption1)
             }

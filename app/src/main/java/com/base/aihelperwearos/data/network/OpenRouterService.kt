@@ -370,6 +370,76 @@ class OpenRouterService(
     }
 
     /**
+     * Checks a short audio snapshot for the spoken stop command "FINE".
+     *
+     * @param audioFile short WAV snapshot.
+     * @param languageCode language code used to phrase the detector prompt.
+     * @return `true` when the stop command is detected.
+     */
+    suspend fun detectStopCommandInAudio(
+        audioFile: File,
+        languageCode: String
+    ): Result<Boolean> {
+        return try {
+            if (!audioFile.exists() || audioFile.length() == 0L) {
+                return Result.success(false)
+            }
+
+            val audioBase64 = Base64.encodeToString(audioFile.readBytes(), Base64.NO_WRAP)
+            val prompt = if (languageCode == "en") {
+                """
+                    Listen only for the Italian stop command "FINE".
+                    Reply exactly FINE if the speaker clearly says "fine" as a stop command, usually isolated or at the end.
+                    Otherwise reply exactly NO.
+                """.trimIndent()
+            } else {
+                """
+                    Ascolta solo se viene pronunciato il comando di stop "FINE".
+                    Rispondi esattamente FINE se la persona dice chiaramente "fine" come comando di stop, di solito isolato o alla fine.
+                    Altrimenti rispondi esattamente NO.
+                """.trimIndent()
+            }
+
+            val requestBody = buildJsonObject {
+                put("model", TRANSCRIPTION_MODEL)
+                put("temperature", 0.0)
+                put("max_tokens", 5)
+                put("messages", buildJsonArray {
+                    add(buildJsonObject {
+                        put("role", "user")
+                        put("content", buildJsonArray {
+                            add(buildJsonObject {
+                                put("type", "text")
+                                put("text", prompt)
+                            })
+                            add(buildJsonObject {
+                                put("type", "input_audio")
+                                put("input_audio", buildJsonObject {
+                                    put("data", audioBase64)
+                                    put("format", "wav")
+                                })
+                            })
+                        })
+                    })
+                })
+            }
+
+            val response: String = client.post("chat/completions") {
+                setBody(requestBody)
+            }.body()
+            val jsonResponse = Json.parseToJsonElement(response) as kotlinx.serialization.json.JsonObject
+            val choices = jsonResponse["choices"] as? kotlinx.serialization.json.JsonArray
+            val choice = choices?.firstOrNull() as? kotlinx.serialization.json.JsonObject
+            val message = choice?.get("message") as? kotlinx.serialization.json.JsonObject
+            val rawText = (message?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+            Result.success(rawText.trim().contains("FINE", ignoreCase = true))
+        } catch (e: Exception) {
+            Log.w("OpenRouter", "Stop-command detection failed", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Sends a math problem to the model and returns the solution text.
      *
      * @param problem problem statement text.

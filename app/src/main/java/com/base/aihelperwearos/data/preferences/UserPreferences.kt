@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,8 @@ class UserPreferences(private val context: Context) {
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
         private val MODEL_KEY = stringPreferencesKey("selected_model")
+        private val RESUME_SESSION_ID_KEY = longPreferencesKey("resume_session_id")
+        private val RESUME_SESSION_UPDATED_AT_KEY = longPreferencesKey("resume_session_updated_at")
         private const val DEFAULT_MODEL = "openai/gpt-5.5"
         private const val LEGACY_GPT_MODEL = "openai/gpt-5.2"
     }
@@ -30,6 +33,26 @@ class UserPreferences(private val context: Context) {
     suspend fun setModel(modelId: String) {
         context.dataStore.edit { preferences ->
             preferences[MODEL_KEY] = modelId
+        }
+    }
+
+    suspend fun setResumeSession(sessionId: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[RESUME_SESSION_ID_KEY] = sessionId
+            preferences[RESUME_SESSION_UPDATED_AT_KEY] = System.currentTimeMillis()
+        }
+    }
+
+    suspend fun getResumeSessionId(): Long? {
+        return context.dataStore.data.map { preferences ->
+            preferences[RESUME_SESSION_ID_KEY]
+        }.first()
+    }
+
+    suspend fun clearResumeSession() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(RESUME_SESSION_ID_KEY)
+            preferences.remove(RESUME_SESSION_UPDATED_AT_KEY)
         }
     }
 
