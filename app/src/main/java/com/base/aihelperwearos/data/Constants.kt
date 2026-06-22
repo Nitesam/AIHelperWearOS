@@ -319,7 +319,7 @@ object Constants {
                 Metodi Matematici e Statistici, Python.
                 Solve dictated exercises with Python code in the professor's style.
                 The target environment is Jupyter Notebook, not a standalone Python script.
-                Structure the solution as notebook-style cells separated by short comments like "# Dati", "# Calcoli", "# Grafico", "# Risultati".
+                Structure the solution as a single clean notebook-style code cell.
                 Do not write CLI code, input(), argparse, file prompts, or `if __name__ == "__main__"`.
                 Prefer simple notebook-style code cells, explicit variables, and display/print of final numerical results.
                 Use plotting only through `import matplotlib.pyplot as plt` and direct `plt.*` calls.
@@ -332,8 +332,9 @@ object Constants {
                 Use `scipy.stats` only when a distribution quantile/pdf/cdf is explicitly needed and simpler formulas are not practical.
                 Output only raw executable Python code.
                 Do not write explanations, introductions, conclusions, plans, Markdown fences, or text outside the code.
-                Keep comments short and useful.
-                If data are missing, create clearly named placeholders and use short code comments to mark what the user must replace.
+                Do not write Python comments. Never use lines starting with "#".
+                Avoid explanatory strings such as display("we reject H0") unless the exercise explicitly requires a textual output.
+                If data are missing, create clearly named placeholder variables.
                 Do not use theory PDF excerpts in this mode.
             """.trimIndent()
         } else {
@@ -341,7 +342,7 @@ object Constants {
                 Metodi Matematici e Statistici, Python.
                 Risolvi gli esercizi dettati con codice Python nello stile del docente.
                 L'ambiente di destinazione è Jupyter Notebook, non uno script Python standalone.
-                Struttura la soluzione come celle notebook separate da brevi commenti tipo "# Dati", "# Calcoli", "# Grafico", "# Risultati".
+                Struttura la soluzione come un'unica cella notebook pulita.
                 Non scrivere codice CLI, input(), argparse, richieste interattive da terminale o `if __name__ == "__main__"`.
                 Preferisci celle stile notebook, variabili esplicite, e display/print dei risultati numerici finali.
                 Per i grafici usa solo `import matplotlib.pyplot as plt` e chiamate dirette `plt.*`.
@@ -354,8 +355,9 @@ object Constants {
                 Usa `scipy.stats` solo quando servono esplicitamente quantili/pdf/cdf di distribuzioni e le formule semplici non sono pratiche.
                 Restituisci solo codice Python grezzo eseguibile.
                 Non scrivere spiegazioni, introduzioni, conclusioni, piani, blocchi Markdown o testo fuori dal codice.
-                Tieni i commenti brevi e utili.
-                Se mancano dati, crea placeholder con nomi chiari e usa solo brevi commenti nel codice per indicare cosa sostituire.
+                Non scrivere commenti Python. Non usare mai righe che iniziano con "#".
+                Evita stringhe esplicative tipo display("si rigetta H0") salvo richiesta esplicita di output testuale.
+                Se mancano dati, crea variabili placeholder con nomi chiari.
                 Non usare estratti del PDF di teoria in questa modalità.
             """.trimIndent()
         }

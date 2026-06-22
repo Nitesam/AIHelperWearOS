@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -157,18 +158,14 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                 Screen.Chat, Screen.Analysis -> ChatScreen(
                     uiState = uiState,
                     modeLabel = chatModeLabel,
-                    onSendMessage = { viewModel.sendMessage(it) },
                     onStartRecording = { viewModel.startRecording() },
-                    onStartSmartRecording = { viewModel.startSmartRecording() },
                     onStopRecording = { viewModel.stopRecording() },
-                    onSynthesizeLocally = { text -> viewModel.synthesizeTextLocally(text) },
                     onPlayAudio = { path -> viewModel.playAudio(path) },
                     onIncreaseFontSize = { viewModel.increaseFontSize() },
                     onDecreaseFontSize = { viewModel.decreaseFontSize() },
                     onBack = { viewModel.navigateTo(Screen.Home) },
                     onConfirmTranscription = { viewModel.confirmTranscription() },
                     onCancelTranscription = { viewModel.cancelTranscription() },
-                    onUpdateTranscription = { viewModel.updateTranscription(it) },
                     onRetryLastAction = { viewModel.retryLastAction() },
                     onDismissRetry = { viewModel.dismissRetry() }
                 )
@@ -452,44 +449,31 @@ fun SettingsScreen(
  * Displays the chat screen with message list and input controls.
  *
  * @param uiState current chat UI state.
- * @param onSendMessage callback to send text messages.
  * @param onStartRecording callback to begin audio recording.
- * @param onStartSmartRecording callback to begin audio recording with stop-word detection.
  * @param onStopRecording callback to stop audio recording.
- * @param onSynthesizeLocally callback to synthesize speech locally.
  * @param onPlayAudio callback to play an audio message.
  * @param onIncreaseFontSize callback to increase message font size.
  * @param onDecreaseFontSize callback to decrease message font size.
  * @param onBack callback to return to the home screen.
  * @param onConfirmTranscription callback to accept a transcription.
  * @param onCancelTranscription callback to discard a transcription.
- * @param onUpdateTranscription callback to edit transcription text.
  * @return `Unit` after composing the screen.
  */
 @Composable
 fun ChatScreen(
     uiState: com.base.aihelperwearos.presentation.viewmodel.ChatUiState,
     modeLabel: String? = null,
-    onSendMessage: (String) -> Unit,
     onStartRecording: () -> Unit,
-    onStartSmartRecording: () -> Unit,
     onStopRecording: () -> Unit,
-    onSynthesizeLocally: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
     onIncreaseFontSize: () -> Unit,
     onDecreaseFontSize: () -> Unit,
     onBack: () -> Unit,
     onConfirmTranscription: () -> Unit,
     onCancelTranscription: () -> Unit,
-    onUpdateTranscription: (String) -> Unit,
     onRetryLastAction: () -> Unit,
     onDismissRetry: () -> Unit
 ) {
-    val context = LocalContext.current
-    var showTtsDialog by remember { mutableStateOf(false) }
-    var pendingText by remember { mutableStateOf("") }
-    var startSmartAfterPermission by remember { mutableStateOf(false) }
-    
     val listState = rememberScalingLazyListState()
     val coroutineScope = rememberCoroutineScope()
     
@@ -516,30 +500,9 @@ fun ChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            if (startSmartAfterPermission) {
-                onStartSmartRecording()
-            } else {
-                onStartRecording()
-            }
+            onStartRecording()
         } else {
             android.util.Log.e("ChatScreen", microphonePermissionDenied)
-        }
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        result.data?.let { data ->
-            RemoteInputHelper.getTextFromIntent(data)?.let { text ->
-                if (text.isNotBlank()) {
-                    if (uiState.pendingTranscription != null) {
-                        onUpdateTranscription(text)
-                    } else {
-                        pendingText = text
-                        showTtsDialog = true
-                    }
-                }
-            }
         }
     }
 
@@ -588,7 +551,8 @@ fun ChatScreen(
                 content = message.content,
                 audioPath = message.audioPath,
                 onPlayAudio = onPlayAudio,
-                fontSize = uiState.fontSize
+                fontSize = uiState.fontSize,
+                renderPlainText = uiState.chatModeId == ChatModeIds.METODI_CODE && message.role != "user"
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -680,54 +644,27 @@ fun ChatScreen(
 
         item {
             Spacer(modifier = Modifier.height(8.dp))
-            val writeMessage = stringResource(SpecializedChatRegistry.get(uiState.chatModeId).inputHintRes)
             Row(
                 modifier = Modifier.fillMaxWidth(0.9f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.Center
             ) {
                 Button(
                     onClick = {
-                        if (uiState.isRecording && uiState.isSmartRecording) {
+                        if (uiState.isRecording) {
                             onStopRecording()
                         } else {
-                            startSmartAfterPermission = true
                             audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         }
                     },
-                    modifier = Modifier.weight(1f),
-                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading &&
-                        (!uiState.isRecording || uiState.isSmartRecording),
-                    colors = ButtonDefaults.primaryButtonColors()
-                ) {
-                    Text(
-                        if (uiState.isRecording && uiState.isSmartRecording) {
-                            stringResource(R.string.recording_stop)
-                        } else {
-                            "🎙"
-                        },
-                        style = MaterialTheme.typography.title2
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        if (uiState.isRecording && !uiState.isSmartRecording) {
-                            onStopRecording()
-                        } else {
-                            startSmartAfterPermission = false
-                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading &&
-                        (!uiState.isRecording || !uiState.isSmartRecording),
-                    colors = if (uiState.isRecording && !uiState.isSmartRecording)
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.isCurrentModeEnabled && !uiState.isLoading,
+                    colors = if (uiState.isRecording)
                         ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
                     else
                         ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
                 ) {
                     Text(
-                        if (uiState.isRecording && !uiState.isSmartRecording) {
+                        if (uiState.isRecording) {
                             stringResource(R.string.recording_stop)
                         } else {
                             stringResource(R.string.recording_start)
@@ -746,69 +683,6 @@ fun ChatScreen(
                     style = MaterialTheme.typography.caption2,
                     color = MaterialTheme.colors.error
                 )
-            }
-        }
-
-        if (showTtsDialog && pendingText.isNotBlank()) {
-            item { Spacer(modifier = Modifier.height(16.dp)) }
-
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(0.95f)
-                        .background(
-                            color = MaterialTheme.colors.primary.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        )
-                        .padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        stringResource(R.string.choose_input_method),
-                        style = MaterialTheme.typography.caption1,
-                        color = MaterialTheme.colors.primary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = {
-                            showTtsDialog = false
-                            onSendMessage(pendingText)
-                            pendingText = ""
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.primaryButtonColors()
-                    ) {
-                        Text(stringResource(R.string.send_text_only), style = MaterialTheme.typography.caption1)
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Button(
-                        onClick = {
-                            showTtsDialog = false
-                            onSynthesizeLocally(pendingText)
-                            pendingText = ""
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.secondaryButtonColors()
-                    ) {
-                        Text(stringResource(R.string.synthesize_locally), style = MaterialTheme.typography.caption1)
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Button(
-                        onClick = {
-                            showTtsDialog = false
-                            pendingText = ""
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
-                    ) {
-                        Text(stringResource(R.string.cancel), style = MaterialTheme.typography.caption1)
-                    }
-                }
             }
         }
 
@@ -1191,6 +1065,7 @@ fun AnalysisScreen(
  * @param audioPath optional audio file path for playback.
  * @param onPlayAudio callback invoked to play audio.
  * @param fontSize font size for message text.
+ * @param renderPlainText whether to skip Markdown rendering for assistant content.
  * @return `Unit` after composing the message row.
  */
 @Composable
@@ -1199,7 +1074,8 @@ fun ChatMessageItem(
     content: String,
     audioPath: String? = null,
     onPlayAudio: (String) -> Unit = {},
-    fontSize: Int = 11
+    fontSize: Int = 11,
+    renderPlainText: Boolean = false
 ) {
     val isUser = role == "user"
     val hasAudio = audioPath != null && File(audioPath).exists()
@@ -1249,7 +1125,7 @@ fun ChatMessageItem(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            if (!isUser) {
+            if (!isUser && !renderPlainText) {
                 MathMarkdownText(
                     markdown = content,
                     fontSize = fontSize
@@ -1257,7 +1133,11 @@ fun ChatMessageItem(
             } else {
                 Text(
                     text = content,
-                    style = MaterialTheme.typography.body2,
+                    style = if (renderPlainText) {
+                        MaterialTheme.typography.body2.copy(fontFamily = FontFamily.Monospace)
+                    } else {
+                        MaterialTheme.typography.body2
+                    },
                     fontSize = fontSize.sp
                 )
             }
