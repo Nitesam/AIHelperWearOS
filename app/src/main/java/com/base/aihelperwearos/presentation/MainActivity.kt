@@ -512,7 +512,7 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(horizontal = 8.dp),
             state = listState,
-            horizontalAlignment = Alignment.Start
+            horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item { Spacer(modifier = Modifier.height(40.dp)) }
 
@@ -720,7 +720,7 @@ fun ChatScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 28.dp),
+                .padding(start = 22.dp, top = 28.dp, end = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -747,7 +747,7 @@ fun ChatScreen(
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 2.dp),
+                    .padding(start = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -1013,7 +1013,7 @@ fun AnalysisScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 28.dp),
+                .padding(start = 22.dp, top = 28.dp, end = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Button(
@@ -1031,7 +1031,7 @@ fun AnalysisScreen(
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 2.dp),
+                    .padding(start = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
