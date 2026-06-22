@@ -133,7 +133,10 @@ object SpecializedChatRegistry {
 
     fun all(): List<ChatModeSpec> = modes
 
-    fun homeModes(): List<ChatModeSpec> = modes.filter { it.showInHome }
+    fun homeModes(): List<ChatModeSpec> {
+        val shownModes = modes.filter { it.showInHome }
+        return shownModes.filter { it.isSpecialized } + shownModes.filterNot { it.isSpecialized }
+    }
 
     fun get(modeId: String?): ChatModeSpec {
         return byId[normalizeModeId(modeId)] ?: general

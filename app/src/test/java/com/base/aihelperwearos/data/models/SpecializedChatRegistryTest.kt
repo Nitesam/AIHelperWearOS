@@ -12,11 +12,16 @@ class SpecializedChatRegistryTest {
     fun `home modes include enabled modes only`() {
         val homeModeIds = SpecializedChatRegistry.homeModes().map { it.id }
 
-        assertTrue(homeModeIds.contains(ChatModeIds.GENERAL))
-        assertTrue(homeModeIds.contains(ChatModeIds.PHYSICS))
+        assertEquals(
+            listOf(
+                ChatModeIds.METODI_THEORY,
+                ChatModeIds.METODI_CODE,
+                ChatModeIds.GENERAL
+            ),
+            homeModeIds
+        )
+        assertFalse(homeModeIds.contains(ChatModeIds.PHYSICS))
         assertFalse(homeModeIds.contains(ChatModeIds.ANALYSIS2))
-        assertFalse(homeModeIds.contains(ChatModeIds.METODI_THEORY))
-        assertFalse(homeModeIds.contains(ChatModeIds.METODI_CODE))
         assertTrue(SpecializedChatRegistry.homeModes().all { it.enabled })
     }
 

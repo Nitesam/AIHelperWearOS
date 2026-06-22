@@ -183,10 +183,8 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
 /**
  * Renders the home screen with navigation actions.
  *
- * @param onNewChat callback to start a new chat.
- * @param onAnalysis callback to start analysis mode.
- * @param onMetodiTheory callback to start Metodi theory mode.
- * @param onMetodiCode callback to start Metodi code mode.
+ * @param availableModes chat modes that can be started from home.
+ * @param onStartMode callback to start a chat mode.
  * @param onHistory callback to open chat history.
  * @param onSettings callback to open settings.
  * @return `Unit` after composing the screen.
@@ -198,6 +196,9 @@ fun HomeScreen(
     onHistory: () -> Unit,
     onSettings: () -> Unit
 ) {
+    val specializedModes = availableModes.filter { it.isSpecialized }
+    val generalModes = availableModes.filterNot { it.isSpecialized }
+
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -221,27 +222,12 @@ fun HomeScreen(
 
         item { Spacer(modifier = Modifier.height(12.dp)) }
 
-        items(availableModes.size) { index ->
-            val modeSpec = availableModes[index]
-            val title = stringResource(modeSpec.titleRes)
-            Button(
-                onClick = { onStartMode(modeSpec, title) },
-                modifier = Modifier.fillMaxWidth(0.85f),
-                colors = when {
-                    modeSpec.id == ChatModeIds.GENERAL -> ButtonDefaults.primaryButtonColors()
-                    index % 2 == 0 -> ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
-                    else -> ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.surface)
-                }
-            ) {
-                Text(
-                    text = title,
-                    color = if (index % 2 == 0 && modeSpec.id != ChatModeIds.GENERAL) {
-                        MaterialTheme.colors.onSecondary
-                    } else {
-                        MaterialTheme.colors.onSurface
-                    }
-                )
-            }
+        items(specializedModes.size) { index ->
+            HomeModeButton(
+                modeSpec = specializedModes[index],
+                visualIndex = index,
+                onStartMode = onStartMode
+            )
             Spacer(modifier = Modifier.height(8.dp))
         }
 
@@ -257,6 +243,15 @@ fun HomeScreen(
 
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
+        items(generalModes.size) { index ->
+            HomeModeButton(
+                modeSpec = generalModes[index],
+                visualIndex = index,
+                onStartMode = onStartMode
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         item {
             Button(
                 onClick = onSettings,
@@ -268,6 +263,35 @@ fun HomeScreen(
                 Text("⚙️ " + stringResource(R.string.settings))
             }
         }
+    }
+}
+
+@Composable
+private fun HomeModeButton(
+    modeSpec: ChatModeSpec,
+    visualIndex: Int,
+    onStartMode: (ChatModeSpec, String) -> Unit
+) {
+    val title = stringResource(modeSpec.titleRes)
+    val useSecondaryColor = visualIndex % 2 == 0 && modeSpec.id != ChatModeIds.GENERAL
+
+    Button(
+        onClick = { onStartMode(modeSpec, title) },
+        modifier = Modifier.fillMaxWidth(0.85f),
+        colors = when {
+            modeSpec.id == ChatModeIds.GENERAL -> ButtonDefaults.primaryButtonColors()
+            useSecondaryColor -> ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+            else -> ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.surface)
+        }
+    ) {
+        Text(
+            text = title,
+            color = if (useSecondaryColor) {
+                MaterialTheme.colors.onSecondary
+            } else {
+                MaterialTheme.colors.onSurface
+            }
+        )
     }
 }
 
