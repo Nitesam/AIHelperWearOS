@@ -34,7 +34,8 @@ class OpenRouterService(
     context: Context
 ) {
     companion object {
-        private const val TRANSCRIPTION_MODEL = "google/gemini-3-flash-preview"
+        private const val TRANSCRIPTION_MODEL = "google/gemini-3.5-flash"
+        private const val STOP_DETECTION_MODEL = "google/gemini-3-flash-preview"
         private const val CONTINUATION_MAX_TOKENS = 6000
     }
 
@@ -289,7 +290,7 @@ class OpenRouterService(
             Log.d("OpenRouter", "Keyword extraction enabled: ${transcriptionPrompt.contains("KEYWORDS")}")
 
             val requestBody = buildJsonObject {
-                put("model", TRANSCRIPTION_MODEL)
+                put("model", STOP_DETECTION_MODEL)
                 put("temperature", 0.0)
                 put("max_tokens", 450)
                 put("messages", buildJsonArray {
