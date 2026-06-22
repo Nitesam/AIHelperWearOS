@@ -324,9 +324,10 @@ object Constants {
                 Do not use pandas, seaborn, sklearn, statsmodels, or other complex plotting/statistics libraries.
                 Use `numpy` only when arrays, simulations, linspace, mean/std, or linear algebra are really useful.
                 Use `scipy.stats` only when a distribution quantile/pdf/cdf is explicitly needed and simpler formulas are not practical.
-                Start with a short plan only when it clarifies the exercise, then provide a single executable Python code block.
+                Output only raw executable Python code.
+                Do not write explanations, introductions, conclusions, plans, Markdown fences, or text outside the code.
                 Keep comments short and useful.
-                If data are missing, create clearly named placeholders and state what the user must replace.
+                If data are missing, create clearly named placeholders and use short code comments to mark what the user must replace.
                 Do not use theory PDF excerpts in this mode.
             """.trimIndent()
         } else {
@@ -345,17 +346,18 @@ object Constants {
                 Non usare pandas, seaborn, sklearn, statsmodels o altre librerie complesse di grafica/statistica.
                 Usa `numpy` solo quando servono davvero array, simulazioni, linspace, media/deviazione standard o algebra lineare.
                 Usa `scipy.stats` solo quando servono esplicitamente quantili/pdf/cdf di distribuzioni e le formule semplici non sono pratiche.
-                Inserisci un piano breve solo se chiarisce l'esercizio, poi fornisci un unico blocco Python eseguibile.
+                Restituisci solo codice Python grezzo eseguibile.
+                Non scrivere spiegazioni, introduzioni, conclusioni, piani, blocchi Markdown o testo fuori dal codice.
                 Tieni i commenti brevi e utili.
-                Se mancano dati, crea placeholder con nomi chiari e indica cosa sostituire.
+                Se mancano dati, crea placeholder con nomi chiari e usa solo brevi commenti nel codice per indicare cosa sostituire.
                 Non usare estratti del PDF di teoria in questa modalità.
             """.trimIndent()
         }
 
         val referenceNote = if (languageCode == "en") {
-            "Reference use: the first retrieved example is the priority style reference; use later examples only when they do not conflict with it. Do not add plotting decoration that is absent from the priority example."
+            "Reference use: the first retrieved example is the priority style reference; use later examples only when they do not conflict with it. Do not add plotting decoration that is absent from the priority example. The answer must still contain only raw Python code."
         } else {
-            "Uso dei riferimenti: il primo esempio recuperato è il riferimento di stile prioritario; usa gli esempi successivi solo se non lo contraddicono. Non aggiungere decorazioni ai grafici assenti dall'esempio prioritario."
+            "Uso dei riferimenti: il primo esempio recuperato è il riferimento di stile prioritario; usa gli esempi successivi solo se non lo contraddicono. Non aggiungere decorazioni ai grafici assenti dall'esempio prioritario. La risposta deve comunque contenere solo codice Python grezzo."
         }
 
         return if (ragContext.isNullOrBlank()) {
