@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import com.base.aihelperwearos.data.models.TranscriptionModels
 import com.base.aihelperwearos.utils.getCurrentLanguageCode
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -20,6 +21,7 @@ class UserPreferences(private val context: Context) {
     companion object {
         private val LANGUAGE_KEY = stringPreferencesKey("language")
         private val MODEL_KEY = stringPreferencesKey("selected_model")
+        private val TRANSCRIPTION_MODEL_KEY = stringPreferencesKey("selected_transcription_model")
         private val RESUME_SESSION_ID_KEY = longPreferencesKey("resume_session_id")
         private val RESUME_SESSION_UPDATED_AT_KEY = longPreferencesKey("resume_session_updated_at")
         private const val DEFAULT_MODEL = "openai/gpt-5.5"
@@ -30,9 +32,19 @@ class UserPreferences(private val context: Context) {
         normalizeModel(preferences[MODEL_KEY])
     }
 
+    val transcriptionModelFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        TranscriptionModels.normalizeId(preferences[TRANSCRIPTION_MODEL_KEY])
+    }
+
     suspend fun setModel(modelId: String) {
         context.dataStore.edit { preferences ->
             preferences[MODEL_KEY] = modelId
+        }
+    }
+
+    suspend fun setTranscriptionModel(modelId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[TRANSCRIPTION_MODEL_KEY] = TranscriptionModels.normalizeId(modelId)
         }
     }
 
@@ -60,6 +72,14 @@ class UserPreferences(private val context: Context) {
         return runBlocking {
             context.dataStore.data.map { preferences ->
                 normalizeModel(preferences[MODEL_KEY])
+            }.first()
+        }
+    }
+
+    fun getTranscriptionModel(): String {
+        return runBlocking {
+            context.dataStore.data.map { preferences ->
+                TranscriptionModels.normalizeId(preferences[TRANSCRIPTION_MODEL_KEY])
             }.first()
         }
     }

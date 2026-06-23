@@ -8,6 +8,7 @@ import com.base.aihelperwearos.data.models.Message
 import com.base.aihelperwearos.data.models.OpenRouterRequest
 import com.base.aihelperwearos.data.models.OpenRouterResponse
 import com.base.aihelperwearos.data.models.SpecializedChatRegistry
+import com.base.aihelperwearos.data.models.TranscriptionModels
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
@@ -34,7 +35,6 @@ class OpenRouterService(
     context: Context
 ) {
     companion object {
-        private const val TRANSCRIPTION_MODEL = "google/gemini-3.5-flash"
         private const val CONTINUATION_MAX_TOKENS = 6000
     }
 
@@ -267,11 +267,13 @@ class OpenRouterService(
         audioFile: File,
         languageCode: String,
         modeId: String = ChatModeIds.GENERAL,
+        transcriptionModelId: String = TranscriptionModels.DEFAULT_ID,
         deleteOnCompletion: Boolean = true
     ): Result<com.base.aihelperwearos.data.models.TranscriptionResult> {
         return try {
+            val transcriptionModel = TranscriptionModels.normalizeId(transcriptionModelId)
             Log.d("OpenRouter", "=== TRANSCRIPTION START ===")
-            Log.d("OpenRouter", "Transcribing with $TRANSCRIPTION_MODEL (audio support)")
+            Log.d("OpenRouter", "Transcribing with $transcriptionModel (audio support)")
             Log.d("OpenRouter", "Language parameter received: '$languageCode'")
             Log.d("OpenRouter", "Transcription language: ${if (languageCode == "en") "ENGLISH" else "ITALIANO"} (code: $languageCode)")
 
@@ -289,7 +291,7 @@ class OpenRouterService(
             Log.d("OpenRouter", "Keyword extraction enabled: ${transcriptionPrompt.contains("KEYWORDS")}")
 
             val requestBody = buildJsonObject {
-                put("model", TRANSCRIPTION_MODEL)
+                put("model", transcriptionModel)
                 put("temperature", 0.0)
                 put("max_tokens", 900)
                 put("messages", buildJsonArray {
@@ -312,7 +314,7 @@ class OpenRouterService(
                 })
             }
 
-            Log.d("OpenRouter", "Sending to $TRANSCRIPTION_MODEL for transcription")
+            Log.d("OpenRouter", "Sending to $transcriptionModel for transcription")
 
             val response: String = client.post("chat/completions") {
                 setBody(requestBody)

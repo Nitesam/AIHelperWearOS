@@ -59,6 +59,7 @@ Hello, %1$s!</string>
     <string name="chat">Chat</string>
 
     <string name="choose_transcription_method">Choose transcription method:</string>
+    <string name="choose_transcription_model">Transcription Model</string>
     <string name="ai_transcription">Cloud Transcription (Gemini)</string>
     <string name="local_speech_recognition">🎤 Device Speech-to-Text</string>
     <string name="transcribing">Transcribing...</string>

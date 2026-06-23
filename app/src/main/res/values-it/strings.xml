@@ -59,6 +59,7 @@ Ciao, %1$s!</string>
     <string name="chat">Chat</string>
 
     <string name="choose_transcription_method">Scegli il metodo di trascrizione:</string>
+    <string name="choose_transcription_model">Modello di trascrizione</string>
     <string name="ai_transcription">Trascrizione online (Gemini)</string>
     <string name="local_speech_recognition">🎤 Riconoscimento vocale del dispositivo</string>
     <string name="transcribing">Trascrizione in corso...</string>

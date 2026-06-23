@@ -18,6 +18,7 @@ import com.base.aihelperwearos.data.models.ChatModeIds
 import com.base.aihelperwearos.data.models.ChatModeSpec
 import com.base.aihelperwearos.data.models.ContextToolType
 import com.base.aihelperwearos.data.models.SpecializedChatRegistry
+import com.base.aihelperwearos.data.models.TranscriptionModels
 import com.base.aihelperwearos.data.rag.MathContextRetriever
 import com.base.aihelperwearos.data.rag.RagRepository
 import com.base.aihelperwearos.data.specialized.ChatContextTool
@@ -78,6 +79,7 @@ private sealed class PendingRetryAction {
 data class ChatUiState(
     val currentScreen: Screen = Screen.Home,
     val selectedModel: String = "openai/gpt-5.5",
+    val selectedTranscriptionModel: String = TranscriptionModels.DEFAULT_ID,
     val currentSessionId: Long? = null,
     val chatMessages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
@@ -319,6 +321,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         loadUserPreferences()
         loadModelPreference()
+        loadTranscriptionModelPreference()
         restoreResumeSession()
     }
 
@@ -334,6 +337,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             userPreferences.setModel(modelId)
             _uiState.update { it.copy(selectedModel = modelId) }
+        }
+    }
+
+    private fun loadTranscriptionModelPreference() {
+        viewModelScope.launch {
+            userPreferences.transcriptionModelFlow.collect { modelId ->
+                _uiState.update { it.copy(selectedTranscriptionModel = modelId) }
+            }
+        }
+    }
+
+    fun saveTranscriptionModelPreference(modelId: String) {
+        viewModelScope.launch {
+            val normalizedModelId = TranscriptionModels.normalizeId(modelId)
+            userPreferences.setTranscriptionModel(normalizedModelId)
+            _uiState.update { it.copy(selectedTranscriptionModel = normalizedModelId) }
         }
     }
 
@@ -949,6 +968,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 val audioPath = audioFile.absolutePath
                 val currentLanguage = _uiState.value.selectedLanguage.code
+                val transcriptionModelId = _uiState.value.selectedTranscriptionModel
                 val modeSpec = SpecializedChatRegistry.get(_uiState.value.chatModeId)
                 val retryAction = PendingRetryAction.AudioTranscription(audioPath)
 
@@ -977,13 +997,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 updateActiveSession(sessionId) { it.copy(networkWarningMessage = warning) }
 
-                android.util.Log.d("MainViewModel", "sendAudioMessage - cloud transcription, language: $currentLanguage, modeId: ${modeSpec.id}")
+                android.util.Log.d("MainViewModel", "sendAudioMessage - cloud transcription, language: $currentLanguage, modeId: ${modeSpec.id}, transcriptionModel: $transcriptionModelId")
                 android.util.Log.d("MainViewModel", "Starting transcription request")
                 
                 val transcriptionResult = openRouterService.transcribeAudioWithGemini(
                     audioFile = audioFile,
                     languageCode = currentLanguage,
                     modeId = modeSpec.id,
+                    transcriptionModelId = transcriptionModelId,
                     deleteOnCompletion = false
                 )
 

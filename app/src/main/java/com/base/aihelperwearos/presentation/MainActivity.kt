@@ -28,6 +28,7 @@ import com.base.aihelperwearos.R
 import com.base.aihelperwearos.data.models.ChatModeIds
 import com.base.aihelperwearos.data.models.ChatModeSpec
 import com.base.aihelperwearos.data.models.SpecializedChatRegistry
+import com.base.aihelperwearos.data.models.TranscriptionModels
 import com.base.aihelperwearos.presentation.components.MathMarkdownText
 import com.base.aihelperwearos.presentation.theme.AIHelperWearOSTheme
 import com.base.aihelperwearos.presentation.viewmodel.MainViewModel
@@ -142,8 +143,12 @@ fun WearApp(viewModel: MainViewModel, activity: ComponentActivity) {
                 )
                 Screen.Settings -> SettingsScreen(
                     selectedModel = uiState.selectedModel,
+                    selectedTranscriptionModel = uiState.selectedTranscriptionModel,
                     onModelSelected = { model ->
                         viewModel.saveModelPreference(model)
+                    },
+                    onTranscriptionModelSelected = { model ->
+                        viewModel.saveTranscriptionModelPreference(model)
                     },
                     onLanguageChange = { languageCode ->
                         setLocale(activity, languageCode)
@@ -311,7 +316,9 @@ private fun HomeModeButton(
 @Composable
 fun SettingsScreen(
     selectedModel: String,
+    selectedTranscriptionModel: String,
     onModelSelected: (String) -> Unit,
+    onTranscriptionModelSelected: (String) -> Unit,
     onLanguageChange: (String) -> Unit,
     onExport: ((String) -> Unit) -> Unit,
     onBack: () -> Unit
@@ -324,6 +331,7 @@ fun SettingsScreen(
         "anthropic/claude-sonnet-4.6" to stringResource(R.string.model_claude_sonnet),
         "openai/gpt-5.5" to stringResource(R.string.model_gpt5)
     )
+    val transcriptionModels = TranscriptionModels.options
 
     // Show toast when export completes
     LaunchedEffect(exportMessage) {
@@ -382,6 +390,42 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(0.9f),
                 colors = ChipDefaults.chipColors(
                     backgroundColor = if (modelId == selectedModel)
+                        MaterialTheme.colors.primary
+                    else
+                        MaterialTheme.colors.surface
+                )
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+
+        item {
+            Text(
+                stringResource(R.string.choose_transcription_model),
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(4.dp)) }
+
+        items(transcriptionModels.size) { index ->
+            val option = transcriptionModels[index]
+            Chip(
+                onClick = { onTranscriptionModelSelected(option.id) },
+                label = {
+                    Text(
+                        option.displayName,
+                        style = MaterialTheme.typography.body2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(0.9f),
+                colors = ChipDefaults.chipColors(
+                    backgroundColor = if (option.id == selectedTranscriptionModel)
                         MaterialTheme.colors.primary
                     else
                         MaterialTheme.colors.surface
