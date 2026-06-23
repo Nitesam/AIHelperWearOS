@@ -291,7 +291,7 @@ class OpenRouterService(
             val requestBody = buildJsonObject {
                 put("model", TRANSCRIPTION_MODEL)
                 put("temperature", 0.0)
-                put("max_tokens", 450)
+                put("max_tokens", 900)
                 put("messages", buildJsonArray {
                     add(buildJsonObject {
                         put("role", "user")
@@ -345,6 +345,7 @@ class OpenRouterService(
             Log.d("OpenRouter", "Starting keyword extraction")
             
             val result = parseTranscriptionWithKeywords(rawText, languageCode)
+            validateTranscriptionResult(rawText, result.transcription)
             
             Log.d("OpenRouter", "Transcription success")
             Log.d("OpenRouter", "Keywords extracted: ${result.keywords.joinToString(", ")}")
@@ -462,8 +463,10 @@ class OpenRouterService(
         Log.d("OpenRouter", "Input text length: ${rawText.length} chars")
         Log.d("OpenRouter", "Input text: $rawText")
         
-        val keywordPattern = Regex("""\[KEYWORDS?:\s*([^\]]+)\]""", RegexOption.IGNORE_CASE)
-        val transcriptionPattern = Regex("""\[(TRASCRIZIONE|TRANSCRIPTION):\s*([^\]]+)\]""", RegexOption.IGNORE_CASE)
+        val keywordPattern = Regex("""(?im)^\s*\[KEYWORDS?:\s*(.*?)\]\s*$""")
+        val transcriptionPattern = Regex("""(?im)^\s*\[(TRASCRIZIONE|TRANSCRIPTION):\s*(.*?)\]\s*$""")
+        val keywordMarkerPattern = Regex("""(?i)\[KEYWORDS?\s*:""")
+        val transcriptionMarkerPattern = Regex("""(?i)\[(TRASCRIZIONE|TRANSCRIPTION)\s*:""")
         
         val keywordMatch = keywordPattern.find(rawText)
         val transcriptionMatch = transcriptionPattern.find(rawText)
@@ -484,10 +487,16 @@ class OpenRouterService(
             extractFallbackKeywords(rawText, languageCode)
         }
         
+        val hasControlMarker = keywordMarkerPattern.containsMatchIn(rawText) ||
+            transcriptionMarkerPattern.containsMatchIn(rawText)
+
         val transcription = if (transcriptionMatch != null) {
             val extracted = transcriptionMatch.groupValues[2].trim()
             Log.d("OpenRouter", "Extracted transcription: '$extracted'")
             extracted
+        } else if (hasControlMarker) {
+            Log.w("OpenRouter", "Malformed transcription markers found - rejecting control-only response")
+            ""
         } else {
             Log.w("OpenRouter", "No transcription marker found - using cleaned raw text")
             rawText.replace(keywordPattern, "").trim()
@@ -505,6 +514,37 @@ class OpenRouterService(
         
         Log.d("OpenRouter", "parseTranscriptionWithKeywords - END")
         return result
+    }
+
+    /**
+     * Rejects metadata-only or malformed transcription responses before they become chat messages.
+     */
+    private fun validateTranscriptionResult(rawText: String, transcription: String) {
+        val cleaned = transcription.trim()
+        if (cleaned.isBlank()) {
+            throw IllegalArgumentException("Trascrizione incompleta: il modello ha restituito solo metadati.")
+        }
+
+        val lower = cleaned.lowercase()
+        val controlOnly = lower.startsWith("[keywords") ||
+            lower.startsWith("[keyword") ||
+            lower.startsWith("[trascrizione:") ||
+            lower.startsWith("[transcription:")
+        if (controlOnly) {
+            throw IllegalArgumentException("Trascrizione incompleta: formato di servizio ricevuto al posto del testo.")
+        }
+
+        if (cleaned.equals("[incomprensibile]", ignoreCase = true) ||
+            cleaned.equals("[inaudible]", ignoreCase = true)
+        ) {
+            throw IllegalArgumentException("Audio non comprensibile: riprova parlando piu' vicino al microfono.")
+        }
+
+        val hasKeywords = Regex("""(?i)\[KEYWORDS?\s*:""").containsMatchIn(rawText)
+        val hasTranscription = Regex("""(?i)\[(TRASCRIZIONE|TRANSCRIPTION)\s*:""").containsMatchIn(rawText)
+        if (hasKeywords && !hasTranscription) {
+            throw IllegalArgumentException("Trascrizione incompleta: manca la riga TRASCRIZIONE.")
+        }
     }
     
     /**
@@ -606,6 +646,8 @@ class OpenRouterService(
                 2) one exact category name from the list above
                 3) one exact subtype name from the list above (if identifiable)
                 then add any other useful math keywords.
+
+                Always include the [TRANSCRIPTION: ...] line after [KEYWORDS: ...].
             """.trimIndent()
         } else {
             """
@@ -618,6 +660,8 @@ class OpenRouterService(
                 2) un nome categoria esatto dalla lista sopra
                 3) un nome sottotipo esatto dalla lista sopra (se identificabile)
                 poi eventuali altre parole chiave utili.
+
+                Includi sempre la riga [TRASCRIZIONE: ...] dopo [KEYWORDS: ...].
             """.trimIndent()
         }
 

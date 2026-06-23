@@ -135,6 +135,10 @@ object Constants {
         [KEYWORDS: parola1, parola2, parola3]
         [TRASCRIZIONE: testo completo della trascrizione]
 
+        La riga [TRASCRIZIONE: ...] è obbligatoria.
+        Non restituire mai solo [KEYWORDS: ...].
+        Se l'audio è troppo debole o non comprensibile, scrivi comunque [TRASCRIZIONE: [incomprensibile]].
+
         Keywords:
         - Estrai 3-5 parole chiave matematiche dal contenuto (es: teorema, integrale, gauss, derivata, limite)
         - Identifica se si parla di TEORIA (teorema, definizione, enuncia, cos'è) o ESERCIZIO (calcola, risolvi, trova, determina)
@@ -170,6 +174,10 @@ object Constants {
         Format:
         [KEYWORDS: word1, word2, word3]
         [TRANSCRIPTION: full transcription text]
+
+        The [TRANSCRIPTION: ...] line is mandatory.
+        Never return only [KEYWORDS: ...].
+        If the audio is too quiet or not understandable, still write [TRANSCRIPTION: [inaudible]].
 
         Keywords:
         - Extract 3-5 math keywords (for example: theorem, integral, gauss, derivative, limit)
@@ -401,6 +409,8 @@ object Constants {
                     [KEYWORDS: theory, keyword1, keyword2, keyword3]
                     [TRANSCRIPTION: full literal transcription]
 
+                    The [TRANSCRIPTION: ...] line is mandatory. Never return only [KEYWORDS: ...].
+
                     Extract 3-5 useful course keywords such as probability, random variable, distribution, estimator, confidence interval, hypothesis test, Markov chain, regression.
                     Do not answer the question.
                 """.trimIndent()
@@ -414,6 +424,8 @@ object Constants {
                     Formato:
                     [KEYWORDS: teoria, parola1, parola2, parola3]
                     [TRASCRIZIONE: trascrizione letterale completa]
+
+                    La riga [TRASCRIZIONE: ...] è obbligatoria. Non restituire mai solo [KEYWORDS: ...].
 
                     Estrai 3-5 parole chiave utili del corso, ad esempio probabilità, variabile aleatoria, distribuzione, stimatore, intervallo di confidenza, test di ipotesi, catena di Markov, regressione.
                     Non rispondere alla domanda.
@@ -430,6 +442,8 @@ object Constants {
                     [KEYWORDS: exercise, python, keyword1, keyword2, keyword3]
                     [TRANSCRIPTION: full literal transcription]
 
+                    The [TRANSCRIPTION: ...] line is mandatory. Never return only [KEYWORDS: ...].
+
                     Extract 3-5 useful coding/statistics keywords such as binomial, normal, hypergeometric, histogram, regression, confidence interval, chi-square, simulation, Markov.
                     Preserve numbers, variable names and data values exactly.
                     Do not solve the exercise.
@@ -444,6 +458,8 @@ object Constants {
                     Formato:
                     [KEYWORDS: esercizio, python, parola1, parola2, parola3]
                     [TRASCRIZIONE: trascrizione letterale completa]
+
+                    La riga [TRASCRIZIONE: ...] è obbligatoria. Non restituire mai solo [KEYWORDS: ...].
 
                     Estrai 3-5 parole chiave utili per codice/statistica, ad esempio binomiale, normale, ipergeometrica, istogramma, regressione, intervallo di confidenza, chi quadro, simulazione, Markov.
                     Preserva esattamente numeri, nomi di variabili e dati.
@@ -460,6 +476,8 @@ object Constants {
                     [KEYWORDS: exercise, physics, keyword1, keyword2, keyword3]
                     [TRANSCRIPTION: full literal transcription]
 
+                    The [TRANSCRIPTION: ...] line is mandatory. Never return only [KEYWORDS: ...].
+
                     Extract 3-6 useful physics keywords such as motion, acceleration, projectile, circular motion, force, energy, impulse, collision, momentum.
                     Preserve numbers, units and variable names exactly.
                     Do not solve the exercise.
@@ -473,6 +491,8 @@ object Constants {
                     Formato:
                     [KEYWORDS: esercizio, fisica, parola1, parola2, parola3]
                     [TRASCRIZIONE: trascrizione letterale completa]
+
+                    La riga [TRASCRIZIONE: ...] è obbligatoria. Non restituire mai solo [KEYWORDS: ...].
 
                     Estrai 3-6 parole chiave fisiche utili, ad esempio moto, accelerazione, proiettile, moto circolare, forza, energia, impulso, urto, quantità di moto.
                     Preserva esattamente numeri, unità di misura e nomi delle variabili.
