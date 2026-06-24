@@ -56,6 +56,7 @@ data class Exercise(
             add(sottotipo.lowercase())
             addAll(tokenizeLabel(categoria))
             addAll(tokenizeLabel(sottotipo))
+            addAll(tokenizeLabel(testo).take(80))
         }
     }
 

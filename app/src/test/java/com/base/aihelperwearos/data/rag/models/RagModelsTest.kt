@@ -40,7 +40,7 @@ class RagModelsTest {
             categoria = "Equazioni-Differenziali",
             sottotipo = "Test Sottotipo",
             keywords = listOf("keyword"),
-            testo = "test",
+            testo = "Calcola una soluzione con metodo del polinomio caratteristico",
             svolgimento = "test"
         )
         
@@ -50,6 +50,8 @@ class RagModelsTest {
         assertTrue(terms.contains("differenziali"))
         assertTrue(terms.contains("test"))
         assertTrue(terms.contains("sottotipo"))
+        assertTrue(terms.contains("polinomio"))
+        assertTrue(terms.contains("caratteristico"))
     }
 
     /**
