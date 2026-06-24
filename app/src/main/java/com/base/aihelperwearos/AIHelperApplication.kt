@@ -27,7 +27,7 @@ class AIHelperApplication : Application() {
          *
          * @return nullable `RagRepository` if initialized, otherwise `null`.
          */
-        fun getRagRepository(): RagRepository? = ragRepositories[ChatModeIds.ANALYSIS2]
+        fun getRagRepository(): RagRepository? = ragRepositories[ChatModeIds.ANALYSIS]
 
         fun getRagRepository(modeId: String): RagRepository? {
             return ragRepositories[SpecializedChatRegistry.normalizeModeId(modeId)]
@@ -91,7 +91,7 @@ class AIHelperApplication : Application() {
                         val repository = RagRepository(
                             context = this@AIHelperApplication,
                             exerciseRawResId = exerciseRawResId,
-                            theoremRawResId = if (spec.id == ChatModeIds.ANALYSIS2) R.raw.teoremi_analisi2 else null,
+                            theoremRawResId = null,
                             sourceLabel = getString(spec.titleRes)
                         )
                         repository.initialize()

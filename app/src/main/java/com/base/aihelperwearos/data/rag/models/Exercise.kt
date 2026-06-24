@@ -28,9 +28,12 @@ data class Exercise(
      *
      * @return formatted exercise text.
      */
-    fun formatForPrompt(solutionLabel: String = "Svolgimento della professoressa"): String {
+    fun formatForPrompt(
+        solutionLabel: String = "Svolgimento della professoressa",
+        itemLabel: String = "Esercizio"
+    ): String {
         return buildString {
-            appendLine("Esercizio [ID: $id | $categoria - $sottotipo]:")
+            appendLine("$itemLabel [ID: $id | $categoria - $sottotipo]:")
             appendLine(testo)
             appendLine()
             appendLine("$solutionLabel:")
@@ -76,6 +79,9 @@ data class ExerciseDatabase(
     
     @SerialName("last_updated")
     val lastUpdated: String,
+
+    @SerialName("total_exercises")
+    val totalExercises: Int? = null,
     
     @SerialName("max_exercises")
     val maxExercises: Int = 100,

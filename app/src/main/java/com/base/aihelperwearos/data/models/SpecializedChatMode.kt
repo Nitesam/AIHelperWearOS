@@ -5,23 +5,28 @@ import com.base.aihelperwearos.R
 
 object ChatModeIds {
     const val GENERAL = "general"
-    const val ANALYSIS2 = "analysis2"
+    const val ANALYSIS = "analysis2"
+    @Deprecated("Use ANALYSIS. The persisted id remains analysis2 for compatibility.")
+    const val ANALYSIS2 = ANALYSIS
     const val PHYSICS = "physics"
+    const val SOFTWARE_ENGINEERING = "software_engineering"
     const val METODI_THEORY = "metodi_theory"
     const val METODI_CODE = "metodi_code"
 }
 
 enum class PromptProfile {
     NONE,
-    ANALYSIS2,
+    ANALYSIS,
     PHYSICS,
+    SOFTWARE_ENGINEERING,
     METODI_THEORY,
     METODI_CODE
 }
 
 enum class ContextToolType {
-    EXERCISE_ANALYSIS2,
+    EXERCISE_ANALYSIS,
     EXERCISE_PHYSICS,
+    SOFTWARE_ENGINEERING,
     METODI_THEORY,
     METODI_CODE
 }
@@ -46,6 +51,7 @@ data class ChatModeSpec(
 object SpecializedChatRegistry {
     private const val ANALYSIS_MAX_TOKENS = 8000
     private const val PHYSICS_MAX_TOKENS = 5000
+    private const val SOFTWARE_MAX_TOKENS = 6500
     private const val METODI_MAX_TOKENS = 3500
     private const val CHAT_MAX_TOKENS = 1000
 
@@ -63,19 +69,19 @@ object SpecializedChatRegistry {
         contextTools = emptyList()
     )
 
-    val analysis2 = ChatModeSpec(
-        id = ChatModeIds.ANALYSIS2,
-        titleRes = R.string.analysis2_mode,
-        historyLabelRes = R.string.analysis2_short,
+    val analysis = ChatModeSpec(
+        id = ChatModeIds.ANALYSIS,
+        titleRes = R.string.analysis,
+        historyLabelRes = R.string.analysis,
         inputHintRes = R.string.write_problem,
         enabled = BuildConfig.CHAT_ANALYSIS2_ENABLED,
         showInHome = BuildConfig.CHAT_ANALYSIS2_ENABLED,
-        promptProfile = PromptProfile.ANALYSIS2,
+        promptProfile = PromptProfile.ANALYSIS,
         maxTokens = ANALYSIS_MAX_TOKENS,
         temperature = 0.2,
         historyLimit = null,
-        contextTools = listOf(ContextToolType.EXERCISE_ANALYSIS2),
-        exerciseRawResId = R.raw.esercizi_analisi2
+        contextTools = listOf(ContextToolType.EXERCISE_ANALYSIS),
+        exerciseRawResId = R.raw.esercizi_analisi
     )
 
     val physics = ChatModeSpec(
@@ -91,6 +97,21 @@ object SpecializedChatRegistry {
         historyLimit = null,
         contextTools = listOf(ContextToolType.EXERCISE_PHYSICS),
         exerciseRawResId = R.raw.esercizi_fisica
+    )
+
+    val softwareEngineering = ChatModeSpec(
+        id = ChatModeIds.SOFTWARE_ENGINEERING,
+        titleRes = R.string.software_engineering_mode,
+        historyLabelRes = R.string.software_engineering_short,
+        inputHintRes = R.string.write_problem,
+        enabled = BuildConfig.CHAT_SOFTWARE_ENGINEERING_ENABLED,
+        showInHome = BuildConfig.CHAT_SOFTWARE_ENGINEERING_ENABLED,
+        promptProfile = PromptProfile.SOFTWARE_ENGINEERING,
+        maxTokens = SOFTWARE_MAX_TOKENS,
+        temperature = 0.15,
+        historyLimit = null,
+        contextTools = listOf(ContextToolType.SOFTWARE_ENGINEERING),
+        exerciseRawResId = R.raw.ingegneria_software
     )
 
     val metodiTheory = ChatModeSpec(
@@ -124,7 +145,8 @@ object SpecializedChatRegistry {
     private val modes = listOf(
         general,
         physics,
-        analysis2,
+        analysis,
+        softwareEngineering,
         metodiTheory,
         metodiCode
     )
@@ -150,8 +172,12 @@ object SpecializedChatRegistry {
         val normalized = modeId?.trim()?.lowercase().orEmpty()
         return when (normalized) {
             "", "general", "chat" -> ChatModeIds.GENERAL
-            "analysis", "analysis2", "analysis_2", "analisi", "analisi2", "analisi_2" -> ChatModeIds.ANALYSIS2
+            "analysis", "analysis1", "analysis_1", "analysis2", "analysis_2",
+            "analisi", "analisi1", "analisi_1", "analisi2", "analisi_2" -> ChatModeIds.ANALYSIS
             "physics", "fisica" -> ChatModeIds.PHYSICS
+            "software", "software_engineering", "software-engineering", "ingegneria",
+            "ingegneria_software", "ingegneria-software", "ingegneria_del_software",
+            "ingegneria-del-software", "ingsoft", "ids" -> ChatModeIds.SOFTWARE_ENGINEERING
             "metodi_teoria", "metodi_theory", "theory" -> ChatModeIds.METODI_THEORY
             "metodi_codice", "metodi_code", "code" -> ChatModeIds.METODI_CODE
             else -> normalized
@@ -159,10 +185,10 @@ object SpecializedChatRegistry {
     }
 
     fun modeIdFromLegacy(mode: ChatMode, isAnalysisMode: Boolean): String {
-        if (isAnalysisMode) return ChatModeIds.ANALYSIS2
+        if (isAnalysisMode) return ChatModeIds.ANALYSIS
         return when (mode) {
             ChatMode.GENERAL -> ChatModeIds.GENERAL
-            ChatMode.ANALYSIS -> ChatModeIds.ANALYSIS2
+            ChatMode.ANALYSIS -> ChatModeIds.ANALYSIS
             ChatMode.METODI_TEORIA -> ChatModeIds.METODI_THEORY
             ChatMode.METODI_CODICE -> ChatModeIds.METODI_CODE
         }
@@ -170,7 +196,7 @@ object SpecializedChatRegistry {
 
     fun legacyModeFor(modeId: String?): ChatMode {
         return when (normalizeModeId(modeId)) {
-            ChatModeIds.ANALYSIS2 -> ChatMode.ANALYSIS
+            ChatModeIds.ANALYSIS -> ChatMode.ANALYSIS
             ChatModeIds.METODI_THEORY -> ChatMode.METODI_TEORIA
             ChatModeIds.METODI_CODE -> ChatMode.METODI_CODICE
             else -> ChatMode.GENERAL

@@ -54,6 +54,7 @@ android {
         buildConfigField("boolean", "CHAT_GENERAL_ENABLED", getChatModeFlag("chat.general.enabled", true))
         buildConfigField("boolean", "CHAT_ANALYSIS2_ENABLED", getChatModeFlag("chat.analysis2.enabled", false))
         buildConfigField("boolean", "CHAT_PHYSICS_ENABLED", getChatModeFlag("chat.physics.enabled", true))
+        buildConfigField("boolean", "CHAT_SOFTWARE_ENGINEERING_ENABLED", getChatModeFlag("chat.software.enabled", false))
         buildConfigField("boolean", "CHAT_METODI_THEORY_ENABLED", getChatModeFlag("chat.metodi.theory.enabled", true))
         buildConfigField("boolean", "CHAT_METODI_CODE_ENABLED", getChatModeFlag("chat.metodi.code.enabled", true))
 

@@ -16,7 +16,7 @@ import java.io.InputStream
 object ExerciseParser {
     
     private const val TAG = "ExerciseParser"
-    private const val MAX_EXERCISES = 100
+    private const val HARD_MAX_EXERCISES = 300
     private const val MAX_THEOREMS = 50
     
     private val json = Json {
@@ -36,9 +36,10 @@ object ExerciseParser {
             val content = inputStream.bufferedReader().use { it.readText() }
             val database = json.decodeFromString<ExerciseDatabase>(content)
             
-            val cappedDatabase = if (database.exercises.size > MAX_EXERCISES) {
-                Log.w(TAG, "Exercise count ${database.exercises.size} exceeds max $MAX_EXERCISES, truncating")
-                database.copy(exercises = database.exercises.take(MAX_EXERCISES))
+            val maxExercises = database.maxExercises.coerceIn(1, HARD_MAX_EXERCISES)
+            val cappedDatabase = if (database.exercises.size > maxExercises) {
+                Log.w(TAG, "Exercise count ${database.exercises.size} exceeds max $maxExercises, truncating")
+                database.copy(exercises = database.exercises.take(maxExercises))
             } else {
                 database
             }
@@ -77,7 +78,7 @@ object ExerciseParser {
      * @return `Result<ExerciseDatabase>` with parsed exercises or failure.
      */
     fun loadExercisesFromResources(context: Context): Result<ExerciseDatabase> {
-        return loadExercisesFromResource(context, R.raw.esercizi_analisi2)
+        return loadExercisesFromResource(context, R.raw.esercizi_analisi)
     }
 
     fun loadExercisesFromResource(context: Context, rawResId: Int): Result<ExerciseDatabase> {
@@ -94,13 +95,13 @@ object ExerciseParser {
     /**
      * Builds a taxonomy from real categories/subtypes present in exercises.
      *
-     * Source of truth is `esercizi_analisi2.json`.
+     * Source of truth is `esercizi_analisi.json`.
      *
      * @param context context used to access raw resources.
      * @return `Result<Taxonomy>` with the built taxonomy or failure.
      */
     fun loadSynchronizedTaxonomyFromResources(context: Context): Result<Taxonomy> {
-        return loadSynchronizedTaxonomyFromResource(context, R.raw.esercizi_analisi2)
+        return loadSynchronizedTaxonomyFromResource(context, R.raw.esercizi_analisi)
     }
 
     fun loadSynchronizedTaxonomyFromResource(context: Context, rawResId: Int): Result<Taxonomy> {

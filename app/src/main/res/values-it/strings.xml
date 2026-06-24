@@ -4,8 +4,9 @@
 Ciao, %1$s!</string>
     <string name="new_chat">Nuova Chat</string>
     <string name="analysis_mode">Modalità Analisi</string>
-    <string name="analysis2_mode">📊 Analisi 2</string>
+    <string name="analysis2_mode">📊 Analisi</string>
     <string name="physics_mode">⚙ Fisica</string>
+    <string name="software_engineering_mode">💻 Ing. Software</string>
     <string name="metodi_theory_mode">📘 Teoria</string>
     <string name="metodi_code_mode">🐍 Codice</string>
     <string name="history">Cronologia</string>
@@ -33,8 +34,9 @@ Ciao, %1$s!</string>
     <string name="decrease_font_size">↓</string>
     <string name="no_saved_chats">Nessuna chat salvata</string>
     <string name="analysis">📊 Analisi</string>
-    <string name="analysis2_short">📊 Analisi 2</string>
+    <string name="analysis2_short">📊 Analisi</string>
     <string name="physics_short">⚙ Fisica</string>
+    <string name="software_engineering_short">💻 Ing. Software</string>
     <string name="metodi_theory_short">📘 Teoria</string>
     <string name="metodi_code_short">🐍 Codice</string>
     <string name="delete">🗑</string>

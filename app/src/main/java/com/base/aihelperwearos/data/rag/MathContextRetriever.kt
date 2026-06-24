@@ -9,7 +9,8 @@ class MathContextRetriever(
     private val maxExercises: Int = DEFAULT_MAX_EXERCISES,
     private val maxPromptLength: Int = DEFAULT_MAX_PROMPT_LENGTH,
     private val contextHeader: String = "ESEMPI RILEVANTI DALLA PROFESSORESSA:",
-    private val solutionLabel: String = "Svolgimento della professoressa"
+    private val solutionLabel: String = "Svolgimento della professoressa",
+    private val itemLabel: String = "Esercizio"
 ) {
     
     companion object {
@@ -140,7 +141,8 @@ class MathContextRetriever(
         
         val formatted = result.formatForPrompt(
             header = contextHeader,
-            solutionLabel = solutionLabel
+            solutionLabel = solutionLabel,
+            itemLabel = itemLabel
         )
         
         return if (formatted.length > maxPromptLength) {
@@ -170,7 +172,7 @@ class MathContextRetriever(
             appendLine()
             appendLine(contextHeader.removeSuffix(":") + ":")
             appendLine("─".repeat(40))
-            append(first.formatForPrompt(solutionLabel))
+            append(first.formatForPrompt(solutionLabel = solutionLabel, itemLabel = itemLabel))
             appendLine("─".repeat(40))
         }
         
@@ -179,9 +181,9 @@ class MathContextRetriever(
         } else {
             buildString {
                 appendLine()
-                appendLine("ESEMPIO RILEVANTE:")
+                appendLine("${itemLabel.uppercase()} RILEVANTE:")
                 appendLine("[${first.categoria}] ${first.testo.take(200)}...")
-                appendLine("Svolgimento: ${first.svolgimento.take(500)}...")
+                appendLine("$solutionLabel: ${first.svolgimento.take(500)}...")
             }
         }
     }

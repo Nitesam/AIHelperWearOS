@@ -233,8 +233,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun getContextTools(modeSpec: ChatModeSpec): List<ChatContextTool> {
         return modeSpec.contextTools.mapNotNull { toolType ->
             when (toolType) {
-                ContextToolType.EXERCISE_ANALYSIS2,
-                ContextToolType.EXERCISE_PHYSICS -> getExerciseRagTool(modeSpec)
+                ContextToolType.EXERCISE_ANALYSIS,
+                ContextToolType.EXERCISE_PHYSICS,
+                ContextToolType.SOFTWARE_ENGINEERING -> getExerciseRagTool(modeSpec)
                 ContextToolType.METODI_THEORY -> cachedContextTools.getOrPut(toolType.name) {
                     MetodiTheoryTool(metodiRepository)
                 }
@@ -254,19 +255,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val isPhysics = modeSpec.id == ChatModeIds.PHYSICS
+        val isSoftwareEngineering = modeSpec.id == ChatModeIds.SOFTWARE_ENGINEERING
         val retriever = MathContextRetriever(
             ragRepository = repository,
-            maxExercises = if (isPhysics) 3 else 2,
-            maxPromptLength = if (isPhysics) 5200 else 4096,
-            contextHeader = if (isPhysics) {
-                "ESEMPI DI FISICA RILEVANTI:"
-            } else {
-                "ESEMPI RILEVANTI DALLA PROFESSORESSA:"
+            maxExercises = when {
+                isSoftwareEngineering -> 4
+                isPhysics -> 3
+                else -> 2
             },
-            solutionLabel = if (isPhysics) {
-                "Svolgimento di riferimento"
-            } else {
-                "Svolgimento della professoressa"
+            maxPromptLength = when {
+                isSoftwareEngineering -> 6500
+                isPhysics -> 5200
+                else -> 4096
+            },
+            contextHeader = when {
+                isSoftwareEngineering -> "CONTESTO INGEGNERIA DEL SOFTWARE RILEVANTE:"
+                isPhysics -> "ESEMPI DI FISICA RILEVANTI:"
+                else -> "ESEMPI RILEVANTI DALLA PROFESSORESSA:"
+            },
+            solutionLabel = when {
+                isSoftwareEngineering -> "Appunti/esempio del professore"
+                isPhysics -> "Svolgimento di riferimento"
+                else -> "Svolgimento della professoressa"
+            },
+            itemLabel = when {
+                isSoftwareEngineering -> "Riferimento"
+                else -> "Esercizio"
             }
         )
         val tool = ExerciseRagTool(retriever, getApplication<Application>().getString(modeSpec.titleRes))
@@ -521,7 +535,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val sessionId = chatRepository.createSession(
                     modelId = _uiState.value.selectedModel,
                     title = effectiveTitle,
-                    isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
+                    isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS,
                     modeId = modeSpec.id
                 )
 
@@ -535,7 +549,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         currentSessionId = sessionId,
                         currentScreen = newScreen,
-                        isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
+                        isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS,
                         chatModeId = modeSpec.id,
                         isCurrentModeEnabled = modeSpec.enabled,
                         chatMessages = emptyList()
@@ -580,7 +594,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         currentSessionId = sessionId,
                         selectedModel = session.modelId,
-                        isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS2,
+                        isAnalysisMode = modeSpec.id == ChatModeIds.ANALYSIS,
                         chatModeId = modeSpec.id,
                         isCurrentModeEnabled = modeSpec.enabled,
                         currentScreen = screenForMode(modeSpec.id)
