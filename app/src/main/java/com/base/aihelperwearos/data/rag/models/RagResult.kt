@@ -12,7 +12,8 @@ sealed class RagResult {
          */
         fun formatForPrompt(
             header: String = "ESEMPI RILEVANTI DALLA PROFESSORESSA:",
-            solutionLabel: String = "Svolgimento della professoressa"
+            solutionLabel: String = "Svolgimento della professoressa",
+            itemLabel: String = "Esercizio"
         ): String {
             if (exercises.isEmpty()) return ""
             
@@ -22,7 +23,7 @@ sealed class RagResult {
                 appendLine("─".repeat(40))
                 exercises.forEachIndexed { index, exercise ->
                     if (index > 0) appendLine()
-                    append(exercise.formatForPrompt(solutionLabel))
+                    append(exercise.formatForPrompt(solutionLabel = solutionLabel, itemLabel = itemLabel))
                 }
                 appendLine("─".repeat(40))
             }

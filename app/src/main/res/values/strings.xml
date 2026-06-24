@@ -4,8 +4,9 @@
 Hello, %1$s!</string>
     <string name="new_chat">New Chat</string>
     <string name="analysis_mode">Analysis Mode</string>
-    <string name="analysis2_mode">📊 Analysis 2</string>
+    <string name="analysis2_mode">📊 Analysis</string>
     <string name="physics_mode">⚙ Physics</string>
+    <string name="software_engineering_mode">💻 Software Eng.</string>
     <string name="metodi_theory_mode">📘 Theory</string>
     <string name="metodi_code_mode">🐍 Code</string>
     <string name="history">History</string>
@@ -33,8 +34,9 @@ Hello, %1$s!</string>
     <string name="decrease_font_size">↓</string>
     <string name="no_saved_chats">No saved chats</string>
     <string name="analysis">📊 Analysis</string>
-    <string name="analysis2_short">📊 Analysis 2</string>
+    <string name="analysis2_short">📊 Analysis</string>
     <string name="physics_short">⚙ Physics</string>
+    <string name="software_engineering_short">💻 Software Eng.</string>
     <string name="metodi_theory_short">📘 Theory</string>
     <string name="metodi_code_short">🐍 Code</string>
     <string name="delete">🗑</string>

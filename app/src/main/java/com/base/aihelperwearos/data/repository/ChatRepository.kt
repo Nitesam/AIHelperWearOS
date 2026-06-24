@@ -177,7 +177,7 @@ class ChatRepository(private val context: Context) {
                 modelId = modelId,
                 title = title,
                 timestamp = System.currentTimeMillis(),
-                isAnalysisMode = normalizedModeId == ChatModeIds.ANALYSIS2 || isAnalysisMode,
+                isAnalysisMode = normalizedModeId == ChatModeIds.ANALYSIS || isAnalysisMode,
                 mode = SpecializedChatRegistry.legacyModeFor(normalizedModeId),
                 modeId = normalizedModeId
             )

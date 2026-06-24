@@ -25,9 +25,9 @@ sealed class TheoremResult {
 
 class RagRepository(
     private val context: Context,
-    private val exerciseRawResId: Int = com.base.aihelperwearos.R.raw.esercizi_analisi2,
-    private val theoremRawResId: Int? = com.base.aihelperwearos.R.raw.teoremi_analisi2,
-    private val sourceLabel: String = "Analisi 2"
+    private val exerciseRawResId: Int = com.base.aihelperwearos.R.raw.esercizi_analisi,
+    private val theoremRawResId: Int? = null,
+    private val sourceLabel: String = "Analisi"
 ) {
     
     companion object {

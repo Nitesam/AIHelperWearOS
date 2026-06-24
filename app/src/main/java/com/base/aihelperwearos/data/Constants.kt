@@ -28,7 +28,7 @@ object Constants {
     """.trimIndent()
 
     val MATH_MODE_PROMPT_IT = """
-        Analisi Matematica 2, corso di laurea in Informatica.
+        Analisi Matematica 1 e 2, corso di laurea in Informatica.
         Risoluzione formale, passo per passo, nel taglio richiesto agli esami.
 
         Formato Wear OS:
@@ -55,7 +55,7 @@ object Constants {
     """.trimIndent()
 
     val MATH_MODE_PROMPT_EN = """
-        Calculus 2, Computer Science degree level.
+        Calculus 1 and 2, Computer Science degree level.
         Solve the exercise with formal, exam-style, step-by-step reasoning.
 
         Wear OS format:
@@ -121,6 +121,88 @@ object Constants {
         $$ \boxed{\text{[result with units]}} $$
 
         Respond in ENGLISH. Avoid long explanations unless requested.
+    """.trimIndent()
+
+    private val SOFTWARE_ENGINEERING_PROMPT_IT = """
+        Ingegneria del Software.
+        Aiuta a preparare e risolvere le prove d'esame usando come base primaria gli appunti e gli esempi del professore recuperati dal RAG.
+
+        L'esame ha tre blocchi:
+        1. Dieci domande a risposta multipla.
+        2. Quattro esercizi sugli stream Java.
+        3. Un problema sui design pattern.
+
+        La richiesta non contiene necessariamente tutto l'esame:
+        - Le domande a risposta multipla possono arrivare singole oppure in batch da 2, 3, 4 o 5.
+        - Gli esercizi sugli stream possono arrivare singoli oppure in batch fino a 4.
+        - Il problema sui design pattern arriva da solo.
+        - Rispondi solo agli elementi presenti nel messaggio corrente, senza chiedere il resto dell'esame.
+        - Se nel messaggio ci sono piu' elementi, numerali e mantieni una risposta separata per ciascuno.
+
+        Regole per le domande a risposta multipla:
+        - Indica l'opzione scelta e una motivazione breve.
+        - Se serve, spiega in una frase perche' le alternative principali sono meno adatte.
+        - Usa gli appunti del professore quando sono presenti nel contesto.
+
+        Regole per gli esercizi sugli stream:
+        - Risolvi in Java con Stream API, nello stile degli esercizi del professore recuperati.
+        - Mantieni nomi di classi, metodi, campi e variabili del testo.
+        - Evita cicli espliciti se l'esercizio richiede stream.
+        - Preferisci pipeline chiare con filter, map, flatMap, sorted, collect, groupingBy, counting, max/min quando pertinenti.
+        - Non introdurre librerie o architetture non richieste.
+
+        Regole per i design pattern:
+        - Riconosci il pattern piu' adatto dal problema.
+        - Scrivi una motivazione breve legata al testo.
+        - Crea un diagramma UML semplice in un blocco di testo, usando le classi e i nomi del problema.
+        - Scrivi 3-4 funzioni Java caratteristiche del pattern, adattate alle classi del problema.
+        - Non usare nomi generici come Subject, Observer, Product se il testo fornisce nomi di dominio migliori.
+
+        Formato:
+        - Rispondi in ITALIANO.
+        - Tieni blocchi brevi e leggibili su Wear OS.
+        - Se il contesto del professore non e' disponibile, rispondi con conoscenza standard del corso senza inventare appunti.
+    """.trimIndent()
+
+    private val SOFTWARE_ENGINEERING_PROMPT_EN = """
+        Software Engineering.
+        Help prepare and solve exam tasks using the professor's notes and examples retrieved from RAG as the primary reference.
+
+        The exam has three blocks:
+        1. Ten multiple-choice questions.
+        2. Four Java Stream exercises.
+        3. One design pattern problem.
+
+        The request will not necessarily contain the whole exam:
+        - Multiple-choice questions may arrive individually or in batches of 2, 3, 4, or 5.
+        - Stream exercises may arrive individually or in batches up to 4.
+        - The design pattern problem arrives alone.
+        - Answer only the items present in the current message, without asking for the rest of the exam.
+        - If the message contains multiple items, number them and keep a separate answer for each one.
+
+        Rules for multiple-choice questions:
+        - State the selected option and a short reason.
+        - When useful, explain in one sentence why the main alternatives are less suitable.
+        - Use the professor's notes when they are present in context.
+
+        Rules for Stream exercises:
+        - Solve in Java with the Stream API, matching the professor's retrieved examples.
+        - Preserve class, method, field, and variable names from the prompt.
+        - Avoid explicit loops when the exercise asks for streams.
+        - Prefer clear pipelines with filter, map, flatMap, sorted, collect, groupingBy, counting, max/min when relevant.
+        - Do not introduce libraries or architecture that the exercise does not ask for.
+
+        Rules for design patterns:
+        - Identify the most suitable pattern from the problem.
+        - Give a brief reason grounded in the text.
+        - Create a simple UML diagram in a text block, using the classes and names from the problem.
+        - Write 3-4 characteristic Java methods adapted to the problem classes.
+        - Do not use generic names such as Subject, Observer, Product when the prompt provides better domain names.
+
+        Format:
+        - Respond in ENGLISH.
+        - Keep blocks short and readable on Wear OS.
+        - If professor context is unavailable, answer with standard course knowledge without inventing notes.
     """.trimIndent()
 
     val TRANSCRIPTION_PROMPT_IT = """
@@ -241,10 +323,19 @@ object Constants {
     fun getPrompt(profile: PromptProfile, languageCode: String, ragContext: String?): String? {
         if (profile == PromptProfile.NONE) return null
 
-        val policy = if (languageCode == "en") WEAR_LATEX_POLICY_EN else WEAR_LATEX_POLICY_IT
+        val policy = if (profile == PromptProfile.SOFTWARE_ENGINEERING) {
+            ""
+        } else if (languageCode == "en") {
+            WEAR_LATEX_POLICY_EN
+        } else {
+            WEAR_LATEX_POLICY_IT
+        }
         val base = when (profile) {
-            PromptProfile.ANALYSIS2 -> getMathPrompt(languageCode)
+            PromptProfile.ANALYSIS -> getMathPrompt(languageCode)
             PromptProfile.PHYSICS -> if (languageCode == "en") PHYSICS_MODE_PROMPT_EN else PHYSICS_MODE_PROMPT_IT
+            PromptProfile.SOFTWARE_ENGINEERING -> {
+                if (languageCode == "en") SOFTWARE_ENGINEERING_PROMPT_EN else SOFTWARE_ENGINEERING_PROMPT_IT
+            }
             PromptProfile.METODI_THEORY -> getMetodiTheoryPrompt(languageCode, ragContext = null)
             PromptProfile.METODI_CODE -> getMetodiCodePrompt(languageCode, ragContext = null)
             PromptProfile.NONE -> return null
@@ -256,6 +347,7 @@ object Constants {
             val label = when {
                 languageCode == "en" -> "RELEVANT REFERENCE CONTEXT"
                 profile == PromptProfile.PHYSICS -> "ESEMPI DI FISICA RILEVANTI"
+                profile == PromptProfile.SOFTWARE_ENGINEERING -> "CONTESTO INGEGNERIA DEL SOFTWARE RILEVANTE"
                 else -> "CONTESTO DI RIFERIMENTO RILEVANTE"
             }
             "\n\n$label:\n$ragContext"
@@ -265,10 +357,13 @@ object Constants {
             ragContext.isNullOrBlank() -> ""
             languageCode == "en" -> "\n\nMatch the notation, level of detail, and step organization of the retrieved references when relevant."
             profile == PromptProfile.PHYSICS -> "\n\nUsa il taglio degli esempi: formule essenziali, sostituzioni, unita' e risultato breve."
+            profile == PromptProfile.SOFTWARE_ENGINEERING -> "\n\nUsa appunti ed esempi del professore come riferimento principale; per gli stream copia stile e livello di dettaglio degli esempi recuperati."
             else -> "\n\nSegui notazione, livello di dettaglio e organizzazione degli esempi recuperati quando pertinenti."
         }
 
-        return "$policy\n\n$base$contextBlock$styleReminder"
+        return listOf(policy, "$base$contextBlock$styleReminder")
+            .filter { it.isNotBlank() }
+            .joinToString("\n\n")
     }
 
     fun getMetodiPrompt(chatMode: ChatMode, languageCode: String, ragContext: String?): String {
@@ -464,6 +559,39 @@ object Constants {
                     Estrai 3-5 parole chiave utili per codice/statistica, ad esempio binomiale, normale, ipergeometrica, istogramma, regressione, intervallo di confidenza, chi quadro, simulazione, Markov.
                     Preserva esattamente numeri, nomi di variabili e dati.
                     Non risolvere l'esercizio.
+                """.trimIndent()
+            }
+            ChatModeIds.SOFTWARE_ENGINEERING -> if (languageCode == "en") {
+                """
+                    Listen carefully and transcribe exactly what is said.
+                    The audio may contain a Software Engineering multiple-choice question, a Java Stream exercise, a design pattern problem, or a microphone test.
+                    Do not infer or complete the task. Transcribe only words actually spoken.
+
+                    Format:
+                    [KEYWORDS: software engineering, keyword1, keyword2, keyword3]
+                    [TRANSCRIPTION: full literal transcription]
+
+                    The [TRANSCRIPTION: ...] line is mandatory. Never return only [KEYWORDS: ...].
+
+                    Extract 3-6 useful keywords such as quiz, multiple choice, stream, lambda, collect, groupingBy, design pattern, UML, adapter, observer, strategy, factory, singleton, decorator.
+                    Preserve option letters, numbers, class names, method names, field names, and code fragments exactly.
+                    Do not solve the question.
+                """.trimIndent()
+            } else {
+                """
+                    Ascolta attentamente e trascrivi esattamente ciò che viene detto.
+                    L'audio può contenere una domanda a risposta multipla di Ingegneria del Software, un esercizio Java Stream, un problema sui design pattern oppure una prova microfono.
+                    Non dedurre e non completare la traccia. Trascrivi solo parole realmente pronunciate.
+
+                    Formato:
+                    [KEYWORDS: ingegneria software, parola1, parola2, parola3]
+                    [TRASCRIZIONE: trascrizione letterale completa]
+
+                    La riga [TRASCRIZIONE: ...] è obbligatoria. Non restituire mai solo [KEYWORDS: ...].
+
+                    Estrai 3-6 parole chiave utili, ad esempio quiz, risposta multipla, stream, lambda, collect, groupingBy, design pattern, UML, adapter, observer, strategy, factory, singleton, decorator.
+                    Preserva esattamente lettere delle opzioni, numeri, nomi di classi, metodi, campi e frammenti di codice.
+                    Non risolvere la domanda.
                 """.trimIndent()
             }
             ChatModeIds.PHYSICS -> if (languageCode == "en") {

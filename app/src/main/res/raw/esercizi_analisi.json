@@ -1,0 +1,153 @@
+{
+  "version": "4.0",
+  "last_updated": "2026-06-23",
+  "description": "Esercizi svolti di Analisi generica trascritti e normalizzati da app/src/main/res/raw/analisi. Sono inclusi solo blocchi manoscritti con consegna e svolgimento leggibili.",
+  "total_exercises": 18,
+  "max_exercises": 300,
+  "exercises": [
+    {
+      "id": "ANA-SUC-001",
+      "categoria": "Analisi 1 - Successioni",
+      "sottotipo": "Limiti con crescita esponenziale",
+      "keywords": ["successioni", "limite", "esponenziale", "infinito", "confronto asintotico", "Esercizi sulle successioni"],
+      "testo": "Calcolare il limite della successione\\n$$a_n=\\frac{2^n+2^{-n}}{n^2+n^{-2}}.$$",
+      "svolgimento": "Mettiamo in evidenza i termini dominanti:\\n$$a_n=\\frac{2^n\\left(1+\\frac{1}{4^n}\\right)}{n^2\\left(1+\\frac{1}{n^4}\\right)}.$$\\n\\nPoiche'\\n$$\\frac{1}{4^n}\\to0,\\qquad \\frac{1}{n^4}\\to0,$$\\nla successione ha lo stesso comportamento di\\n$$\\frac{2^n}{n^2}.$$\\n\\nL'esponenziale cresce piu' velocemente di ogni potenza, quindi\\n$$\\lim_{n\\to\\infty}a_n=+\\infty.$$"
+    },
+    {
+      "id": "ANA-SUC-002",
+      "categoria": "Analisi 1 - Successioni",
+      "sottotipo": "Limiti notevoli trigonometrici",
+      "keywords": ["successioni", "limite notevole", "logaritmo", "coseno", "asintotico", "Esercizi sulle successioni"],
+      "testo": "Calcolare il limite\\n$$\\lim_{n\\to\\infty} n^2\\log\\left(\\cos\\frac{1}{n}\\right).$$",
+      "svolgimento": "Scriviamo\\n$$\\cos\\frac{1}{n}=1-\\left(1-\\cos\\frac{1}{n}\\right).$$\\n\\nPoniamo\\n$$c_n=-\\left(1-\\cos\\frac{1}{n}\\right),\\qquad c_n\\to0.$$\\n\\nAllora\\n$$n^2\\log\\left(1+c_n\\right)=n^2\\frac{\\log(1+c_n)}{c_n}\\,c_n.$$\\n\\nUsiamo i limiti notevoli\\n$$\\frac{\\log(1+c_n)}{c_n}\\to1,$$\\n$$\\frac{1-\\cos(1/n)}{(1/n)^2}\\to\\frac{1}{2}.$$\\n\\nQuindi\\n$$\\lim_{n\\to\\infty}n^2\\log\\left(\\cos\\frac{1}{n}\\right)=-\\frac{1}{2}.$$"
+    },
+    {
+      "id": "ANA-SUC-003",
+      "categoria": "Analisi 1 - Successioni",
+      "sottotipo": "Monotonia, estremo superiore e inferiore",
+      "keywords": ["successioni", "monotonia", "logaritmo", "supremo", "infimo", "Esercizi sulle successioni"],
+      "testo": "Stabilire monotonia, estremo superiore e inferiore della successione\\n$$a_n=\\log\\left(\\frac{n^2+1}{n+5}\\right),\\qquad n\\ge0.$$",
+      "svolgimento": "Poniamo\\n$$a_n=f(b_n),\\qquad b_n=\\frac{n^2+1}{n+5},\\qquad f(x)=\\log x.$$\\n\\nLa funzione logaritmo e' crescente, quindi basta studiare la monotonia di $b_n$.\\n\\nVerifichiamo\\n$$b_n\\le b_{n+1}$$\\ncioe'\\n$$\\frac{n^2+1}{n+5}\\le\\frac{(n+1)^2+1}{n+6}.$$\\n\\nSviluppando si ottiene\\n$$n^2+11n+4\\ge0,$$\\nvera per $n\\ge0$. Dunque $b_n$ e' crescente, e anche $a_n$ e' crescente.\\n\\nPer il limite:\\n$$\\lim_{n\\to\\infty}a_n=\\lim_{n\\to\\infty}\\log\\left(\\frac{n^2+1}{n+5}\\right)=+\\infty.$$\\n\\nQuindi\\n$$\\sup a_n=+\\infty,$$\\nmentre l'infimo e' il primo valore:\\n$$\\inf a_n=a_0=\\log\\frac{1}{5}=-\\log5.$$"
+    },
+    {
+      "id": "ANA-SUC-004",
+      "categoria": "Analisi 1 - Successioni",
+      "sottotipo": "Limiti con esponenziale dominante",
+      "keywords": ["successioni", "limite", "esponenziale", "logaritmo", "confronto", "Esercizi sulle successioni"],
+      "testo": "Calcolare il limite\\n$$\\lim_{n\\to\\infty}\\frac{e^n-1+\\cos n}{n-\\log n}.$$",
+      "svolgimento": "Il denominatore soddisfa\\n$$n-\\log n=n\\left(1-\\frac{\\log n}{n}\\right),\\qquad \\frac{\\log n}{n}\\to0.$$\\n\\nIl numeratore e' dominato da $e^n$, infatti $-1+\\cos n$ resta limitato.\\n\\nQuindi il rapporto ha lo stesso comportamento di\\n$$\\frac{e^n}{n}.$$\\n\\nPoiche' l'esponenziale domina la crescita lineare,\\n$$\\lim_{n\\to\\infty}\\frac{e^n-1+\\cos n}{n-\\log n}=+\\infty.$$"
+    },
+    {
+      "id": "ANA-SUC-005",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Limite esponenziale notevole",
+      "keywords": ["successioni", "limite notevole", "numero e", "potenza", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}\\left(1-\\frac{3}{\\sqrt n}\\right)^{\\sqrt n}.$$",
+      "svolgimento": "Usiamo il limite notevole\\n$$\\lim_{m\\to\\infty}\\left(1+\\frac{\\alpha}{m}\\right)^m=e^{\\alpha}.$$\\n\\nQui poniamo\\n$$m=\\sqrt n,\\qquad \\alpha=-3.$$\\n\\nAllora\\n$$\\left(1-\\frac{3}{\\sqrt n}\\right)^{\\sqrt n}=\\left(1+\\frac{-3}{m}\\right)^m.$$\\n\\nQuindi\\n$$\\lim_{n\\to\\infty}\\left(1-\\frac{3}{\\sqrt n}\\right)^{\\sqrt n}=e^{-3}.$$"
+    },
+    {
+      "id": "ANA-SUC-006",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Potenza con base tendente a uno",
+      "keywords": ["successioni", "limite", "potenza", "numero e", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}\\left(1+\\frac{1}{5n^2}\\right)^n.$$",
+      "svolgimento": "Riscriviamo la potenza separando il limite notevole:\\n$$\\left(1+\\frac{1}{5n^2}\\right)^n=\\left[\\left(1+\\frac{1}{5n^2}\\right)^{5n^2}\\right]^{\\frac{1}{5n}}.$$\\n\\nIl blocco tra parentesi tende a $e$, mentre\\n$$\\frac{1}{5n}\\to0.$$\\n\\nQuindi\\n$$\\lim_{n\\to\\infty}\\left(1+\\frac{1}{5n^2}\\right)^n=e^0=1.$$"
+    },
+    {
+      "id": "ANA-SUC-007",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Potenza con termine esterno",
+      "keywords": ["successioni", "limite", "potenza", "esponenziale", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}\\frac{1}{n}\\left(1-\\frac{2}{\\sqrt n}\\right)^{n^2}.$$",
+      "svolgimento": "Riscriviamo isolando un limite esponenziale:\\n$$\\frac{1}{n}\\left(1-\\frac{2}{\\sqrt n}\\right)^{n^2}=\\frac{1}{n}\\left[\\left(1-\\frac{2}{\\sqrt n}\\right)^{-\\frac{\\sqrt n}{2}}\\right]^{-2n^{3/2}}.$$\\n\\nIl blocco tra parentesi tende a $e$. L'esponente finale tende a $-\\infty$:\\n$$-2n^{3/2}\\to-\\infty.$$\\n\\nPercio' il fattore esponenziale tende a zero, e anche moltiplicando per $1/n$ resta\\n$$\\lim_{n\\to\\infty}\\frac{1}{n}\\left(1-\\frac{2}{\\sqrt n}\\right)^{n^2}=0.$$"
+    },
+    {
+      "id": "ANA-SUC-008",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Logaritmo notevole",
+      "keywords": ["successioni", "logaritmo", "limite notevole", "numero e", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}n\\log\\left(1-\\frac{1}{n}\\right).$$",
+      "svolgimento": "Poniamo\\n$$a_n=n\\log\\left(1-\\frac{1}{n}\\right).$$\\n\\nPassiamo all'esponenziale:\\n$$e^{a_n}=\\left(1-\\frac{1}{n}\\right)^n.$$\\n\\nPer il limite notevole,\\n$$\\left(1-\\frac{1}{n}\\right)^n\\to e^{-1}.$$\\n\\nQuindi\\n$$e^{a_n}\\to e^{-1},$$\\ne per continuita' del logaritmo otteniamo\\n$$\\lim_{n\\to\\infty}a_n=-1.$$"
+    },
+    {
+      "id": "ANA-SUC-009",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Logaritmo in base due",
+      "keywords": ["successioni", "logaritmo", "base due", "limite notevole", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}\\sqrt n\\,\\log_2\\left(1+\\frac{1}{n+1}\\right).$$",
+      "svolgimento": "Passiamo al logaritmo naturale:\\n$$\\log_2 b=\\frac{\\log b}{\\log2}.$$\\n\\nAllora\\n$$\\sqrt n\\,\\log_2\\left(1+\\frac{1}{n+1}\\right)=\\frac{\\sqrt n}{\\log2}\\log\\left(1+\\frac{1}{n+1}\\right).$$\\n\\nMoltiplichiamo e dividiamo per $1/(n+1)$:\\n$$=\\frac{\\sqrt n}{\\log2(n+1)}\\frac{\\log\\left(1+\\frac{1}{n+1}\\right)}{\\frac{1}{n+1}}.$$\\n\\nIl secondo fattore tende a $1$, mentre\\n$$\\frac{\\sqrt n}{n+1}\\to0.$$\\n\\nQuindi il limite vale\\n$$0.$$"
+    },
+    {
+      "id": "ANA-SUC-010",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Seno notevole",
+      "keywords": ["successioni", "seno", "limite notevole", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}\\sqrt n\\,\\sin\\left(\\frac{1}{\\sqrt n}\\right).$$",
+      "svolgimento": "Riscriviamo il prodotto come rapporto:\\n$$\\sqrt n\\,\\sin\\left(\\frac{1}{\\sqrt n}\\right)=\\frac{\\sin\\left(\\frac{1}{\\sqrt n}\\right)}{\\frac{1}{\\sqrt n}}.$$\\n\\nPoiche' $1/\\sqrt n\\to0$, usiamo il limite notevole\\n$$\\lim_{x\\to0}\\frac{\\sin x}{x}=1.$$\\n\\nQuindi\\n$$\\lim_{n\\to\\infty}\\sqrt n\\,\\sin\\left(\\frac{1}{\\sqrt n}\\right)=1.$$"
+    },
+    {
+      "id": "ANA-SUC-011",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Rapporto tra seno ed esponenziale",
+      "keywords": ["successioni", "seno", "esponenziale", "limite notevole", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}\\frac{\\sin\\left(\\frac{1}{n^3}\\right)}{e^{1/n^2}-1}.$$",
+      "svolgimento": "Moltiplichiamo e dividiamo per i termini notevoli:\\n$$\\frac{\\sin(1/n^3)}{e^{1/n^2}-1}=\\frac{1/n^2}{e^{1/n^2}-1}\\cdot\\frac{\\sin(1/n^3)}{1/n^3}\\cdot\\frac{1/n^3}{1/n^2}.$$\\n\\nPer i limiti notevoli:\\n$$\\frac{1/n^2}{e^{1/n^2}-1}\\to1,$$\\n$$\\frac{\\sin(1/n^3)}{1/n^3}\\to1.$$\\n\\nResta\\n$$\\frac{1/n^3}{1/n^2}=\\frac{1}{n}\\to0.$$\\n\\nQuindi il limite vale\\n$$0.$$"
+    },
+    {
+      "id": "ANA-SUC-012",
+      "categoria": "Analisi 2 - Limiti notevoli e asintotici",
+      "sottotipo": "Radice e seno al quadrato",
+      "keywords": ["successioni", "radice", "seno", "limite notevole", "Esercizi sulle successioni"],
+      "testo": "Calcolare\\n$$\\lim_{n\\to\\infty}\\frac{\\sqrt{1+\\frac{1}{n^2+2}}-1}{\\sin^2\\left(\\frac{1}{n+4}\\right)}.$$",
+      "svolgimento": "Separiamo il rapporto in fattori notevoli:\\n$$\\frac{\\sqrt{1+\\frac{1}{n^2+2}}-1}{\\sin^2\\left(\\frac{1}{n+4}\\right)}$$\\n$$=\\frac{\\sqrt{1+\\frac{1}{n^2+2}}-1}{\\frac{1}{n^2+2}}\\cdot\\frac{\\frac{1}{n^2+2}}{\\sin^2\\left(\\frac{1}{n+4}\\right)}.$$\\n\\nPer il primo fattore usiamo\\n$$\\frac{(1+x)^{1/2}-1}{x}\\to\\frac{1}{2}.$$\\n\\nPer il secondo fattore:\\n$$\\sin\\left(\\frac{1}{n+4}\\right)\\sim\\frac{1}{n+4},$$\\nquindi\\n$$\\frac{\\frac{1}{n^2+2}}{\\sin^2\\left(\\frac{1}{n+4}\\right)}\\sim\\frac{(n+4)^2}{n^2+2}\\to1.$$\\n\\nPertanto\\n$$\\lim_{n\\to\\infty}\\frac{\\sqrt{1+\\frac{1}{n^2+2}}-1}{\\sin^2\\left(\\frac{1}{n+4}\\right)}=\\frac{1}{2}.$$"
+    },
+    {
+      "id": "ANA-SUC-013",
+      "categoria": "Analisi 1 - Successioni",
+      "sottotipo": "Successione convergente non monotona",
+      "keywords": ["successioni", "monotonia", "convergenza", "esempio", "Esercizi sulle successioni"],
+      "testo": "Mostrare con un esempio che una successione puo' essere convergente senza essere monotona.",
+      "svolgimento": "Consideriamo\\n$$a_n=\\frac{(-1)^n}{n}.$$\\n\\nI primi termini sono\\n$$a_1=-1,\\qquad a_2=\\frac{1}{2},\\qquad a_3=-\\frac{1}{3},\\ldots$$\\n\\nLa successione cambia segno, quindi non e' monotona.\\n\\nTuttavia\\n$$\\left|a_n\\right|=\\frac{1}{n}\\to0.$$\\n\\nPer confronto,\\n$$a_n\\to0.$$\\n\\nQuindi $a_n$ e' convergente ma non monotona."
+    },
+    {
+      "id": "ANA-COM-001",
+      "categoria": "Analisi 1 - Numeri complessi",
+      "sottotipo": "Equazioni complesse con coniugato e modulo",
+      "keywords": ["numeri complessi", "equazione complessa", "coniugato", "modulo", "parte reale", "Esercizi complessi"],
+      "testo": "Risolvere in $\\mathbb C$:\\n$$z-z^3=|z|^2-\\bar z.$$",
+      "svolgimento": "Usiamo $|z|^2=z\\bar z$:\\n$$z(1-z^2)=\\bar z z-\\bar z.$$\\n\\nFattorizziamo:\\n$$z(1-z)(1+z)=-\\bar z(1-z).$$\\n\\nSi vede subito che $z=1$ e' soluzione. Se $z\\ne1$, dividiamo per $1-z$:\\n$$z(1+z)=-\\bar z.$$\\n\\nQuindi\\n$$z^2+z+\\bar z=0.$$\\n\\nPonendo $z=x+iy$ otteniamo\\n$$x^2-y^2+2x=0,$$\\n$$2xy=0.$$\\n\\nDal sistema: se $x=0$ allora $y=0$; se $y=0$ allora $x(x+2)=0$.\\n\\nLe soluzioni sono\\n$$z=0,\\qquad z=1,\\qquad z=-2.$$"
+    },
+    {
+      "id": "ANA-COM-002",
+      "categoria": "Analisi 1 - Numeri complessi",
+      "sottotipo": "Equazioni complesse con modulo",
+      "keywords": ["numeri complessi", "equazione complessa", "modulo", "coniugato", "parte immaginaria", "Esercizi complessi"],
+      "testo": "Risolvere in $\\mathbb C$:\\n$$z^3+z=\\bar z+i|z|^2.$$",
+      "svolgimento": "Raccogliamo a sinistra:\\n$$z(z^2+1)=\\bar z(1+iz).$$\\n\\nOsserviamo che\\n$$1+z^2=(1-iz)(1+iz).$$\\n\\nAllora\\n$$z(1+iz)(1-iz)=\\bar z(1+iz).$$\\n\\nSe $1+iz=0$, allora $z=i$, che e' soluzione.\\n\\nSe $1+iz\\ne0$, dividiamo:\\n$$z(1-iz)=\\bar z.$$\\n\\nPonendo $z=x+iy$ otteniamo\\n$$xy=0,$$\\n$$2y-(x^2-y^2)=0.$$\\n\\nDai casi: se $y=0$ allora $x=0$; se $x=0$ allora $y(y+2)=0$.\\n\\nLe soluzioni sono\\n$$z=0,\\qquad z=i,\\qquad z=-2i.$$"
+    },
+    {
+      "id": "ANA-COM-003",
+      "categoria": "Analisi 1 - Numeri complessi",
+      "sottotipo": "Radici quadrate in forma trigonometrica",
+      "keywords": ["numeri complessi", "radici quadrate", "forma trigonometrica", "argomento", "Esercizi complessi"],
+      "testo": "Calcolare le radici quadrate del numero\\n$$z=\\frac{\\sqrt3-i}{2i(1+i)^8}.$$",
+      "svolgimento": "Portiamo il numero in forma trigonometrica. Razionalizzando il denominatore e semplificando si ottiene\\n$$z=\\frac{1}{16}\\left(-\\frac{1}{2}-i\\frac{\\sqrt3}{2}\\right).$$\\n\\nQuindi\\n$$|z|=\\frac{1}{16},\\qquad \\arg z=\\frac{4\\pi}{3}.$$\\n\\nScriviamo\\n$$z=\\frac{1}{16}e^{i(4\\pi/3+2k\\pi)}.$$\\n\\nLe radici quadrate hanno modulo\\n$$\\sqrt{|z|}=\\frac{1}{4}$$\\ne argomenti\\n$$\\frac{1}{2}\\left(\\frac{4\\pi}{3}+2k\\pi\\right)=\\frac{2\\pi}{3}+k\\pi.$$\\n\\nDunque\\n$$w_0=\\frac{1}{4}e^{i2\\pi/3}=-\\frac{1}{8}+i\\frac{\\sqrt3}{8},$$\\n$$w_1=\\frac{1}{4}e^{i5\\pi/3}=\\frac{1}{8}-i\\frac{\\sqrt3}{8}.$$"
+    },
+    {
+      "id": "ANA-COM-004",
+      "categoria": "Analisi 1 - Numeri complessi",
+      "sottotipo": "Radici quadrate con argomento negativo",
+      "keywords": ["numeri complessi", "radici quadrate", "forma esponenziale", "argomento", "Esercizi complessi"],
+      "testo": "Calcolare le radici quadrate del numero\\n$$z=\\frac{i-\\sqrt3}{2i(i-1)^6}.$$",
+      "svolgimento": "Semplificando il denominatore si arriva alla forma\\n$$z=\\frac{1}{8}\\left(\\frac{\\sqrt3}{2}-i\\frac{1}{2}\\right).$$\\n\\nQuindi\\n$$|z|=\\frac{1}{8},\\qquad \\arg z=-\\frac{\\pi}{6}.$$\\n\\nIn forma esponenziale:\\n$$z=\\frac{1}{8}e^{i(-\\pi/6+2k\\pi)}.$$\\n\\nLe radici quadrate hanno modulo\\n$$\\sqrt{\\frac{1}{8}}=\\frac{1}{2\\sqrt2}.$$\\n\\nGli argomenti sono\\n$$-\\frac{\\pi}{12}+k\\pi.$$\\n\\nPercio'\\n$$w_0=\\frac{1}{2\\sqrt2}e^{-i\\pi/12},$$\\n$$w_1=\\frac{1}{2\\sqrt2}e^{i11\\pi/12}.$$"
+    },
+    {
+      "id": "ANA-COM-005",
+      "categoria": "Analisi 1 - Numeri complessi",
+      "sottotipo": "Equazioni complesse con parte immaginaria",
+      "keywords": ["numeri complessi", "equazione complessa", "parte immaginaria", "coniugato", "sistema reale", "Esercizi complessi"],
+      "testo": "Risolvere in $\\mathbb C$:\\n$$z^2-i\\,\\operatorname{Im}(z)-3\\bar z=0.$$",
+      "svolgimento": "Poniamo\\n$$z=x+iy.$$\\n\\nAllora\\n$$z^2=x^2-y^2+2ixy,$$\\n$$-i\\operatorname{Im}(z)=-iy,$$\\n$$-3\\bar z=-3x+3iy.$$\\n\\nSeparando parte reale e immaginaria otteniamo\\n$$x^2-y^2-3x=0,$$\\n$$2xy-y+3y=0.$$\\n\\nLa seconda equazione diventa\\n$$2y(x+1)=0.$$\\n\\nSe $x=-1$, allora dalla prima\\n$$1-y^2+3=0,$$\\nquindi\\n$$y=\\pm2.$$\\n\\nSe $y=0$, allora\\n$$x^2-3x=0,$$\\nquindi\\n$$x=0\\quad \\text{oppure}\\quad x=3.$$\\n\\nLe soluzioni sono\\n$$z=0,\\qquad z=3,\\qquad z=-1+2i,\\qquad z=-1-2i.$$"
+    }
+  ]
+}
